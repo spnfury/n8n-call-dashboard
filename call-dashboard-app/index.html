@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Llamadas - GeneralProtect</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body class="auth-hidden">
+    <!-- Login Gate -->
+    <div id="login-gate" class="login-overlay">
+        <div class="login-card">
+            <span class="logo">📞</span>
+            <h2>Acceso al Dashboard</h2>
+            <p>Introduce tus credenciales para continuar</p>
+            <form id="login-form">
+                <input type="email" id="email-input" placeholder="Email" required>
+                <input type="password" id="password-input" placeholder="Contraseña" required>
+                <button type="submit" class="refresh-btn" style="width: 100%;">Entrar</button>
+            </form>
+            <p id="auth-error" class="auth-error" style="display: none;">Email o contraseña incorrectos</p>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div class="container" id="main-content">
+        <header>
+            <h1><span class="logo">📞</span> Dashboard de Llamadas</h1>
+            <button class="refresh-btn" id="refresh-btn">🔄 Actualizar</button>
+        </header>
+
+        <div class="stats-grid" id="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="total-calls">-</div>
+                <div class="stat-label">Total Llamadas</div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-value" id="success-rate">-</div>
+                <div class="stat-label">Tasa de Éxito</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avg-duration">-</div>
+                <div class="stat-label">Duración Media</div>
+            </div>
+        </div>
+
+        <div class="section-title">📋 Historial de Llamadas</div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Empresa</th>
+                        <th>Teléfono</th>
+                        <th>Fecha</th>
+                        <th>Resultado</th>
+                        <th>Evaluación</th>
+                        <th>Duración</th>
+                        <th>Detalle</th>
+                    </tr>
+                </thead>
+                <tbody id="call-table">
+                    <tr>
+                        <td colspan="7" class="loading">Cargando datos...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal para Detalle -->
+    <div class="modal" id="detail-modal">
+        <div class="modal-content">
+            <button class="close-modal" id="close-modal">×</button>
+            <div class="modal-header">
+                <h2 id="modal-title">Detalle de la Llamada</h2>
+                <p id="modal-subtitle" style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;"></p>
+            </div>
+
+            <div class="section-title">📝 Transscripción</div>
+            <div class="transcript-text" id="modal-transcript">No hay transcripción disponible para esta llamada.</div>
+
+            <div id="recording-section" style="display: none;">
+                <div class="section-title">🔊 Grabación</div>
+                <audio id="modal-audio" class="audio-player" controls>
+                    Tu navegador no soporta el elemento de audio.
+                </audio>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./main.js"></script>
+</body>
+
+</html>
