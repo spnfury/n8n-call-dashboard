@@ -1,0 +1,219 @@
+{
+    "nodes": [
+        {
+            "parameters": {
+                "updates": [
+                    "message"
+                ]
+            },
+            "id": "telegram-trigger",
+            "name": "Telegram Trigger",
+            "type": "n8n-nodes-base.telegramTrigger",
+            "position": [
+                860,
+                4440
+            ],
+            "typeVersion": 1
+        },
+        {
+            "parameters": {
+                "authentication": "nocoDbApiToken",
+                "operation": "getAll",
+                "projectId": "p5xxqp29w9h8sb6",
+                "table": "mgot1kl4sglenym",
+                "limit": 1,
+                "options": {}
+            },
+            "id": "nocodb-get",
+            "name": "Get Row from NocoDB",
+            "type": "n8n-nodes-base.nocoDb",
+            "position": [
+                860,
+                4240
+            ],
+            "typeVersion": 3
+        },
+        {
+            "parameters": {
+                "jsCode": "let nombre = null;\nlet phone = null;\n\nconst item = $input.first().json;\n\n// 1. Check for Telegram Data\nif (item.message && item.message.text) {\n  const text = item.message.text;\n  \n  // Try to find a phone number (9 digits or more)\n  const phoneMatch = text.match(/(\\+?\\d[\\d\\s]{8,})/);\n  if (phoneMatch) phone = phoneMatch[0].replace(/\\s/g, '');\n  \n  // Try to find a name (assuming first words that aren't the phone)\n  const cleanText = text.replace(phoneMatch ? phoneMatch[0] : '', '').trim();\n  if (cleanText.length > 2) nombre = cleanText.split(/\\s+/).slice(0, 2).join(' ');\n}\n\n// 2. Check for NocoDB Data (Fallback)\nif (!nombre) nombre = item.nombre || item.name || item.unique_id;\nif (!phone) phone = item.phone || item.telefono || item.formattedPhone;\n\nreturn {\n  nombre,\n  phone,\n  hasData: !!(nombre && phone)\n};"
+            },
+            "id": "normalize-data-code",
+            "name": "Normalize Data (Code)",
+            "type": "n8n-nodes-base.code",
+            "position": [
+                1160,
+                4340
+            ],
+            "typeVersion": 2
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.hasData }}",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "data-check",
+            "name": "Has Name and Phone?",
+            "type": "n8n-nodes-base.if",
+            "position": [
+                1380,
+                4340
+            ],
+            "typeVersion": 1
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+                "text": "Lo siento, no he podido capturar tus datos. Por favor, envíame tu NOMBRE y TELÉFONO."
+            },
+            "id": "ask-for-info",
+            "name": "Ask for Info (Telegram)",
+            "type": "n8n-nodes-base.telegram",
+            "position": [
+                1600,
+                4500
+            ],
+            "typeVersion": 1
+        },
+        {
+            "parameters": {
+                "mode": "raw",
+                "jsonOutput": "={\n  \"nombre\": \"{{ $json.nombre }}\",\n  \"formattedPhone\": \"{{ (function() { let p = ($json.phone || '').toString().replace(/\\\\D/g, ''); return p ? (p.startsWith('34') ? '+' + p : '+34' + p) : ''; })() }}\"\n}",
+                "options": {}
+            },
+            "id": "prepare-vapi",
+            "name": "Prepare Vapi Data",
+            "type": "n8n-nodes-base.set",
+            "position": [
+                1600,
+                4180
+            ],
+            "typeVersion": 3.4
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.vapi.ai/call",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer 852080ba-ce7c-4778-b218-bf718613a2b6"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ \n  {\n    \"customer\": {\n      \"number\": $json.formattedPhone\n    },\n    \"assistantId\": \"49e56db1-1f20-4cf1-b031-9cea9fba73cb\",\n    \"phoneNumberId\": \"611c8c8e-ab43-4af0-8df0-f2f8fac8115b\",\n    \"assistantOverrides\": {\n      \"variableValues\": {\n        \"nombre\": $json.nombre\n      }\n    }\n  } \n}}",
+                "options": {
+                    "redirect": {}
+                }
+            },
+            "id": "vapi-call",
+            "name": "Initiate Vapi AI Call",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                1800,
+                4180
+            ],
+            "typeVersion": 4.2
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+                "text": "¡Entendido {{ $node[\"Prepare Vapi Data\"].json.nombre }}! Iniciando llamada al {{ $node[\"Prepare Vapi Data\"].json.formattedPhone }}..."
+            },
+            "id": "confirm-success",
+            "name": "Confirm Call (Telegram)",
+            "type": "n8n-nodes-base.telegram",
+            "position": [
+                2000,
+                4180
+            ],
+            "typeVersion": 1
+        }
+    ],
+    "connections": {
+        "Telegram Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Normalize Data (Code)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Row from NocoDB": {
+            "main": [
+                [
+                    {
+                        "node": "Normalize Data (Code)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Normalize Data (Code)": {
+            "main": [
+                [
+                    {
+                        "node": "Has Name and Phone?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Has Name and Phone?": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Vapi Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Ask for Info (Telegram)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Vapi Data": {
+            "main": [
+                [
+                    {
+                        "node": "Initiate Vapi AI Call",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Initiate Vapi AI Call": {
+            "main": [
+                [
+                    {
+                        "node": "Confirm Call (Telegram)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

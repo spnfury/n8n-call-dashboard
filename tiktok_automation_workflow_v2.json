@@ -1,0 +1,151 @@
+{
+    "name": "TikTok Remixer V2 (Fixed)",
+    "nodes": [
+        {
+            "parameters": {},
+            "name": "Start",
+            "type": "n8n-nodes-base.start",
+            "typeVersion": 1,
+            "position": [
+                240,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "values": {
+                    "string": [
+                        {
+                            "name": "tiktok_url",
+                            "value": "https://www.tiktok.com/@khaby.lame/video/7254764316308655387"
+                        }
+                    ]
+                }
+            },
+            "name": "Mock Data (Input)",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 1,
+            "position": [
+                460,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "='https://tiktok-video-downloader-api.p.rapidapi.com/media?videoUrl=' + $json[\"tiktok_url\"]",
+                "method": "GET",
+                "authentication": "none",
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "x-rapidapi-host",
+                            "value": "tiktok-video-downloader-api.p.rapidapi.com"
+                        },
+                        {
+                            "name": "x-rapidapi-key",
+                            "value": "h813b615xwmshZlOxiBFW6j62wkPp1BzyiujsnhUFSPg6N9WAb"
+                        }
+                    ]
+                }
+            },
+            "name": "Get Clean Video URL",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 1,
+            "position": [
+                700,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "={{$json[\"downloadUrl\"]}}",
+                "responseFormat": "file",
+                "dataPropertyName": "data"
+            },
+            "name": "Download Video File",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 1,
+            "position": [
+                920,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "upload",
+                "fileContent": "data",
+                "name": "=/raw_{{$now.format('YYYYMMDD_HHmm')}}.mp4",
+                "driveId": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": ""
+                },
+                "folderId": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": ""
+                }
+            },
+            "name": "Save Raw to Drive",
+            "type": "n8n-nodes-base.googleDrive",
+            "typeVersion": 1,
+            "position": [
+                1140,
+                300
+            ],
+            "credentials": {
+                "googleDriveOAuth2Api": {
+                    "id": "",
+                    "name": "Google Drive account"
+                }
+            },
+            "notes": "Configure your Drive ID here"
+        }
+    ],
+    "connections": {
+        "Start": {
+            "main": [
+                [
+                    {
+                        "node": "Mock Data (Input)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Mock Data (Input)": {
+            "main": [
+                [
+                    {
+                        "node": "Get Clean Video URL",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Clean Video URL": {
+            "main": [
+                [
+                    {
+                        "node": "Download Video File",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Download Video File": {
+            "main": [
+                [
+                    {
+                        "node": "Save Raw to Drive",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

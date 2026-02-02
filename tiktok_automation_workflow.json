@@ -1,0 +1,212 @@
+{
+  "name": "TikTok Remixer V1",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://tiktok-video-downloader-api.p.rapidapi.com/media",
+        "method": "GET",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "videoUrl",
+              "value": "={{$json[\"tiktok_url\"]}}"
+            }
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-host",
+              "value": "tiktok-video-downloader-api.p.rapidapi.com"
+            },
+            {
+              "name": "x-rapidapi-key",
+              "value": "h813b615xwmshZlOxiBFW6j62wkPp1BzyiujsnhUFSPg6N9WAb"
+            }
+          ]
+        }
+      },
+      "name": "Get Clean Video URL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        700,
+        300
+      ],
+      "notes": "Replace with your chosen RapidAPI service"
+    },
+    {
+      "parameters": {
+        "url": "={{$json[\"downloadUrl\"]}}",
+        "responseFormat": "file",
+        "dataPropertyName": "data"
+      },
+      "name": "Download Video File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        920,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "fileContent": "data",
+        "name": "=/raw_{{$now.format('YYYYMMDD_HHmm')}}.mp4",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "name": "Save Raw to Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 1,
+      "position": [
+        1140,
+        300
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "list",
+        "application": {
+          "__rl": true,
+          "value": "",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "",
+          "mode": "list"
+        },
+        "returnAll": true
+      },
+      "name": "Get Captions from Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 1,
+      "position": [
+        460,
+        500
+      ],
+      "credentials": {
+        "airtableApi": {
+          "id": "",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "ffmpeg -i input.mp4 -vf \"drawtext=text='Your Text Here':fontcolor=white:fontsize=24:x=(w-text_w)/2:y=(h-text_h)/2\" -codec:a copy output.mp4"
+      },
+      "name": "FFmpeg Processing (Placeholder)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1360,
+        300
+      ],
+      "notes": "Commands will be built dynamically"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "tiktok_url",
+              "value": "https://www.tiktok.com/@user/video/1234567890"
+            }
+          ]
+        }
+      },
+      "name": "Mock Data (Input)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Mock Data (Input)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mock Data (Input)": {
+      "main": [
+        [
+          {
+            "node": "Get Clean Video URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Clean Video URL": {
+      "main": [
+        [
+          {
+            "node": "Download Video File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Video File": {
+      "main": [
+        [
+          {
+            "node": "Save Raw to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Raw to Drive": {
+      "main": [
+        [
+          {
+            "node": "FFmpeg Processing (Placeholder)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

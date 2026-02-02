@@ -1,0 +1,497 @@
+{
+    "nodes": [
+        {
+            "parameters": {
+                "updates": [
+                    "message",
+                    "callback_query"
+                ]
+            },
+            "id": "telegram-trigger",
+            "name": "Telegram Trigger",
+            "type": "n8n-nodes-base.telegramTrigger",
+            "position": [
+                -200,
+                1000
+            ],
+            "typeVersion": 1
+        },
+        {
+            "parameters": {
+                "authentication": "nocoDbApiToken",
+                "operation": "getAll",
+                "projectId": "p5xxqp29w9h8sb6",
+                "table": "mgot1kl4sglenym"
+            },
+            "id": "nocodb-lookup",
+            "name": "Check User Status",
+            "type": "n8n-nodes-base.nocoDb",
+            "position": [
+                0,
+                1000
+            ],
+            "typeVersion": 3
+        },
+        {
+            "parameters": {
+                "jsCode": "const triggerJson = $node[\"Telegram Trigger\"].json;\nconst chatId = triggerJson.message ? triggerJson.message.chat.id : triggerJson.callback_query.message.chat.id;\nconst callbackData = triggerJson.callback_query ? triggerJson.callback_query.data : null;\n\nconst rows = $input.all().map(r => r.json);\nconst row = rows.find(r => r.telegram_chat_id == chatId || r.telegram_chat_id == chatId.toString());\n\nlet step = 'START';\n\nif (callbackData === 'restart') {\n  step = 'RESTART';\n} else if (callbackData === 'call_now') {\n  step = 'CALL_NOW';\n} else if (row && row.conversation_step) {\n  step = row.conversation_step;\n}\n\nreturn { \n  step, \n  row_id: row ? row.Id : null,\n  chatId,\n  callbackData,\n  row_data: row\n};"
+            },
+            "id": "determine-step",
+            "name": "Determine Step & Action",
+            "type": "n8n-nodes-base.code",
+            "position": [
+                200,
+                1000
+            ],
+            "typeVersion": 2
+        },
+        {
+            "parameters": {
+                "dataType": "string",
+                "value1": "={{ $json.step }}",
+                "rules": {
+                    "rules": [
+                        {
+                            "value2": "START"
+                        },
+                        {
+                            "value2": "RESTART"
+                        },
+                        {
+                            "value2": "ASK_NAME"
+                        },
+                        {
+                            "value2": "ASK_COMPANY"
+                        },
+                        {
+                            "value2": "ASK_PHONE"
+                        },
+                        {
+                            "value2": "COMPLETED"
+                        },
+                        {
+                            "value2": "CALL_NOW"
+                        }
+                    ]
+                }
+            },
+            "id": "switch-state",
+            "name": "Switch State",
+            "type": "n8n-nodes-base.switch",
+            "position": [
+                450,
+                1000
+            ],
+            "typeVersion": 1
+        },
+        {
+            "parameters": {
+                "authentication": "nocoDbApiToken",
+                "operation": "create",
+                "projectId": "p5xxqp29w9h8sb6",
+                "table": "mgot1kl4sglenym",
+                "columns": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "telegram_chat_id": "={{ $node[\"Determine Step & Action\"].json.chatId }}",
+                        "conversation_step": "ASK_NAME"
+                    }
+                }
+            },
+            "id": "create-row",
+            "name": "Start Conversation",
+            "type": "n8n-nodes-base.nocoDb",
+            "position": [
+                700,
+                400
+            ],
+            "typeVersion": 3
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $node[\"Determine Step & Action\"].json.chatId }}",
+                "text": "¡Hola! Bienvenido al asistente de captación. Para empezar, ¿cuál es tu nombre?"
+            },
+            "id": "reply-start",
+            "name": "Reply: Ask Name",
+            "type": "n8n-nodes-base.telegram",
+            "position": [
+                900,
+                400
+            ],
+            "typeVersion": 1
+        },
+        {
+            "parameters": {
+                "authentication": "nocoDbApiToken",
+                "operation": "update",
+                "projectId": "p5xxqp29w9h8sb6",
+                "table": "mgot1kl4sglenym",
+                "id": "={{ $node[\"Determine Step & Action\"].json.row_id }}",
+                "columns": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "nombre": "={{ $node[\"Telegram Trigger\"].json.message.text }}",
+                        "conversation_step": "ASK_COMPANY"
+                    }
+                }
+            },
+            "id": "update-name",
+            "name": "Save Name",
+            "type": "n8n-nodes-base.nocoDb",
+            "position": [
+                700,
+                600
+            ],
+            "typeVersion": 3
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $node[\"Determine Step & Action\"].json.chatId }}",
+                "text": "Gracias. ¿A qué empresa perteneces?"
+            },
+            "id": "reply-company",
+            "name": "Reply: Ask Company",
+            "type": "n8n-nodes-base.telegram",
+            "position": [
+                900,
+                600
+            ],
+            "typeVersion": 1
+        },
+        {
+            "parameters": {
+                "authentication": "nocoDbApiToken",
+                "operation": "update",
+                "projectId": "p5xxqp29w9h8sb6",
+                "table": "mgot1kl4sglenym",
+                "id": "={{ $node[\"Determine Step & Action\"].json.row_id }}",
+                "columns": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "empresa": "={{ $node[\"Telegram Trigger\"].json.message.text }}",
+                        "conversation_step": "ASK_PHONE"
+                    }
+                }
+            },
+            "id": "update-company",
+            "name": "Save Company",
+            "type": "n8n-nodes-base.nocoDb",
+            "position": [
+                700,
+                800
+            ],
+            "typeVersion": 3
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $node[\"Determine Step & Action\"].json.chatId }}",
+                "text": "Entendido. Por último, ¿cuál es tu número de teléfono?"
+            },
+            "id": "reply-phone",
+            "name": "Reply: Ask Phone",
+            "type": "n8n-nodes-base.telegram",
+            "position": [
+                900,
+                800
+            ],
+            "typeVersion": 1
+        },
+        {
+            "parameters": {
+                "authentication": "nocoDbApiToken",
+                "operation": "update",
+                "projectId": "p5xxqp29w9h8sb6",
+                "table": "mgot1kl4sglenym",
+                "id": "={{ $node[\"Determine Step & Action\"].json.row_id }}",
+                "columns": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "phone": "={{ $node[\"Telegram Trigger\"].json.message.text }}",
+                        "conversation_step": "COMPLETED"
+                    }
+                }
+            },
+            "id": "update-phone",
+            "name": "Save Phone",
+            "type": "n8n-nodes-base.nocoDb",
+            "position": [
+                700,
+                1000
+            ],
+            "typeVersion": 3
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $node[\"Determine Step & Action\"].json.chatId }}",
+                "text": "¡Datos guardados! ¿Quieres que te llamemos ahora mismo?",
+                "replyMarkup": "inlineKeyboard",
+                "inlineKeyboard": {
+                    "rows": [
+                        {
+                            "row": [
+                                {
+                                    "text": "📞 Llama ahora",
+                                    "value": "call_now",
+                                    "action": "callback"
+                                },
+                                {
+                                    "text": "🔄 Reiniciar",
+                                    "value": "restart",
+                                    "action": "callback"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            "id": "reply-done",
+            "name": "Reply: Completed + Buttons",
+            "type": "n8n-nodes-base.telegram",
+            "position": [
+                900,
+                1000
+            ],
+            "typeVersion": 1
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.vapi.ai/call",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer 852080ba-ce7c-4778-b218-bf718613a2b6"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ \n  {\n    \"customer\": {\n      \"number\": $node[\"Determine Step & Action\"].json.row_data.phone\n    },\n    \"assistantId\": \"49e56db1-1f20-4cf1-b031-9cea9fba73cb\",\n    \"phoneNumberId\": \"611c8c8e-ab43-4af0-8df0-f2f8fac8115b\",\n    \"assistantOverrides\": {\n      \"variableValues\": {\n        \"nombre\": $node[\"Determine Step & Action\"].json.row_data.nombre\n      }\n    }\n  } \n}}",
+                "options": {
+                    "redirect": {}
+                }
+            },
+            "id": "vapi-call",
+            "name": "Initiate Vapi Call",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                700,
+                1200
+            ],
+            "typeVersion": 4.2
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $node[\"Determine Step & Action\"].json.chatId }}",
+                "text": "¡Llamada iniciada! Tu teléfono sonará en breve."
+            },
+            "id": "confirm-call",
+            "name": "Reply: Call Started",
+            "type": "n8n-nodes-base.telegram",
+            "position": [
+                900,
+                1200
+            ],
+            "typeVersion": 1
+        },
+        {
+            "parameters": {
+                "authentication": "nocoDbApiToken",
+                "operation": "update",
+                "projectId": "p5xxqp29w9h8sb6",
+                "table": "mgot1kl4sglenym",
+                "id": "={{ $node[\"Determine Step & Action\"].json.row_id }}",
+                "columns": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "conversation_step": "ASK_NAME",
+                        "nombre": "",
+                        "empresa": "",
+                        "phone": ""
+                    }
+                }
+            },
+            "id": "reset-row",
+            "name": "Reset Data",
+            "type": "n8n-nodes-base.nocoDb",
+            "position": [
+                700,
+                200
+            ],
+            "typeVersion": 3
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $node[\"Determine Step & Action\"].json.chatId }}",
+                "text": "Datos reiniciados. ¿Cuál es tu nombre?"
+            },
+            "id": "reply-reset",
+            "name": "Reply: Ask Name (Again)",
+            "type": "n8n-nodes-base.telegram",
+            "position": [
+                900,
+                200
+            ],
+            "typeVersion": 1
+        }
+    ],
+    "connections": {
+        "Telegram Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Check User Status",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check User Status": {
+            "main": [
+                [
+                    {
+                        "node": "Determine Step & Action",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Determine Step & Action": {
+            "main": [
+                [
+                    {
+                        "node": "Switch State",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Switch State": {
+            "main": [
+                [
+                    {
+                        "node": "Start Conversation",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Reset Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Save Name",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Save Company",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Save Phone",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Reply: Completed + Buttons",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Initiate Vapi Call",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Start Conversation": {
+            "main": [
+                [
+                    {
+                        "node": "Reply: Ask Name",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Reset Data": {
+            "main": [
+                [
+                    {
+                        "node": "Reply: Ask Name (Again)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Save Name": {
+            "main": [
+                [
+                    {
+                        "node": "Reply: Ask Company",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Save Company": {
+            "main": [
+                [
+                    {
+                        "node": "Reply: Ask Phone",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Save Phone": {
+            "main": [
+                [
+                    {
+                        "node": "Reply: Completed + Buttons",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Initiate Vapi Call": {
+            "main": [
+                [
+                    {
+                        "node": "Reply: Call Started",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

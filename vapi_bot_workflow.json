@@ -1,0 +1,185 @@
+{
+    "nodes": [
+        {
+            "parameters": {
+                "options": {
+                    "showWelcomeMessage": true,
+                    "welcomeMessage": "¡Hola! Soy tu asistente para agendar llamadas. ¿Cuál es tu nombre?",
+                    "title": "Asistente de Llamadas",
+                    "description": "Recopila tus datos para iniciar una llamada con Vapi AI"
+                }
+            },
+            "id": "bot-trigger",
+            "name": "Chat Trigger",
+            "type": "n8n-nodes-base.chatTrigger",
+            "position": [
+                -600,
+                1940
+            ],
+            "typeVersion": 1.1
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "name-assignment",
+                            "name": "nombre",
+                            "type": "string",
+                            "value": "={{ $json.chatInput }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "set-name",
+            "name": "Save Name",
+            "type": "n8n-nodes-base.set",
+            "position": [
+                -400,
+                1940
+            ],
+            "typeVersion": 3.4
+        },
+        {
+            "parameters": {
+                "operation": "chatWaiting",
+                "message": "Gracias {{ $json.nombre }}. ¿A qué número de teléfono te gustaría que te llamáramos?",
+                "options": {}
+            },
+            "id": "ask-phone",
+            "name": "Ask Phone",
+            "type": "n8n-nodes-base.chatWait",
+            "position": [
+                -200,
+                1940
+            ],
+            "typeVersion": 1
+        },
+        {
+            "parameters": {
+                "mode": "raw",
+                "jsonOutput": "={\n  \"nombre\": \"{{ $node[\"Save Name\"].json.nombre }}\",\n  \"phone\": \"{{ $json.chatInput }}\",\n  \"formattedPhone\": \"{{ (function() { let p = ($json.chatInput || '').toString().replace(/\\D/g, ''); return p ? (p.startsWith('34') ? '+' + p : '+34' + p) : ''; })() }}\"\n}",
+                "includeOtherFields": false,
+                "options": {}
+            },
+            "id": "prepare-data",
+            "name": "Prepare Call Data",
+            "type": "n8n-nodes-base.set",
+            "position": [
+                0,
+                1940
+            ],
+            "typeVersion": 3.4
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.vapi.ai/call",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer 852080ba-ce7c-4778-b218-bf718613a2b6"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ \n  {\n    \"customer\": {\n      \"number\": $json.formattedPhone\n    },\n    \"assistantId\": \"49e56db1-1f20-4cf1-b031-9cea9fba73cb\",\n    \"phoneNumberId\": \"611c8c8e-ab43-4af0-8df0-f2f8fac8115b\",\n    \"assistantOverrides\": {\n      \"variableValues\": {\n        \"nombre\": $json.nombre\n      }\n    }\n  } \n}}",
+                "options": {
+                    "redirect": {}
+                }
+            },
+            "id": "vapi-call",
+            "name": "Initiate Vapi AI Call",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                200,
+                1940
+            ],
+            "typeVersion": 4.2,
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "VyoKa0HV9ZpyrdVx",
+                    "name": "Header Auth account"
+                }
+            },
+            "onError": "continueErrorOutput"
+        },
+        {
+            "parameters": {
+                "message": "¡Perfecto! Estamos iniciando la llamada a {{ $node[\"Prepare Call Data\"].json.formattedPhone }}. ¡Atiende el teléfono!",
+                "options": {}
+            },
+            "id": "final-msg",
+            "name": "Success Message",
+            "type": "n8n-nodes-base.chatWait",
+            "position": [
+                400,
+                1940
+            ],
+            "typeVersion": 1
+        }
+    ],
+    "connections": {
+        "Chat Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Save Name",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Save Name": {
+            "main": [
+                [
+                    {
+                        "node": "Ask Phone",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Ask Phone": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Call Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Call Data": {
+            "main": [
+                [
+                    {
+                        "node": "Initiate Vapi AI Call",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Initiate Vapi AI Call": {
+            "main": [
+                [
+                    {
+                        "node": "Success Message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

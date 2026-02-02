@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Llamadas - GeneralProtect</title>
+    <style>
+        :root {
+            --bg-primary: #0f0f0f;
+            --bg-secondary: #1a1a1a;
+            --bg-card: #242424;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --accent: #6366f1;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --border: #333;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo {
+            font-size: 28px;
+        }
+
+        .refresh-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+
+        .refresh-btn:hover {
+            opacity: 0.9;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid var(--border);
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .stat-card.success .stat-value {
+            color: var(--success);
+        }
+
+        .stat-card.danger .stat-value {
+            color: var(--danger);
+        }
+
+        .stat-card.warning .stat-value {
+            color: var(--warning);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .table-container {
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: var(--bg-secondary);
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .badge.success {
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--success);
+        }
+
+        .badge.fail {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+        }
+
+        .badge.pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+
+        .phone {
+            font-family: monospace;
+            color: var(--text-secondary);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .loading {
+            animation: pulse 1.5s infinite;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1><span class="logo">📞</span> Dashboard de Llamadas</h1>
+            <button class="refresh-btn" onclick="loadData()">🔄 Actualizar</button>
+        </header>
+
+        <div class="stats-grid" id="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="total-calls">-</div>
+                <div class="stat-label">Total Llamadas</div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-value" id="success-rate">-</div>
+                <div class="stat-label">Tasa de Éxito</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avg-duration">-</div>
+                <div class="stat-label">Duración Media</div>
+            </div>
+        </div>
+
+        <div class="section-title">📋 Historial de Llamadas</div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Empresa</th>
+                        <th>Teléfono</th>
+                        <th>Fecha</th>
+                        <th>Resultado</th>
+                        <th>Evaluación</th>
+                        <th>Duración</th>
+                    </tr>
+                </thead>
+                <tbody id="call-table">
+                    <tr>
+                        <td colspan="7" class="loading">Cargando datos...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://nocodb.srv889387.hstgr.cloud/api/v2/tables';
+        const CALL_LOGS_TABLE = 'm013en5u2cyu30j';
+        const XC_TOKEN = 'jx3uoKeVaidZLF7M0skVb9pV6yvNsam0Hu-Vfeww';
+
+        async function fetchData(tableId, limit = 100) {
+            const res = await fetch(`${API_BASE}/${tableId}/records?limit=${limit}&sort=-CreatedAt`, {
+                headers: { 'xc-token': XC_TOKEN }
+            });
+            const data = await res.json();
+            return data.list || [];
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function getBadgeClass(evaluation) {
+            if (!evaluation) return 'pending';
+            const e = evaluation.toLowerCase();
+            if (e.includes('success') || e.includes('completed')) return 'success';
+            if (e.includes('fail') || e.includes('error')) return 'fail';
+            return 'pending';
+        }
+
+        function formatDuration(seconds) {
+            if (!seconds) return '-';
+            const s = parseInt(seconds);
+            if (s < 60) return `${s}s`;
+            return `${Math.floor(s / 60)}m ${s % 60}s`;
+        }
+
+        async function loadData() {
+            try {
+                const calls = await fetchData(CALL_LOGS_TABLE);
+
+                const totalCalls = calls.length;
+                const successCalls = calls.filter(c => getBadgeClass(c.evaluation) === 'success').length;
+                const successRate = totalCalls > 0 ? Math.round((successCalls / totalCalls) * 100) : 0;
+                const totalDuration = calls.reduce((sum, c) => sum + (parseInt(c.duration_seconds) || 0), 0);
+                const avgDuration = totalCalls > 0 ? Math.round(totalDuration / totalCalls) : 0;
+
+                document.getElementById('total-calls').textContent = totalCalls;
+                document.getElementById('success-rate').textContent = successRate + '%';
+                document.getElementById('avg-duration').textContent = formatDuration(avgDuration);
+
+                // Table
+                const tbody = document.getElementById('call-table');
+                if (calls.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No hay llamadas registradas aún</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = calls.map(call => `
+                    <tr>
+                        <td><strong>${call.lead_name || '-'}</strong></td>
+                        <td class="phone">${call.phone_called || '-'}</td>
+                        <td>${formatDate(call.call_time || call.CreatedAt)}</td>
+                        <td>${call.ended_reason || '-'}</td>
+                        <td><span class="badge ${getBadgeClass(call.evaluation)}">${call.evaluation || 'Pendiente'}</span></td>
+                        <td>${formatDuration(call.duration_seconds)}</td>
+                    </tr>
+                `).join('');
+
+            } catch (err) {
+                console.error('Error:', err);
+                document.getElementById('call-table').innerHTML = '<tr><td colspan="6" class="empty-state">Error al cargar datos</td></tr>';
+            }
+        }
+
+        // Load on start
+        loadData();
+
+        // Auto-refresh every 30 seconds
+        setInterval(loadData, 30000);
+    </script>
+</body>
+
+</html>

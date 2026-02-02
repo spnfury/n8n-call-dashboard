@@ -1,0 +1,289 @@
+{
+    "nodes": [
+        {
+            "parameters": {
+                "jsCode": "let nombre = null;\nlet phone = null;\n\n// Check if input comes from AI Agent\nif ($input.first().json.output) {\n  const output = $input.first().json.output;\n  const match = output.match(/DATA:\\s*({.*})/);\n  if (match) {\n    try {\n      const data = JSON.parse(match[1]);\n      nombre = data.nombre;\n      phone = data.phone;\n    } catch (e) {}\n  }\n}\n\n// Check if input comes from NocoDB (fallback or primary)\nif (!nombre) nombre = $input.first().json.nombre || $input.first().json.name;\nif (!phone) phone = $input.first().json.phone || $input.first().json.telefono;\n\nreturn {\n  nombre,\n  phone\n};"
+            },
+            "id": "d843113c-a1bb-4408-82ed-3fcccd800dfe",
+            "name": "Normalize Data (Code)",
+            "type": "n8n-nodes-base.code",
+            "position": [
+                1360,
+                4340
+            ],
+            "typeVersion": 2
+        },
+        {
+            "parameters": {
+                "updates": [
+                    "message"
+                ],
+                "additionalFields": {}
+            },
+            "id": "0289ae78-6552-4fd9-9874-677a4d012b4f",
+            "name": "Telegram Trigger1",
+            "type": "n8n-nodes-base.telegramTrigger",
+            "position": [
+                860,
+                4440
+            ],
+            "typeVersion": 1,
+            "credentials": {
+                "telegramApi": {
+                    "id": "ddSs4jaZbuhgH87D",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "={{ $json.message.text }}",
+                "options": {
+                    "systemMessage": "Eres un asistente amable. Tu objetivo es recoger el NOMBRE y el TELÉFONO del usuario para agendar una llamada.\n\nReglas:\n1. Si no tienes el nombre, pídelo.\n2. Si tienes el nombre pero no el teléfono, pídelo.\n3. Una vez tengas AMBOS datos, di: \"¡Perfecto! Iniciando la llamada...\" y añade al final de tu mensaje este bloque exacto:\nDATA: {\"nombre\": \"VALOR\", \"phone\": \"VALOR\"}"
+                }
+            },
+            "id": "25248da6-99b1-459a-8505-0ac23ecac81d",
+            "name": "AI Agent (Telegram)1",
+            "type": "n8n-nodes-base.aiAgent",
+            "position": [
+                1060,
+                4440
+            ],
+            "typeVersion": 1.1
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "id": "f4cf9b3b-2e1f-4f7d-97b3-37eed6aab42c",
+            "name": "OpenAI Chat Model1",
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+            "position": [
+                1020,
+                4600
+            ],
+            "typeVersion": 1,
+            "credentials": {
+                "openAiApi": {
+                    "id": "0YIvlQ9Twt3cnlTH",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {},
+            "id": "72a01d3c-48cd-4e45-a27f-cc57eb47943c",
+            "name": "Window Buffer Memory1",
+            "type": "@n8n/n8n-nodes-langchain.memoryWindowBuffer",
+            "position": [
+                1120,
+                4600
+            ],
+            "typeVersion": 1.2
+        },
+        {
+            "parameters": {
+                "authentication": "nocoDbApiToken",
+                "operation": "getAll",
+                "projectId": "p5xxqp29w9h8sb6",
+                "table": "mgot1kl4sglenym",
+                "limit": 1,
+                "options": {}
+            },
+            "id": "a57de9a0-5d55-4331-855c-c2f1e1b78cd0",
+            "name": "Get Row from NocoDB1",
+            "type": "n8n-nodes-base.nocoDb",
+            "position": [
+                860,
+                4240
+            ],
+            "typeVersion": 3,
+            "credentials": {
+                "nocoDbApiToken": {
+                    "id": "tV5VwP4BVmME7Vgo",
+                    "name": "NocoDB Token account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "id": "check-phone",
+                            "leftValue": "={{ $json.phone }}",
+                            "operator": {
+                                "operation": "exists",
+                                "type": "string"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "id": "0d71e7b2-a7a5-4ad6-9cc1-eaaeda2914ae",
+            "name": "Filter Ready to Call1",
+            "type": "n8n-nodes-base.filter",
+            "position": [
+                1560,
+                4340
+            ],
+            "typeVersion": 2.2
+        },
+        {
+            "parameters": {
+                "mode": "raw",
+                "jsonOutput": "={\n  \"nombre\": \"{{ $json.nombre }}\",\n  \"formattedPhone\": \"{{ (function() { let p = ($json.phone || '').toString().replace(/\\\\D/g, ''); return p ? (p.startsWith('34') ? '+' + p : '+34' + p) : ''; })() }}\"\n}",
+                "options": {}
+            },
+            "id": "1b9b8461-4750-40d0-b09d-eab9a62daa81",
+            "name": "Prepare Vapi Data1",
+            "type": "n8n-nodes-base.set",
+            "position": [
+                1760,
+                4340
+            ],
+            "typeVersion": 3.4
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.vapi.ai/call",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer 852080ba-ce7c-4778-b218-bf718613a2b6"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ \n  {\n    \"customer\": {\n      \"number\": $json.formattedPhone\n    },\n    \"assistantId\": \"49e56db1-1f20-4cf1-b031-9cea9fba73cb\",\n    \"phoneNumberId\": \"611c8c8e-ab43-4af0-8df0-f2f8fac8115b\",\n    \"assistantOverrides\": {\n      \"variableValues\": {\n        \"nombre\": $json.nombre\n      }\n    }\n  } \n}}",
+                "options": {
+                    "redirect": {}
+                }
+            },
+            "id": "dd775eea-787a-453f-ab34-1535758ea9c9",
+            "name": "Initiate Vapi AI Call2",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                1960,
+                4340
+            ],
+            "typeVersion": 4.2,
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "VyoKa0HV9ZpyrdVx",
+                    "name": "Header Auth account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Telegram Trigger1": {
+            "main": [
+                [
+                    {
+                        "node": "AI Agent (Telegram)1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AI Agent (Telegram)1": {
+            "main": [
+                [
+                    {
+                        "node": "Normalize Data (Code)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenAI Chat Model1": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "AI Agent (Telegram)1",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Window Buffer Memory1": {
+            "ai_memory": [
+                [
+                    {
+                        "node": "AI Agent (Telegram)1",
+                        "type": "ai_memory",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Normalize Data (Code)": {
+            "main": [
+                [
+                    {
+                        "node": "Filter Ready to Call1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Row from NocoDB1": {
+            "main": [
+                [
+                    {
+                        "node": "Normalize Data (Code)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Filter Ready to Call1": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Vapi Data1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Vapi Data1": {
+            "main": [
+                [
+                    {
+                        "node": "Initiate Vapi AI Call2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "f0162b38a1f8ee05f971361a1da208e096da623a99e7bb064e6c378b9b7fd5a9"
+    }
+}

@@ -1,0 +1,256 @@
+{
+    "name": "TikTok Remixer V3 (Profile Driven)",
+    "nodes": [
+        {
+            "parameters": {},
+            "id": "start-node",
+            "name": "Trigger",
+            "type": "n8n-nodes-base.start",
+            "typeVersion": 1,
+            "position": [
+                240,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "values": {
+                    "string": [
+                        {
+                            "name": "profile_url",
+                            "value": "https://www.tiktok.com/@lasis.si"
+                        },
+                        {
+                            "name": "rapidapi_key",
+                            "value": "h813b615xwmshZlOxiBFW6j62wkPp1BzyiujsnhUFSPg6N9WAb"
+                        }
+                    ],
+                    "number": [
+                        {
+                            "name": "trim_start",
+                            "value": 1
+                        },
+                        {
+                            "name": "trim_end",
+                            "value": 1
+                        }
+                    ]
+                }
+            },
+            "id": "config-node",
+            "name": "Config",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 1,
+            "position": [
+                440,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "https://tiktok-video-downloader-api.p.rapidapi.com/user/posts",
+                "method": "GET",
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "unique_id",
+                            "value": "={{$json[\"profile_url\"].split('@')[1]}}"
+                        },
+                        {
+                            "name": "count",
+                            "value": "5"
+                        }
+                    ]
+                },
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "x-rapidapi-host",
+                            "value": "tiktok-video-downloader-api.p.rapidapi.com"
+                        },
+                        {
+                            "name": "x-rapidapi-key",
+                            "value": "={{$node[\"Config\"].json[\"rapidapi_key\"]}}"
+                        }
+                    ]
+                }
+            },
+            "id": "get-user-videos",
+            "name": "Get Latest Videos",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 1,
+            "position": [
+                640,
+                300
+            ],
+            "notes": "Verify if your API uses /user/posts or similar. If not, replace with tiktok-download5 API."
+        },
+        {
+            "parameters": {
+                "fieldToSplitOut": "videos",
+                "options": {}
+            },
+            "id": "split-videos",
+            "name": "Split Videos",
+            "type": "n8n-nodes-base.itemLists",
+            "typeVersion": 1,
+            "position": [
+                840,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "='https://tiktok-video-downloader-api.p.rapidapi.com/media?videoUrl=' + $json[\"url\"]",
+                "method": "GET",
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "x-rapidapi-host",
+                            "value": "tiktok-video-downloader-api.p.rapidapi.com"
+                        },
+                        {
+                            "name": "x-rapidapi-key",
+                            "value": "={{$node[\"Config\"].json[\"rapidapi_key\"]}}"
+                        }
+                    ]
+                }
+            },
+            "id": "get-clean-url",
+            "name": "Get Clean URL",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 1,
+            "position": [
+                1040,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "={{$json[\"downloadUrl\"]}}",
+                "responseFormat": "file",
+                "dataPropertyName": "data"
+            },
+            "id": "download-video",
+            "name": "Download Video",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 1,
+            "position": [
+                1240,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "list",
+                "application": "YOUR_AIRTABLE_BASE_ID",
+                "table": "Captions",
+                "returnAll": true
+            },
+            "id": "get-captions",
+            "name": "Get Airtable Captions",
+            "type": "n8n-nodes-base.airtable",
+            "typeVersion": 1,
+            "position": [
+                1240,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const items = $input.all();\nconst random = items[Math.floor(Math.random() * items.length)];\nreturn random;"
+            },
+            "id": "pick-random-caption",
+            "name": "Pick Random Text",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 1,
+            "position": [
+                1440,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "command": "={{ \n  `ffmpeg -i input.mp4 -vf \"drawtext=text='${$node[\"Pick Random Text\"].json[\"top_text\"]}':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=100, drawtext=text='${$node[\"Pick Random Text\"].json[\"bottom_text\"]}':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=h-200\" -ss ${$node[\"Config\"].json[\"trim_start\"]} -to $(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 input.mp4 - ${$node[\"Config\"].json[\"trim_end\"]}) output.mp4` \n}}"
+            },
+            "id": "ffmpeg-processing",
+            "name": "FFmpeg Process",
+            "type": "n8n-nodes-base.executeCommand",
+            "typeVersion": 1,
+            "position": [
+                1640,
+                300
+            ],
+            "notes": "This requires binary data to be saved to a temp file first in n8n servers."
+        }
+    ],
+    "connections": {
+        "Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Config",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Config": {
+            "main": [
+                [
+                    {
+                        "node": "Get Latest Videos",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Latest Videos": {
+            "main": [
+                [
+                    {
+                        "node": "Split Videos",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Split Videos": {
+            "main": [
+                [
+                    {
+                        "node": "Get Clean URL",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Clean URL": {
+            "main": [
+                [
+                    {
+                        "node": "Download Video",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Pick Random Text": {
+            "main": [
+                [
+                    {
+                        "node": "FFmpeg Process",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

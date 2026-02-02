@@ -1,0 +1,99 @@
+{
+    "name": "NocoDB Interaction Workflow",
+    "nodes": [
+        {
+            "parameters": {},
+            "id": "7a3b1e5a-2c4d-4e6f-8a0b-1c2d3e4f5g6h",
+            "name": "When clicking \"Execute Workflow\"",
+            "type": "n8n-nodes-base.manualTrigger",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://nocodb.srv889387.hstgr.cloud/api/v2/tables/mgot1kl4sglenym/records",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "xc-token",
+                            "value": "jx3uoKeVaidZLF7M0skVb9pV6yvNsam0Hu-Vfeww"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "unique_id",
+                            "value": "={{ $json.unique_id }}"
+                        },
+                        {
+                            "name": "name",
+                            "value": "={{ $json.name }}"
+                        },
+                        {
+                            "name": "sector",
+                            "value": "={{ $json.sector }}"
+                        },
+                        {
+                            "name": "summary",
+                            "value": "={{ $json.summary }}"
+                        },
+                        {
+                            "name": "address",
+                            "value": "={{ $json.address }}"
+                        },
+                        {
+                            "name": "email",
+                            "value": "={{ $json.email }}"
+                        },
+                        {
+                            "name": "phone",
+                            "value": "={{ $json.phone }}"
+                        },
+                        {
+                            "name": "website",
+                            "value": "={{ $json.website }}"
+                        },
+                        {
+                            "name": "state",
+                            "value": "={{ $json.state }}"
+                        },
+                        {
+                            "name": "url",
+                            "value": "={{ $json.url }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "8b4c2f6d-3e5f-5a7b-9c1d-2e3f4g5h6i7j",
+            "name": "Insert into NocoDB",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                450,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "When clicking \"Execute Workflow\"": {
+            "main": [
+                [
+                    {
+                        "node": "Insert into NocoDB",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {}
+}
