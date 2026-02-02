@@ -206,10 +206,110 @@
         .loading {
             animation: pulse 1.5s infinite;
         }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            width: 100%;
+            max-width: 800px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            padding: 32px;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .modal-header {
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 16px;
+        }
+
+        .transcript-text {
+            line-height: 1.6;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+            background: var(--bg-primary);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+
+        .audio-player {
+            width: 100%;
+            margin-top: 16px;
+        }
+
+        .action-btn {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
     </style>
 </head>
 
-<body>
+<body class="auth-hidden">
+    <!-- Login Gate -->
+    <div id="login-gate" class="login-overlay"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f0f0f; display: flex; justify-content: center; align-items: center; z-index: 2000;">
+        <div class="login-card"
+            style="background: #242424; padding: 40px; border-radius: 16px; border: 1px solid #333; width: 100%; max-width: 400px; text-align: center;">
+            <span style="font-size: 28px; display: block; margin-bottom: 24px;">📞</span>
+            <h2 style="margin-bottom: 8px; font-size: 20px;">Acceso al Dashboard</h2>
+            <p style="color: #a0a0a0; font-size: 14px; margin-bottom: 24px;">Introduce la contraseña para continuar</p>
+            <form id="login-form">
+                <input type="password" id="password-input" placeholder="Contraseña" required
+                    style="width: 100%; background: #0f0f0f; border: 1px solid #333; padding: 12px 16px; border-radius: 8px; color: white; margin-bottom: 16px; font-size: 16px; outline: none;">
+                <button type="submit"
+                    style="background: #6366f1; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 500; width: 100%;">Entrar</button>
+            </form>
+            <p id="auth-error" style="color: #ef4444; font-size: 13px; margin-top: 16px; display: none;">Contraseña
+                incorrecta</p>
+        </div>
+    </div>
+
+    <style>
+        .auth-hidden .container {
+            display: none;
+        }
+    </style>
+
     <div class="container">
         <header>
             <h1><span class="logo">📞</span> Dashboard de Llamadas</h1>
@@ -242,6 +342,7 @@
                         <th>Resultado</th>
                         <th>Evaluación</th>
                         <th>Duración</th>
+                        <th>Detalle</th>
                     </tr>
                 </thead>
                 <tbody id="call-table">
@@ -253,10 +354,33 @@
         </div>
     </div>
 
+    <!-- Modal para Detalle -->
+    <div class="modal" id="detail-modal" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="close-modal" onclick="closeModal()">×</button>
+            <div class="modal-header">
+                <h2 id="modal-title">Detalle de la Llamada</h2>
+                <p id="modal-subtitle" style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;"></p>
+            </div>
+
+            <div class="section-title">📝 Transscripción</div>
+            <div class="transcript-text" id="modal-transcript">No hay transcripción disponible para esta llamada.</div>
+
+            <div id="recording-section" style="display: none;">
+                <div class="section-title">🔊 Grabación</div>
+                <audio id="modal-audio" class="audio-player" controls>
+                    Tu navegador no soporta el elemento de audio.
+                </audio>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_BASE = 'https://nocodb.srv889387.hstgr.cloud/api/v2/tables';
         const CALL_LOGS_TABLE = 'm013en5u2cyu30j';
         const XC_TOKEN = 'jx3uoKeVaidZLF7M0skVb9pV6yvNsam0Hu-Vfeww';
+
+        let currentCalls = [];
 
         async function fetchData(tableId, limit = 100) {
             const res = await fetch(`${API_BASE}/${tableId}/records?limit=${limit}&sort=-CreatedAt`, {
@@ -287,9 +411,40 @@
             return `${Math.floor(s / 60)}m ${s % 60}s`;
         }
 
+        function openDetail(index) {
+            console.log('Opening detail for index:', index);
+            const call = currentCalls[index];
+            if (!call) {
+                console.error('Call not found at index:', index);
+                return;
+            }
+
+            document.getElementById('modal-title').textContent = call.lead_name || 'Llamada';
+            document.getElementById('modal-subtitle').textContent = `${call.phone_called} • ${formatDate(call.call_time || call.CreatedAt)}`;
+            document.getElementById('modal-transcript').textContent = call.transcript || 'No hay transcripción disponible para esta llamada.';
+
+            const audioSec = document.getElementById('recording-section');
+            const audio = document.getElementById('modal-audio');
+            if (call.recording_url) {
+                audioSec.style.display = 'block';
+                audio.src = call.recording_url;
+            } else {
+                audioSec.style.display = 'none';
+                audio.src = '';
+            }
+
+            document.getElementById('detail-modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('detail-modal').style.display = 'none';
+            document.getElementById('modal-audio').pause();
+        }
+
         async function loadData() {
             try {
                 const calls = await fetchData(CALL_LOGS_TABLE);
+                currentCalls = calls;
 
                 const totalCalls = calls.length;
                 const successCalls = calls.filter(c => getBadgeClass(c.evaluation) === 'success').length;
@@ -304,11 +459,11 @@
                 // Table
                 const tbody = document.getElementById('call-table');
                 if (calls.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No hay llamadas registradas aún</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No hay llamadas registradas aún</td></tr>';
                     return;
                 }
 
-                tbody.innerHTML = calls.map(call => `
+                tbody.innerHTML = calls.map((call, index) => `
                     <tr>
                         <td><strong>${call.lead_name || '-'}</strong></td>
                         <td class="phone">${call.phone_called || '-'}</td>
@@ -316,20 +471,45 @@
                         <td>${call.ended_reason || '-'}</td>
                         <td><span class="badge ${getBadgeClass(call.evaluation)}">${call.evaluation || 'Pendiente'}</span></td>
                         <td>${formatDuration(call.duration_seconds)}</td>
+                        <td>
+                            <button class="action-btn" onclick="openDetail(${index})">👁 Ver Detalle</button>
+                        </td>
                     </tr>
                 `).join('');
 
             } catch (err) {
                 console.error('Error:', err);
-                document.getElementById('call-table').innerHTML = '<tr><td colspan="6" class="empty-state">Error al cargar datos</td></tr>';
+                document.getElementById('call-table').innerHTML = '<tr><td colspan="7" class="empty-state">Error al cargar datos</td></tr>';
             }
         }
 
-        // Load on start
-        loadData();
+        const ADMIN_PASSWORD = 'admin123';
 
-        // Auto-refresh every 30 seconds
-        setInterval(loadData, 30000);
+        function showDashboard() {
+            document.body.classList.remove('auth-hidden');
+            document.getElementById('login-gate').style.display = 'none';
+            loadData();
+            setInterval(loadData, 30000);
+        }
+
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const input = document.getElementById('password-input').value;
+            const errorEl = document.getElementById('auth-error');
+
+            if (input === ADMIN_PASSWORD) {
+                localStorage.setItem('dashboard_auth', 'true');
+                errorEl.style.display = 'none';
+                showDashboard();
+            } else {
+                errorEl.style.display = 'block';
+            }
+        });
+
+        // Initial check
+        if (localStorage.getItem('dashboard_auth') === 'true') {
+            showDashboard();
+        }
     </script>
 </body>
 
