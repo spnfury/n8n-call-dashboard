@@ -51,6 +51,21 @@ h1 {
     font-size: 28px;
 }
 
+/* Brand Logo Styles */
+.brand-logo {
+    width: 180px;
+    height: auto;
+    margin-bottom: 24px;
+    filter: invert(1) brightness(2);
+}
+
+.header-logo {
+    height: 32px;
+    width: auto;
+    filter: invert(1) brightness(2);
+    vertical-align: middle;
+}
+
 .refresh-btn {
     background: var(--accent);
     color: white;
