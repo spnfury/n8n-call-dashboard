@@ -89,8 +89,12 @@ async function loadData() {
         tbody.innerHTML = '';
         calls.forEach((call, index) => {
             const tr = document.createElement('tr');
+            const vapiId = call.lead_id || call.id || call.Id || '-';
+            // Extract short version of Vapi ID if it's a full UUID
+            const shortId = vapiId.length > 20 ? vapiId.substring(0, 8) + '...' : vapiId;
+
             tr.innerHTML = `
-                <td><code style="font-family: monospace; color: var(--text-secondary); font-size: 11px;">${call.id || call.Id || '-'}</code></td>
+                <td><code style="font-family: monospace; color: var(--accent); font-size: 11px;" title="${vapiId}">${shortId}</code></td>
                 <td><strong>${call.lead_name || '-'}</strong></td>
                 <td class="phone">${call.phone_called || '-'}</td>
                 <td>${formatDate(call.call_time || call.CreatedAt)}</td>
