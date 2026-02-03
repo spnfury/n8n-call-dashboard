@@ -82,7 +82,7 @@ async function loadData() {
 
         const tbody = document.getElementById('call-table');
         if (calls.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No hay llamadas registradas aún</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No hay llamadas registradas aún</td></tr>';
             return;
         }
 
@@ -90,6 +90,7 @@ async function loadData() {
         calls.forEach((call, index) => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
+                <td><code style="font-family: monospace; color: var(--text-secondary); font-size: 11px;">${call.id || call.Id || '-'}</code></td>
                 <td><strong>${call.lead_name || '-'}</strong></td>
                 <td class="phone">${call.phone_called || '-'}</td>
                 <td>${formatDate(call.call_time || call.CreatedAt)}</td>
@@ -114,7 +115,7 @@ async function loadData() {
 
     } catch (err) {
         console.error('Error:', err);
-        document.getElementById('call-table').innerHTML = '<tr><td colspan="8" class="empty-state">Error al cargar datos</td></tr>';
+        document.getElementById('call-table').innerHTML = '<tr><td colspan="9" class="empty-state">Error al cargar datos</td></tr>';
     }
 }
 
