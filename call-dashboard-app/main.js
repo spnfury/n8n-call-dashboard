@@ -44,6 +44,8 @@ function openDetail(index) {
     document.getElementById('modal-title').textContent = call.lead_name || 'Llamada';
     document.getElementById('modal-subtitle').textContent = `${call.phone_called} • ${formatDate(call.call_time || call.CreatedAt)}`;
     document.getElementById('modal-transcript').textContent = call.transcript || 'No hay transcripción disponible para esta llamada.';
+    document.getElementById('modal-notes').value = call.notes || '';
+    document.getElementById('save-notes-btn').setAttribute('data-id', call.id || call.Id);
 
     const audioSec = document.getElementById('recording-section');
     const audio = document.getElementById('modal-audio');
@@ -94,6 +96,7 @@ async function loadData() {
                 <td>${call.ended_reason || '-'}</td>
                 <td><span class="badge ${getBadgeClass(call.evaluation)}">${call.evaluation || 'Pendiente'}</span></td>
                 <td>${formatDuration(call.duration_seconds)}</td>
+                <td class="table-notes">${call.notes || '-'}</td>
                 <td>
                     <button class="action-btn" data-index="${index}">👁 Ver Detalle</button>
                 </td>
@@ -111,7 +114,47 @@ async function loadData() {
 
     } catch (err) {
         console.error('Error:', err);
-        document.getElementById('call-table').innerHTML = '<tr><td colspan="7" class="empty-state">Error al cargar datos</td></tr>';
+        document.getElementById('call-table').innerHTML = '<tr><td colspan="8" class="empty-state">Error al cargar datos</td></tr>';
+    }
+}
+
+async function saveNotes() {
+    const btn = document.getElementById('save-notes-btn');
+    const id = btn.getAttribute('data-id');
+    const notes = document.getElementById('modal-notes').value;
+
+    if (!id) return;
+
+    btn.disabled = true;
+    btn.textContent = '⌛ Guardando...';
+
+    try {
+        const res = await fetch(`${API_BASE}/${CALL_LOGS_TABLE}/records`, {
+            method: 'PATCH',
+            headers: {
+                'xc-token': XC_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                Id: id,
+                notes: notes
+            })
+        });
+
+        if (res.ok) {
+            btn.textContent = '✅ Guardado';
+            setTimeout(() => {
+                btn.textContent = '💾 Guardar Notas';
+                btn.disabled = false;
+                loadData();
+            }, 1500);
+        } else {
+            throw new Error('Failed to save');
+        }
+    } catch (err) {
+        console.error('Error saving notes:', err);
+        btn.textContent = '❌ Error';
+        btn.disabled = false;
     }
 }
 
@@ -123,13 +166,13 @@ window.loadData = loadData;
 // Event listeners
 document.getElementById('refresh-btn').addEventListener('click', loadData);
 document.getElementById('close-modal').addEventListener('click', closeModal);
+document.getElementById('save-notes-btn').addEventListener('click', saveNotes);
 document.getElementById('detail-modal').addEventListener('click', (e) => {
     if (e.target === document.getElementById('detail-modal')) {
         closeModal();
     }
 });
 
-const ADMIN_EMAIL = 'admin@generalprotect.com';
 const ADMIN_PASSWORD = 'admin123';
 
 async function checkAuth() {
@@ -146,11 +189,10 @@ function showDashboard() {
 
 document.getElementById('login-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    const email = document.getElementById('email-input').value;
     const password = document.getElementById('password-input').value;
     const errorEl = document.getElementById('auth-error');
 
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+    if (password === ADMIN_PASSWORD) {
         localStorage.setItem('dashboard_auth', 'true');
         errorEl.style.display = 'none';
         showDashboard();

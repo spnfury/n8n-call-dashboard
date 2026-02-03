@@ -14,13 +14,12 @@
         <div class="login-card">
             <img src="./logo.png" alt="SkyPulse" class="brand-logo">
             <h2>Acceso al Dashboard</h2>
-            <p>Introduce tus credenciales para continuar</p>
+            <p>Introduce la contraseña para continuar</p>
             <form id="login-form">
-                <input type="email" id="email-input" placeholder="Email" required>
                 <input type="password" id="password-input" placeholder="Contraseña" required>
                 <button type="submit" class="refresh-btn" style="width: 100%;">Entrar</button>
             </form>
-            <p id="auth-error" class="auth-error" style="display: none;">Email o contraseña incorrectos</p>
+            <p id="auth-error" class="auth-error" style="display: none;">Contraseña incorrecta</p>
         </div>
     </div>
 
@@ -60,6 +59,7 @@
                         <th>Resultado</th>
                         <th>Evaluación</th>
                         <th>Duración</th>
+                        <th>Notas</th>
                         <th>Detalle</th>
                     </tr>
                 </thead>
@@ -90,6 +90,12 @@
                     Tu navegador no soporta el elemento de audio.
                 </audio>
             </div>
+
+            <div class="section-title">📝 Notas del Agente</div>
+            <textarea id="modal-notes" class="notes-area"
+                placeholder="Escribe aquí tus observaciones sobre la llamada..."></textarea>
+            <button id="save-notes-btn" class="refresh-btn" style="width: 100%; margin-top: 10px;">💾 Guardar
+                Notas</button>
         </div>
     </div>
 

@@ -1,0 +1,503 @@
+{
+    "name": "Original Enhanced V2: Bulk Call Manager",
+    "nodes": [
+        {
+            "parameters": {},
+            "id": "0c97638f-8e05-4374-9083-61f39b907d96",
+            "name": "Start Workflow Manually",
+            "type": "n8n-nodes-base.manualTrigger",
+            "position": [
+                -900,
+                2640
+            ],
+            "typeVersion": 1
+        },
+        {
+            "parameters": {
+                "authentication": "nocoDbApiToken",
+                "operation": "getAll",
+                "projectId": "p5xxqp29w9h8sb6",
+                "table": "mgot1kl4sglenym",
+                "options": {}
+            },
+            "id": "f7240d49-2883-4dd9-a6cf-7502fe028bc5",
+            "name": "Get Leads",
+            "type": "n8n-nodes-base.nocoDb",
+            "position": [
+                -700,
+                2640
+            ],
+            "typeVersion": 3,
+            "credentials": {
+                "nocoDbApiToken": {
+                    "id": "tV5VwP4BVmME7Vgo",
+                    "name": "NocoDB Token account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "batchSize": 1,
+                "options": {}
+            },
+            "id": "batching-node",
+            "name": "Split In Batches",
+            "type": "n8n-nodes-base.splitInBatches",
+            "position": [
+                -450,
+                2640
+            ],
+            "typeVersion": 3
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "id": "phone-exists",
+                            "leftValue": "={{ $json.phone }}",
+                            "operator": {
+                                "operation": "exists",
+                                "type": "string"
+                            }
+                        },
+                        {
+                            "id": "cooldown-check",
+                            "leftValue": "={{ (function() { if (!$json.intento_llamada) return true; let lastDate = new Date($json.intento_llamada); let now = new Date(); return (now - lastDate) > (24 * 60 * 60 * 1000); })() }}",
+                            "operator": {
+                                "operation": "true",
+                                "type": "boolean"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "id": "12eb9da3-9442-47ed-a80d-091f72835619",
+            "name": "Filter: Phone & 24h Cooldown",
+            "type": "n8n-nodes-base.filter",
+            "position": [
+                -200,
+                2640
+            ],
+            "typeVersion": 2.2
+        },
+        {
+            "parameters": {
+                "mode": "raw",
+                "jsonOutput": "={\n  \"nombre\": \"{{ $json.name || 'cliente' }}\",\n  \"empresa\": \"{{ $json.name || 'su empresa' }}\",\n  \"address\": \"{{ $json.address || 'su localidad' }}\",\n  \"email\": \"{{ $json.email || '' }}\",\n  \"formattedPhone\": \"{{ (function() { let p = ($json.phone || '').toString().replace(/\\\\D/g, ''); return p ? (p.startsWith('34') ? '+' + p : '+34' + p) : ''; })() }}\",\n  \"leadId\": \"{{ $json.unique_id }}\"\n}",
+                "includeOtherFields": true,
+                "options": {}
+            },
+            "id": "4cb08fdf-4816-4916-81ff-909a9461533c",
+            "name": "Prepare Call Data",
+            "type": "n8n-nodes-base.set",
+            "position": [
+                60,
+                2640
+            ],
+            "typeVersion": 3.4
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.vapi.ai/call",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer 852080ba-ce7c-4778-b218-bf718613a2b6"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n    \"customer\": {\n      \"number\": \"{{ $json.formattedPhone }}\"\n    },\n    \"assistantId\": \"49e56db1-1f20-4cf1-b031-9cea9fba73cb\",\n    \"phoneNumberId\": \"611c8c8e-ab43-4af0-8df0-f2f8fac8115b\",\n    \"assistantOverrides\": {\n      \"variableValues\": {\n        \"ciudad\": \"{{ $json.address }}\",\n        \"nombre\": \"{{ $json.nombre }}\",\n        \"tel_contacto\": \"{{ $json.formattedPhone }}\",\n        \"correo_cliente\": \"{{ $json.email }}\",\n        \"empresa\": \"{{ $json.empresa }}\"\n      }\n    }\n  }",
+                "options": {}
+            },
+            "id": "ca71fdf4-a1aa-4c77-9cf0-418da5b93a1b",
+            "name": "Call Vapi AI",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                320,
+                2640
+            ],
+            "typeVersion": 4.2,
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "VyoKa0HV9ZpyrdVx",
+                    "name": "Header Auth account"
+                }
+            },
+            "onError": "continueErrorOutput"
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "name": "unique_id",
+                            "type": "string",
+                            "value": "={{ $node[\"Get Leads\"].json.unique_id }}",
+                            "id": "unique-id-field"
+                        },
+                        {
+                            "name": "intento_llamada",
+                            "type": "string",
+                            "value": "={{ $now }}",
+                            "id": "intento-llamada"
+                        },
+                        {
+                            "name": "estado_api",
+                            "type": "string",
+                            "value": "={{ $node[\"Call Vapi AI\"].json.id ? 'Call Initiated' : 'Error API' }}",
+                            "id": "estado-api"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "7f8be9c5-a0e0-49b6-bc6e-80fb9f22f01e",
+            "name": "Prepare Lead Update",
+            "type": "n8n-nodes-base.set",
+            "position": [
+                580,
+                2640
+            ],
+            "typeVersion": 3.4
+        },
+        {
+            "parameters": {
+                "authentication": "nocoDbApiToken",
+                "operation": "update",
+                "projectId": "p5xxqp29w9h8sb6",
+                "table": "mgot1kl4sglenym",
+                "dataToSend": "autoMapInputData"
+            },
+            "id": "31a679d0-04e4-426c-bb61-6beb858813af",
+            "name": "Update Lead",
+            "type": "n8n-nodes-base.nocoDb",
+            "position": [
+                840,
+                2640
+            ],
+            "typeVersion": 3,
+            "credentials": {
+                "nocoDbApiToken": {
+                    "id": "tV5VwP4BVmME7Vgo",
+                    "name": "NocoDB Token account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "name": "lead_id",
+                            "type": "string",
+                            "value": "={{ $node[\"Call Vapi AI\"].json.id || '' }}",
+                            "id": "lead-id"
+                        },
+                        {
+                            "name": "lead_name",
+                            "type": "string",
+                            "value": "={{ $node[\"Prepare Call Data\"].json.empresa }}",
+                            "id": "lead-name"
+                        },
+                        {
+                            "name": "phone_called",
+                            "type": "string",
+                            "value": "={{ $node[\"Prepare Call Data\"].json.formattedPhone }}",
+                            "id": "phone-called"
+                        },
+                        {
+                            "name": "call_time",
+                            "type": "string",
+                            "value": "={{ $now }}",
+                            "id": "call-time"
+                        },
+                        {
+                            "name": "ended_reason",
+                            "type": "string",
+                            "value": "={{ $node[\"Call Vapi AI\"].json.id ? 'Call Initiated' : 'API Error' }}",
+                            "id": "ended-reason"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "21665191-13f6-4414-92f1-ee02f91635a4",
+            "name": "Prepare Call Log",
+            "type": "n8n-nodes-base.set",
+            "position": [
+                580,
+                2840
+            ],
+            "typeVersion": 3.4
+        },
+        {
+            "parameters": {
+                "authentication": "nocoDbApiToken",
+                "operation": "create",
+                "projectId": "p5xxqp29w9h8sb6",
+                "table": "m013en5u2cyu30j",
+                "dataToSend": "autoMapInputData"
+            },
+            "id": "b34d7dd3-1b41-47e9-bff5-4e22b67eae3c",
+            "name": "Insert Call Log",
+            "type": "n8n-nodes-base.nocoDb",
+            "position": [
+                840,
+                2840
+            ],
+            "typeVersion": 3,
+            "credentials": {
+                "nocoDbApiToken": {
+                    "id": "tV5VwP4BVmME7Vgo",
+                    "name": "NocoDB Token account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "number": [
+                        {
+                            "id": "is-503",
+                            "leftValue": "={{ $json.httpCode }}",
+                            "operator": {
+                                "operation": "equals",
+                                "type": "number"
+                            },
+                            "rightValue": 503
+                        }
+                    ]
+                }
+            },
+            "id": "concurrency-check",
+            "name": "Is Concurrency Limit?",
+            "type": "n8n-nodes-base.if",
+            "position": [
+                320,
+                2900
+            ],
+            "typeVersion": 1
+        },
+        {
+            "parameters": {
+                "amount": 30,
+                "unit": "seconds"
+            },
+            "id": "retry-wait",
+            "name": "Retry Wait (30s)",
+            "type": "n8n-nodes-base.wait",
+            "position": [
+                520,
+                3000
+            ],
+            "typeVersion": 1.1
+        },
+        {
+            "parameters": {
+                "amount": 15,
+                "unit": "seconds"
+            },
+            "id": "spacing-wait",
+            "name": "Spacing Delay (15s)",
+            "type": "n8n-nodes-base.wait",
+            "position": [
+                1100,
+                2740
+            ],
+            "typeVersion": 1.1
+        }
+    ],
+    "connections": {
+        "Start Workflow Manually": {
+            "main": [
+                [
+                    {
+                        "node": "Get Leads",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Leads": {
+            "main": [
+                [
+                    {
+                        "node": "Split In Batches",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Split In Batches": {
+            "main": [
+                [],
+                [
+                    {
+                        "node": "Filter: Phone & 24h Cooldown",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Filter: Phone & 24h Cooldown": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Call Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Spacing Delay (15s)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Call Data": {
+            "main": [
+                [
+                    {
+                        "node": "Call Vapi AI",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Call Vapi AI": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Lead Update",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Prepare Call Log",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Is Concurrency Limit?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Is Concurrency Limit?": {
+            "main": [
+                [
+                    {
+                        "node": "Retry Wait (30s)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Prepare Call Log",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Retry Wait (30s)": {
+            "main": [
+                [
+                    {
+                        "node": "Call Vapi AI",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Lead Update": {
+            "main": [
+                [
+                    {
+                        "node": "Update Lead",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Update Lead": {
+            "main": [
+                [
+                    {
+                        "node": "Spacing Delay (15s)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Call Log": {
+            "main": [
+                [
+                    {
+                        "node": "Insert Call Log",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Insert Call Log": {
+            "main": [
+                [
+                    {
+                        "node": "Spacing Delay (15s)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Spacing Delay (15s)": {
+            "main": [
+                [
+                    {
+                        "node": "Split In Batches",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "f0162b38a1f8ee05f971361a1da208e096da623a99e7bb064e6c378b9b7fd5a9"
+    }
+}
