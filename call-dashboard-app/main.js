@@ -89,7 +89,7 @@ async function loadData() {
         tbody.innerHTML = '';
         calls.forEach((call, index) => {
             const tr = document.createElement('tr');
-            const vapiId = call.lead_id || call.id || call.Id || '-';
+            const vapiId = call.vapi_call_id || call.lead_id || call.id || call.Id || '-';
             // Extract short version of Vapi ID if it's a full UUID
             const shortId = vapiId.length > 20 ? vapiId.substring(0, 8) + '...' : vapiId;
 
