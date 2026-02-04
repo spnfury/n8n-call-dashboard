@@ -1,0 +1,222 @@
+[
+    {
+        "id": "019c1f1a-5961-799f-8b40-a51384694101",
+        "assistantId": "49e56db1-1f20-4cf1-b031-9cea9fba73cb",
+        "customerId": null,
+        "phoneNumberId": "611c8c8e-ab43-4af0-8df0-f2f8fac8115b",
+        "type": "outboundPhoneCall",
+        "createdAt": "2026-02-02T16:05:46.465Z",
+        "customer": {
+            "number": "+34986205431"
+        }
+    },
+    {
+        "id": "019c1f1a-5953-7113-96bb-319dd52990d1",
+        "assistantId": "49e56db1-1f20-4cf1-b031-9cea9fba73cb",
+        "customerId": null,
+        "phoneNumberId": "611c8c8e-ab43-4af0-8df0-f2f8fac8115b",
+        "type": "outboundPhoneCall",
+        "createdAt": "2026-02-02T16:05:46.451Z",
+        "customer": {
+            "number": "+34984293645"
+        }
+    },
+    {
+        "id": "019c1f1a-593b-7ccb-8537-45fd4a64eee5",
+        "assistantId": "49e56db1-1f20-4cf1-b031-9cea9fba73cb",
+        "customerId": null,
+        "phoneNumberId": "611c8c8e-ab43-4af0-8df0-f2f8fac8115b",
+        "type": "outboundPhoneCall",
+        "createdAt": "2026-02-02T16:05:46.427Z",
+        "customer": {
+            "number": "+34986543743"
+        }
+    },
+    {
+        "id": "019c1f1a-592f-7225-a951-e9bc3bb75913",
+        "assistantId": "49e56db1-1f20-4cf1-b031-9cea9fba73cb",
+        "customerId": null,
+        "phoneNumberId": "611c8c8e-ab43-4af0-8df0-f2f8fac8115b",
+        "type": "outboundPhoneCall",
+        "createdAt": "2026-02-02T16:05:46.415Z",
+        "customer": {
+            "number": "+34969127685"
+        }
+    },
+    {
+        "id": "019c1f1a-592a-7aa7-95ab-930039dde841",
+        "assistantId": "49e56db1-1f20-4cf1-b031-9cea9fba73cb",
+        "customerId": null,
+        "phoneNumberId": "611c8c8e-ab43-4af0-8df0-f2f8fac8115b",
+        "type": "outboundPhoneCall",
+        "createdAt": "2026-02-02T16:05:46.410Z",
+        "customer": {
+            "number": "+34943894014"
+        }
+    },
+    {
+        "id": "019c1f1a-5913-7ccb-8537-3fbc5c0a27e3",
+        "assistantId": "49e56db1-1f20-4cf1-b031-9cea9fba73cb",
+        "customerId": null,
+        "phoneNumberId": "611c8c8e-ab43-4af0-8df0-f2f8fac8115b",
+        "type": "outboundPhoneCall",
+        "createdAt": "2026-02-02T16:05:46.387Z",
+        "customer": {
+            "number": "+34943383265"
+        }
+    },
+    {
+        "id": "019c1f1a-590a-7aa7-95ab-8dd98d56e11c",
+        "assistantId": "49e56db1-1f20-4cf1-b031-9cea9fba73cb",
+        "customerId": null,
+        "phoneNumberId": "611c8c8e-ab43-4af0-8df0-f2f8fac8115b",
+        "type": "outboundPhoneCall",
+        "createdAt": "2026-02-02T16:05:46.378Z",
+        "customer": {
+            "number": "+34918448287"
+        }
+    },
+    {
+        "id": "019c1f1a-5904-7113-96bb-2c779afaea9a",
+        "assistantId": "49e56db1-1f20-4cf1-b031-9cea9fba73cb",
+        "customerId": null,
+        "phoneNumberId": "611c8c8e-ab43-4af0-8df0-f2f8fac8115b",
+        "type": "outboundPhoneCall",
+        "createdAt": "2026-02-02T16:05:46.372Z",
+        "customer": {
+            "number": "+34937124236"
+        }
+    },
+    {
+        "id": "019c1f1a-58f0-7ee4-9f3e-d6a25868dbcb",
+        "assistantId": "49e56db1-1f20-4cf1-b031-9cea9fba73cb",
+        "customerId": null,
+        "phoneNumberId": "611c8c8e-ab43-4af0-8df0-f2f8fac8115b",
+        "type": "outboundPhoneCall",
+        "createdAt": "2026-02-02T16:05:46.352Z",
+        "customer": {
+            "number": "+34954670911"
+        }
+    },
+    {
+        "id": "019c1f1a-58ee-7ee4-9f3e-ca842829881c",
+        "assistantId": "49e56db1-1f20-4cf1-b031-9cea9fba73cb",
+        "customerId": null,
+        "phoneNumberId": "611c8c8e-ab43-4af0-8df0-f2f8fac8115b",
+        "type": "outboundPhoneCall",
+        "createdAt": "2026-02-02T16:05:46.350Z",
+        "customer": {
+            "number": "+34974415571"
+        }
+    },
+    {
+        "id": "019c1f1a-58df-766b-b9dc-aa1ee42f768a",
+        "assistantId": "49e56db1-1f20-4cf1-b031-9cea9fba73cb",
+        "customerId": null,
+        "phoneNumberId": "611c8c8e-ab43-4af0-8df0-f2f8fac8115b",
+        "type": "outboundPhoneCall",
+        "createdAt": "2026-02-02T16:05:46.335Z",
+        "customer": {
+            "number": "+34965566353"
+        }
+    },
+    {
+        "id": "019c1f1a-58d8-7665-96b7-8fde457afb20",
+        "assistantId": "49e56db1-1f20-4cf1-b031-9cea9fba73cb",
+        "customerId": null,
+        "phoneNumberId": "611c8c8e-ab43-4af0-8df0-f2f8fac8115b",
+        "type": "outboundPhoneCall",
+        "createdAt": "2026-02-02T16:05:46.328Z",
+        "customer": {
+            "number": "+34963753847"
+        }
+    },
+    {
+        "id": "019c1f1a-58d8-7ee4-9f3e-c6646ffff6c5",
+        "assistantId": "49e56db1-1f20-4cf1-b031-9cea9fba73cb",
+        "customerId": null,
+        "phoneNumberId": "611c8c8e-ab43-4af0-8df0-f2f8fac8115b",
+        "type": "outboundPhoneCall",
+        "createdAt": "2026-02-02T16:05:46.328Z",
+        "customer": {
+            "number": "+34954789833"
+        }
+    },
+    {
+        "id": "019c1f1a-58ce-733f-a27d-16e42b73357b",
+        "assistantId": "49e56db1-1f20-4cf1-b031-9cea9fba73cb",
+        "customerId": null,
+        "phoneNumberId": "611c8c8e-ab43-4af0-8df0-f2f8fac8115b",
+        "type": "outboundPhoneCall",
+        "createdAt": "2026-02-02T16:05:46.318Z",
+        "customer": {
+            "number": "+34955514167"
+        }
+    },
+    {
+        "id": "019c1f1a-58bf-7ee0-b814-a144a9258a4b",
+        "assistantId": "49e56db1-1f20-4cf1-b031-9cea9fba73cb",
+        "customerId": null,
+        "phoneNumberId": "611c8c8e-ab43-4af0-8df0-f2f8fac8115b",
+        "type": "outboundPhoneCall",
+        "createdAt": "2026-02-02T16:05:46.303Z",
+        "customer": {
+            "number": "+34986772343"
+        }
+    },
+    {
+        "id": "019c1f1a-58a9-7778-a60f-628376bf37de",
+        "assistantId": "49e56db1-1f20-4cf1-b031-9cea9fba73cb",
+        "customerId": null,
+        "phoneNumberId": "611c8c8e-ab43-4af0-8df0-f2f8fac8115b",
+        "type": "outboundPhoneCall",
+        "createdAt": "2026-02-02T16:05:46.281Z",
+        "customer": {
+            "number": "+34976868197"
+        }
+    },
+    {
+        "id": "019c1f1a-589f-7ccb-8537-3325c79a322d",
+        "assistantId": "49e56db1-1f20-4cf1-b031-9cea9fba73cb",
+        "customerId": null,
+        "phoneNumberId": "611c8c8e-ab43-4af0-8df0-f2f8fac8115b",
+        "type": "outboundPhoneCall",
+        "createdAt": "2026-02-02T16:05:46.271Z",
+        "customer": {
+            "number": "+34916326950"
+        }
+    },
+    {
+        "id": "019c1f1a-589b-7007-9559-48ea1708e556",
+        "assistantId": "49e56db1-1f20-4cf1-b031-9cea9fba73cb",
+        "customerId": null,
+        "phoneNumberId": "611c8c8e-ab43-4af0-8df0-f2f8fac8115b",
+        "type": "outboundPhoneCall",
+        "createdAt": "2026-02-02T16:05:46.267Z",
+        "customer": {
+            "number": "+34983315073"
+        }
+    },
+    {
+        "id": "019c1f1a-588d-7445-ab20-e6eb4761a9d0",
+        "assistantId": "49e56db1-1f20-4cf1-b031-9cea9fba73cb",
+        "customerId": null,
+        "phoneNumberId": "611c8c8e-ab43-4af0-8df0-f2f8fac8115b",
+        "type": "outboundPhoneCall",
+        "createdAt": "2026-02-02T16:05:46.253Z",
+        "customer": {
+            "number": "+34976233905"
+        }
+    },
+    {
+        "id": "019c1e77-cbc8-7778-a529-1886207388a6",
+        "assistantId": "49e56db1-1f20-4cf1-b031-9cea9fba73cb",
+        "customerId": null,
+        "phoneNumberId": "611c8c8e-ab43-4af0-8df0-f2f8fac8115b",
+        "type": "outboundPhoneCall",
+        "createdAt": "2026-02-02T13:08:13.384Z",
+        "customer": {
+            "number": "+34976233905"
+        }
+    }
+]

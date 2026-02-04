@@ -204,10 +204,10 @@
                 "assignments": {
                     "assignments": [
                         {
-                            "name": "lead_id",
+                            "name": "vapi_call_id",
                             "type": "string",
                             "value": "={{ $node[\"Call Vapi AI\"].json.id || '' }}",
-                            "id": "lead-id"
+                            "id": "vapi-call-id"
                         },
                         {
                             "name": "lead_name",
