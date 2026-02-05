@@ -2,7 +2,9 @@ const API_BASE = 'https://nocodb.srv889387.hstgr.cloud/api/v2/tables';
 const CALL_LOGS_TABLE = 'm013en5u2cyu30j';
 const XC_TOKEN = 'jx3uoKeVaidZLF7M0skVb9pV6yvNsam0Hu-Vfeww';
 
-let currentCalls = [];
+let allCalls = [];
+let currentCallsPage = [];
+let chartInstance = null;
 
 async function fetchData(tableId, limit = 100) {
     const res = await fetch(`${API_BASE}/${tableId}/records?limit=${limit}&sort=-CreatedAt`, {
@@ -12,9 +14,10 @@ async function fetchData(tableId, limit = 100) {
     return data.list || [];
 }
 
-function formatDate(dateStr) {
+function formatDate(dateStr, short = false) {
     if (!dateStr) return '-';
     const d = new Date(dateStr);
+    if (short) return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
     return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
@@ -33,17 +36,134 @@ function formatDuration(seconds) {
     return `${Math.floor(s / 60)}m ${s % 60}s`;
 }
 
-function openDetail(index) {
-    console.log('Opening detail for index:', index);
-    const call = currentCalls[index];
-    if (!call) {
-        console.error('Call not found at index:', index);
+function updateChart(calls) {
+    const ctx = document.getElementById('call-chart').getContext('2d');
+
+    // Group calls by day
+    const grouped = {};
+    calls.forEach(c => {
+        const day = formatDate(c.CreatedAt || c.call_time, true);
+        grouped[day] = (grouped[day] || 0) + 1;
+    });
+
+    const labels = Object.keys(grouped).reverse();
+    const data = Object.values(grouped).reverse();
+
+    if (chartInstance) {
+        chartInstance.destroy();
+    }
+
+    chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Llamadas por Día',
+                data,
+                borderColor: '#6366f1',
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                fill: true,
+                tension: 0.4,
+                borderWidth: 2,
+                pointBackgroundColor: '#6366f1',
+                pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    ticks: { color: '#a0a0a0', stepSize: 1 }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#a0a0a0' }
+                }
+            }
+        }
+    });
+}
+
+function renderDashboard(calls) {
+    currentCallsPage = calls;
+
+    // Stats
+    const totalCalls = calls.length;
+    const successCalls = calls.filter(c => getBadgeClass(c.evaluation) === 'success').length;
+    const successRate = totalCalls > 0 ? Math.round((successCalls / totalCalls) * 100) : 0;
+    const totalDuration = calls.reduce((sum, c) => sum + (parseInt(c.duration_seconds) || 0), 0);
+    const avgDuration = totalCalls > 0 ? Math.round(totalDuration / totalCalls) : 0;
+
+    document.getElementById('total-calls').textContent = totalCalls;
+    document.getElementById('success-rate').textContent = successRate + '%';
+    document.getElementById('avg-duration').textContent = formatDuration(avgDuration);
+
+    // Table
+    const tbody = document.getElementById('call-table');
+    if (calls.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No hay llamadas para el periodo seleccionado</td></tr>';
         return;
     }
 
+    tbody.innerHTML = '';
+    calls.forEach((call, index) => {
+        const tr = document.createElement('tr');
+        const vapiId = call.vapi_call_id || call.lead_id || call.id || call.Id || '-';
+        const shortId = vapiId.length > 20 ? vapiId.substring(0, 8) + '...' : vapiId;
+
+        tr.innerHTML = `
+            <td><code style="font-family: monospace; color: var(--accent); font-size: 11px;" title="${vapiId}">${shortId}</code></td>
+            <td><strong>${call.lead_name || '-'}</strong></td>
+            <td class="phone">${call.phone_called || '-'}</td>
+            <td>${formatDate(call.call_time || call.CreatedAt)}</td>
+            <td>${call.ended_reason || '-'}</td>
+            <td><span class="badge ${getBadgeClass(call.evaluation)}">${call.evaluation || 'Pendiente'}</span></td>
+            <td>${formatDuration(call.duration_seconds)}</td>
+            <td class="table-notes">${call.notes || '-'}</td>
+            <td>
+                <button class="action-btn" data-index="${index}">👁 Ver Detalle</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    updateChart(calls);
+}
+
+function applyFilters() {
+    const from = document.getElementById('date-from').value;
+    const to = document.getElementById('date-to').value;
+
+    let filtered = allCalls;
+
+    if (from) {
+        const fromDate = new Date(from);
+        fromDate.setHours(0, 0, 0, 0);
+        filtered = filtered.filter(c => new Date(c.CreatedAt || c.call_time) >= fromDate);
+    }
+
+    if (to) {
+        const toDate = new Date(to);
+        toDate.setHours(23, 59, 59, 999);
+        filtered = filtered.filter(c => new Date(c.CreatedAt || c.call_time) <= toDate);
+    }
+
+    renderDashboard(filtered);
+}
+
+function openDetail(index) {
+    const call = currentCallsPage[index];
+    if (!call) return;
+
     document.getElementById('modal-title').textContent = call.lead_name || 'Llamada';
     document.getElementById('modal-subtitle').textContent = `${call.phone_called} • ${formatDate(call.call_time || call.CreatedAt)}`;
-    document.getElementById('modal-transcript').textContent = call.transcript || 'No hay transcripción disponible para esta llamada.';
+    document.getElementById('modal-transcript').textContent = call.transcript || 'No hay transcripción disponible.';
     document.getElementById('modal-notes').value = call.notes || '';
     document.getElementById('save-notes-btn').setAttribute('data-id', call.id || call.Id);
 
@@ -69,7 +189,6 @@ function openDetail(index) {
     document.getElementById('detail-modal').style.display = 'flex';
 }
 
-
 function closeModal() {
     document.getElementById('detail-modal').style.display = 'none';
     document.getElementById('modal-audio').pause();
@@ -78,55 +197,8 @@ function closeModal() {
 async function loadData() {
     try {
         const calls = await fetchData(CALL_LOGS_TABLE);
-        currentCalls = calls;
-
-        const totalCalls = calls.length;
-        const successCalls = calls.filter(c => getBadgeClass(c.evaluation) === 'success').length;
-        const successRate = totalCalls > 0 ? Math.round((successCalls / totalCalls) * 100) : 0;
-        const totalDuration = calls.reduce((sum, c) => sum + (parseInt(c.duration_seconds) || 0), 0);
-        const avgDuration = totalCalls > 0 ? Math.round(totalDuration / totalCalls) : 0;
-
-        document.getElementById('total-calls').textContent = totalCalls;
-        document.getElementById('success-rate').textContent = successRate + '%';
-        document.getElementById('avg-duration').textContent = formatDuration(avgDuration);
-
-        const tbody = document.getElementById('call-table');
-        if (calls.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No hay llamadas registradas aún</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = '';
-        calls.forEach((call, index) => {
-            const tr = document.createElement('tr');
-            const vapiId = call.vapi_call_id || call.lead_id || call.id || call.Id || '-';
-            // Extract short version of Vapi ID if it's a full UUID
-            const shortId = vapiId.length > 20 ? vapiId.substring(0, 8) + '...' : vapiId;
-
-            tr.innerHTML = `
-                <td><code style="font-family: monospace; color: var(--accent); font-size: 11px;" title="${vapiId}">${shortId}</code></td>
-                <td><strong>${call.lead_name || '-'}</strong></td>
-                <td class="phone">${call.phone_called || '-'}</td>
-                <td>${formatDate(call.call_time || call.CreatedAt)}</td>
-                <td>${call.ended_reason || '-'}</td>
-                <td><span class="badge ${getBadgeClass(call.evaluation)}">${call.evaluation || 'Pendiente'}</span></td>
-                <td>${formatDuration(call.duration_seconds)}</td>
-                <td class="table-notes">${call.notes || '-'}</td>
-                <td>
-                    <button class="action-btn" data-index="${index}">👁 Ver Detalle</button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-
-        // Event delegation for action buttons
-        tbody.addEventListener('click', (e) => {
-            if (e.target.classList.contains('action-btn')) {
-                const index = parseInt(e.target.getAttribute('data-index'));
-                openDetail(index);
-            }
-        });
-
+        allCalls = calls;
+        applyFilters();
     } catch (err) {
         console.error('Error:', err);
         document.getElementById('call-table').innerHTML = '<tr><td colspan="9" class="empty-state">Error al cargar datos</td></tr>';
@@ -139,21 +211,14 @@ async function saveNotes() {
     const notes = document.getElementById('modal-notes').value;
 
     if (!id) return;
-
     btn.disabled = true;
     btn.textContent = '⌛ Guardando...';
 
     try {
         const res = await fetch(`${API_BASE}/${CALL_LOGS_TABLE}/records`, {
             method: 'PATCH',
-            headers: {
-                'xc-token': XC_TOKEN,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                Id: id,
-                notes: notes
-            })
+            headers: { 'xc-token': XC_TOKEN, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ Id: id, notes: notes })
         });
 
         if (res.ok) {
@@ -173,28 +238,35 @@ async function saveNotes() {
     }
 }
 
-// Global exposure for event listeners in HTML if needed, though we used delegation
-window.openDetail = openDetail;
-window.closeModal = closeModal;
-window.loadData = loadData;
-
 // Event listeners
 document.getElementById('refresh-btn').addEventListener('click', loadData);
 document.getElementById('close-modal').addEventListener('click', closeModal);
 document.getElementById('save-notes-btn').addEventListener('click', saveNotes);
-document.getElementById('detail-modal').addEventListener('click', (e) => {
-    if (e.target === document.getElementById('detail-modal')) {
-        closeModal();
+document.getElementById('date-from').addEventListener('change', applyFilters);
+document.getElementById('date-to').addEventListener('change', applyFilters);
+
+document.getElementById('call-table').addEventListener('click', (e) => {
+    if (e.target.classList.contains('action-btn')) {
+        const index = parseInt(e.target.getAttribute('data-index'));
+        openDetail(index);
     }
 });
 
-const ADMIN_PASSWORD = 'admin123';
+document.getElementById('detail-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'detail-modal') closeModal();
+});
 
-async function checkAuth() {
-    if (localStorage.getItem('dashboard_auth') === 'true') {
+document.getElementById('login-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const ADMIN_PASSWORD = 'admin123';
+    const password = document.getElementById('password-input').value;
+    if (password === ADMIN_PASSWORD) {
+        localStorage.setItem('dashboard_auth', 'true');
         showDashboard();
+    } else {
+        document.getElementById('auth-error').style.display = 'block';
     }
-}
+});
 
 function showDashboard() {
     document.body.classList.remove('auth-hidden');
@@ -202,19 +274,11 @@ function showDashboard() {
     loadData();
 }
 
-document.getElementById('login-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const password = document.getElementById('password-input').value;
-    const errorEl = document.getElementById('auth-error');
-
-    if (password === ADMIN_PASSWORD) {
-        localStorage.setItem('dashboard_auth', 'true');
-        errorEl.style.display = 'none';
+function checkAuth() {
+    if (localStorage.getItem('dashboard_auth') === 'true') {
         showDashboard();
-    } else {
-        errorEl.style.display = 'block';
     }
-});
+}
 
-// Initial check
 checkAuth();
+

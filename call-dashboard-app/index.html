@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard de Llamadas - GeneralProtect</title>
     <link rel="stylesheet" href="./style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body class="auth-hidden">
@@ -32,6 +33,24 @@
             </h1>
             <button class="refresh-btn" id="refresh-btn">🔄 Actualizar</button>
         </header>
+
+        <div class="filter-section">
+            <div class="filter-group">
+                <label for="date-from">Desde</label>
+                <input type="date" id="date-from" class="filter-input">
+            </div>
+            <div class="filter-group">
+                <label for="date-to">Hasta</label>
+                <input type="date" id="date-to" class="filter-input">
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="section-title">📈 Volumen de Llamadas</div>
+            <div class="chart-container">
+                <canvas id="call-chart"></canvas>
+            </div>
+        </div>
 
         <div class="stats-grid" id="stats">
             <div class="stat-card">
@@ -92,9 +111,11 @@
                 </audio>
             </div>
 
-            <div id="error-section" style="display: none; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+            <div id="error-section"
+                style="display: none; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); border-radius: 8px; padding: 16px; margin-bottom: 24px;">
                 <div class="section-title" style="color: var(--danger); margin-bottom: 8px;">❌ Error en la Llamada</div>
-                <div id="modal-error-detail" style="color: var(--text-primary); font-size: 14px; line-height: 1.5;"></div>
+                <div id="modal-error-detail" style="color: var(--text-primary); font-size: 14px; line-height: 1.5;">
+                </div>
             </div>
 
             <div class="section-title">📝 Notas del Agente</div>
