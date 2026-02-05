@@ -1,0 +1,114 @@
+[
+    {
+        "parameters": {
+            "httpMethod": "POST",
+            "path": "vapi-confirmed-data",
+            "options": {}
+        },
+        "id": "webhook-fix-id",
+        "name": "Webhook1",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 1,
+        "position": [
+            400,
+            400
+        ]
+    },
+    {
+        "parameters": {
+            "conditions": {
+                "string": [
+                    {
+                        "value1": "={{ $json.body.message ? $json.body.message.type : '' }}",
+                        "value2": "tool-calls"
+                    },
+                    {
+                        "value1": "={{ $json.name ? 'direct' : '' }}",
+                        "value2": "direct"
+                    }
+                ],
+                "combinator": "or"
+            },
+            "options": {}
+        },
+        "id": "if-fix-id",
+        "name": "Is Tool Call?1",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 1,
+        "position": [
+            600,
+            400
+        ]
+    },
+    {
+        "parameters": {
+            "jsCode": "const body = $input.first().json.body || $input.first().json;\n\n// 1. Caso Tool Call (desde Vapi)\nif (body.message && body.message.toolCalls) {\n  const toolCall = body.message.toolCalls.find(tc => tc.function.name.includes('save_confirmed_data'));\n  if (toolCall) {\n    const args = typeof toolCall.function.arguments === 'string' ? JSON.parse(toolCall.function.arguments) : toolCall.function.arguments;\n    return {\n      name: args.name,\n      phone: args.phone,\n      email: args.email,\n      vapi_call_id: body.message.call.id\n    };\n  }\n}\n\n// 2. Caso API Request Directo\nif (body.name && body.call_id) {\n  return {\n    name: body.name,\n    phone: body.phone,\n    email: body.email,\n    vapi_call_id: body.call_id\n  };\n}\n\nreturn null;"
+        },
+        "id": "code-fix-id",
+        "name": "Extract Data1",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+            800,
+            400
+        ]
+    },
+    {
+        "parameters": {
+            "authentication": "nocoDbApiToken",
+            "operation": "create",
+            "projectId": "p5xxqp29w9h8sb6",
+            "table": "mtoilizta888pej",
+            "dataToSend": "autoMapInputData",
+            "options": {}
+        },
+        "id": "nocodb-create-fix",
+        "name": "Insert Confirmed Table1",
+        "type": "n8n-nodes-base.nocoDb",
+        "typeVersion": 3,
+        "position": [
+            1000,
+            400
+        ],
+        "credentials": {
+            "nocoDbApiToken": {
+                "id": "tV5VwP4BVmME7Vgo",
+                "name": "NocoDB Token account"
+            }
+        }
+    },
+    {
+        "parameters": {
+            "authentication": "nocoDbApiToken",
+            "operation": "update",
+            "projectId": "p5xxqp29w9h8sb6",
+            "table": "m013en5u2cyu30j",
+            "dataToSend": "defineBelow",
+            "fieldsToUpdate": {
+                "fields": [
+                    {
+                        "column": "is_confirmed",
+                        "value": "true"
+                    }
+                ]
+            },
+            "options": {
+                "where": "=(vapi_call_id,eq,{{ $node[\"Extract Data1\"].json.vapi_call_id }})"
+            }
+        },
+        "id": "nocodb-update-fix",
+        "name": "Mark Call as Confirmed1",
+        "type": "n8n-nodes-base.nocoDb",
+        "typeVersion": 3,
+        "position": [
+            1200,
+            400
+        ],
+        "credentials": {
+            "nocoDbApiToken": {
+                "id": "tV5VwP4BVmME7Vgo",
+                "name": "NocoDB Token account"
+            }
+        }
+    }
+]

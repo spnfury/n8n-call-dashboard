@@ -1,0 +1,542 @@
+{
+    "name": "General_Protech_Workflow_V2",
+    "nodes": [
+        {
+            "parameters": {},
+            "id": "68151cf6-94c9-4ddc-859e-016dfdd44971",
+            "name": "When clicking ‘Execute workflow’",
+            "type": "n8n-nodes-base.manualTrigger",
+            "typeVersion": 1,
+            "position": [
+                -1260,
+                11240
+            ]
+        },
+        {
+            "parameters": {
+                "authentication": "nocoDbApiToken",
+                "operation": "getAll",
+                "projectId": "p5xxqp29w9h8sb6",
+                "table": "mgot1kl4sglenym",
+                "limit": 5,
+                "options": {}
+            },
+            "id": "a0f4e364-bbff-464b-9fcc-ae04e83f9cd2",
+            "name": "Get Leads2",
+            "type": "n8n-nodes-base.nocoDb",
+            "typeVersion": 3,
+            "position": [
+                -940,
+                11280
+            ],
+            "credentials": {
+                "nocoDbApiToken": {
+                    "id": "tV5VwP4BVmME7Vgo",
+                    "name": "NocoDB Token account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "batchSize": 1,
+                "options": {}
+            },
+            "id": "7464f244-298a-4efe-b23e-6ccbe3a3420c",
+            "name": "Split In Batches2",
+            "type": "n8n-nodes-base.splitInBatches",
+            "typeVersion": 3,
+            "position": [
+                -720,
+                11280
+            ]
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "format-phone-id",
+                            "name": "formattedPhone",
+                            "type": "string",
+                            "value": "={{ (function() { let p = ($(\"Split In Batches2\").item.json.phone || '').toString().replace(/\\\\D/g, ''); return p ? (p.startsWith('34') ? '+' + p : '+34' + p) : ''; })() }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "95e4c82e-fb6e-426d-8d02-dcadcd1acc6f",
+            "name": "Normalize Phone1",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3,
+            "position": [
+                -500,
+                11280
+            ]
+        },
+        {
+            "parameters": {
+                "authentication": "nocoDbApiToken",
+                "operation": "getAll",
+                "projectId": "p5xxqp29w9h8sb6",
+                "table": "m013en5u2cyu30j",
+                "limit": 1,
+                "options": {}
+            },
+            "id": "b1eff3a9-fcbc-4170-8c5b-59d986afbe91",
+            "name": "Check Logs2",
+            "type": "n8n-nodes-base.nocoDb",
+            "typeVersion": 3,
+            "position": [
+                -280,
+                11280
+            ],
+            "credentials": {
+                "nocoDbApiToken": {
+                    "id": "tV5VwP4BVmME7Vgo",
+                    "name": "NocoDB Token account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "conditions": [
+                        {
+                            "id": "cooldown-check",
+                            "leftValue": "={{ ($json.id || '').toString() }}",
+                            "operator": {
+                                "operation": "isEmpty",
+                                "type": "string"
+                            }
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "79a14289-a7fe-4d15-bc24-332090c91c3b",
+            "name": "Filter Cooldown2",
+            "type": "n8n-nodes-base.filter",
+            "typeVersion": 2,
+            "position": [
+                -60,
+                11280
+            ]
+        },
+        {
+            "parameters": {
+                "mode": "raw",
+                "jsonOutput": "={\n  \"nombre\": \"{{ $(\"Split In Batches2\").item.json.name || 'cliente' }}\",\n  \"empresa\": \"{{ $(\"Split In Batches2\").item.json.name || 'su empresa' }}\",\n  \"address\": \"{{ $(\"Split In Batches2\").item.json.address || 'su localidad' }}\",\n  \"email\": \"{{ $(\"Split In Batches2\").item.json.email || '' }}\",\n  \"formattedPhone\": \"{{ $(\"Normalize Phone1\").item.json.formattedPhone }}\",\n  \"leadId\": \"{{ $(\"Split In Batches2\").item.json.unique_id }}\"\n}",
+                "options": {}
+            },
+            "id": "7edf7785-d811-4ba0-bd08-0d2e7e6c2e83",
+            "name": "Prepare Call Data2",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3,
+            "position": [
+                160,
+                11280
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.vapi.ai/call",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer 852080ba-ce7c-4778-b218-bf718613a2b6"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"customer\": { \"number\": \"{{ $json.formattedPhone }}\" },\n  \"assistantId\": \"49e56db1-1f20-4cf1-b031-9cea9fba73cb\",\n  \"phoneNumberId\": \"611c8c8e-ab43-4af0-8df0-f2f8fac8115b\",\n  \"assistantOverrides\": { \"variableValues\": { \"ciudad\": \"{{ $json.address }}\", \"nombre\": \"{{ $json.nombre }}\", \"tel_contacto\": \"{{ $json.formattedPhone }}\", \"correo_cliente\": \"{{ $json.email }}\", \"empresa\": \"{{ $json.empresa }}\" } }\n}",
+                "options": {}
+            },
+            "id": "c85e188d-cb55-431b-ac12-04b79598bd91",
+            "name": "Call Vapi AI2",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4,
+            "position": [
+                380,
+                11280
+            ],
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "VyoKa0HV9ZpyrdVx",
+                    "name": "Header Auth account"
+                }
+            },
+            "onError": "continueErrorOutput"
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "log-id",
+                            "name": "vapi_call_id",
+                            "type": "string",
+                            "value": "={{ $(\"Call Vapi AI2\").item.json.id || '' }}"
+                        },
+                        {
+                            "id": "log-name",
+                            "name": "lead_name",
+                            "type": "string",
+                            "value": "={{ $(\"Prepare Call Data2\").item.json.empresa || 'Cliente' }}"
+                        },
+                        {
+                            "id": "log-phone",
+                            "name": "phone_called",
+                            "type": "string",
+                            "value": "={{ $(\"Prepare Call Data2\").item.json.formattedPhone }}"
+                        },
+                        {
+                            "id": "log-time",
+                            "name": "call_time",
+                            "type": "string",
+                            "value": "={{ $now }}"
+                        },
+                        {
+                            "id": "log-status",
+                            "name": "ended_reason",
+                            "type": "string",
+                            "value": "={{ $(\"Call Vapi AI2\").item.json.id ? 'Call Initiated' : 'Error' }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "190e7fde-d23f-40f6-a199-f77ff793b1b8",
+            "name": "Prepare Log2",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3,
+            "position": [
+                600,
+                11380
+            ]
+        },
+        {
+            "parameters": {
+                "authentication": "nocoDbApiToken",
+                "operation": "create",
+                "projectId": "p5xxqp29w9h8sb6",
+                "table": "m013en5u2cyu30j",
+                "dataToSend": "autoMapInputData",
+                "options": {}
+            },
+            "id": "2a6c5df4-92d2-4be4-85b7-85749706bbc6",
+            "name": "Insert Log2",
+            "type": "n8n-nodes-base.nocoDb",
+            "typeVersion": 3,
+            "position": [
+                820,
+                11380
+            ],
+            "credentials": {
+                "nocoDbApiToken": {
+                    "id": "tV5VwP4BVmME7Vgo",
+                    "name": "NocoDB Token account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "amount": 15,
+                "unit": "seconds",
+                "options": {}
+            },
+            "id": "192aa9d9-9c82-4ee7-99d0-a4e481c3d2b2",
+            "name": "Wait 15s2",
+            "type": "n8n-nodes-base.wait",
+            "typeVersion": 1,
+            "position": [
+                1040,
+                11280
+            ]
+        },
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "vapi-confirmed-data",
+                "options": {}
+            },
+            "id": "9e73859f-370b-416c-b72d-eda5fd448b49",
+            "name": "Webhook1",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                -780,
+                10860
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.body.message.type }}",
+                            "value2": "tool-calls"
+                        },
+                        {
+                            "value1": "={{ $json.name ? 'direct' : '' }}",
+                            "value2": "direct"
+                        }
+                    ],
+                    "combinator": "or"
+                }
+            },
+            "id": "f315e579-6a24-4023-94f7-e7debb26bbe3",
+            "name": "Is Tool Call?1",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                -580,
+                10860
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const body = $input.first().json.body || $input.first().json;\n\n// 1. Caso Tool Call (desde Vapi)\nif (body.message && body.message.toolCalls) {\n  const toolCall = body.message.toolCalls.find(tc => tc.function.name.includes('save_confirmed_data'));\n  if (toolCall) {\n    const args = typeof toolCall.function.arguments === 'string' ? JSON.parse(toolCall.function.arguments) : toolCall.function.arguments;\n    return {\n      name: args.name,\n      phone: args.phone,\n      email: args.email,\n      vapi_call_id: body.message.call.id\n    };\n  }\n}\n\n// 2. Caso API Request Directo\nif (body.name && body.call_id) {\n  return {\n    name: body.name,\n    phone: body.phone,\n    email: body.email,\n    vapi_call_id: body.call_id\n  };\n}\n\nreturn null;"
+            },
+            "id": "42e12685-f0ed-47f0-b90e-d88e6c16fa79",
+            "name": "Extract Data1",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -380,
+                10840
+            ]
+        },
+        {
+            "parameters": {
+                "authentication": "nocoDbApiToken",
+                "operation": "create",
+                "projectId": "p5xxqp29w9h8sb6",
+                "table": "mtoilizta888pej",
+                "dataToSend": "autoMapInputData",
+                "options": {}
+            },
+            "id": "40229aca-5847-4b6b-80a0-34e2d27af3a7",
+            "name": "Insert Confirmed Table1",
+            "type": "n8n-nodes-base.nocoDb",
+            "typeVersion": 3,
+            "position": [
+                -180,
+                10840
+            ],
+            "credentials": {
+                "nocoDbApiToken": {
+                    "id": "tV5VwP4BVmME7Vgo",
+                    "name": "NocoDB Token account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "authentication": "nocoDbApiToken",
+                "operation": "update",
+                "projectId": "p5xxqp29w9h8sb6",
+                "table": "m013en5u2cyu30j",
+                "dataToSend": "defineBelow",
+                "fieldsToUpdate": {
+                    "fields": [
+                        {
+                            "column": "is_confirmed",
+                            "value": "true"
+                        }
+                    ]
+                },
+                "options": {
+                    "where": "=(vapi_call_id,eq,{{ $node[\"Extract Data1\"].json.vapi_call_id }})"
+                }
+            },
+            "id": "6c82e2d8-8520-4d47-80b7-87ccd527d80d",
+            "name": "Mark Call as Confirmed1",
+            "type": "n8n-nodes-base.nocoDb",
+            "typeVersion": 3,
+            "position": [
+                20,
+                10840
+            ],
+            "credentials": {
+                "nocoDbApiToken": {
+                    "id": "tV5VwP4BVmME7Vgo",
+                    "name": "NocoDB Token account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "When clicking ‘Execute workflow’": {
+            "main": [
+                [
+                    {
+                        "node": "Get Leads2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Leads2": {
+            "main": [
+                [
+                    {
+                        "node": "Split In Batches2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Split In Batches2": {
+            "main": [
+                [],
+                [
+                    {
+                        "node": "Normalize Phone1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Normalize Phone1": {
+            "main": [
+                [
+                    {
+                        "node": "Check Logs2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Logs2": {
+            "main": [
+                [
+                    {
+                        "node": "Filter Cooldown2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Filter Cooldown2": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Call Data2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Call Data2": {
+            "main": [
+                [
+                    {
+                        "node": "Call Vapi AI2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Call Vapi AI2": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Log2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Log2": {
+            "main": [
+                [
+                    {
+                        "node": "Insert Log2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Insert Log2": {
+            "main": [
+                [
+                    {
+                        "node": "Wait 15s2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Wait 15s2": {
+            "main": [
+                [
+                    {
+                        "node": "Split In Batches2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Webhook1": {
+            "main": [
+                [
+                    {
+                        "node": "Is Tool Call?1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Is Tool Call?1": {
+            "main": [
+                [
+                    {
+                        "node": "Extract Data1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract Data1": {
+            "main": [
+                [
+                    {
+                        "node": "Insert Confirmed Table1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Insert Confirmed Table1": {
+            "main": [
+                [
+                    {
+                        "node": "Mark Call as Confirmed1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
