@@ -92,7 +92,13 @@
                 </audio>
             </div>
 
+            <div id="error-section" style="display: none; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+                <div class="section-title" style="color: var(--danger); margin-bottom: 8px;">❌ Error en la Llamada</div>
+                <div id="modal-error-detail" style="color: var(--text-primary); font-size: 14px; line-height: 1.5;"></div>
+            </div>
+
             <div class="section-title">📝 Notas del Agente</div>
+
             <textarea id="modal-notes" class="notes-area"
                 placeholder="Escribe aquí tus observaciones sobre la llamada..."></textarea>
             <button id="save-notes-btn" class="refresh-btn" style="width: 100%; margin-top: 10px;">💾 Guardar

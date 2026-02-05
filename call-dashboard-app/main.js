@@ -57,8 +57,18 @@ function openDetail(index) {
         audio.src = '';
     }
 
+    const errorSec = document.getElementById('error-section');
+    const errorDetail = document.getElementById('modal-error-detail');
+    if (call.ended_reason && (call.ended_reason.includes('Error') || call.ended_reason.includes('fail'))) {
+        errorSec.style.display = 'block';
+        errorDetail.textContent = call.ended_reason;
+    } else {
+        errorSec.style.display = 'none';
+    }
+
     document.getElementById('detail-modal').style.display = 'flex';
 }
+
 
 function closeModal() {
     document.getElementById('detail-modal').style.display = 'none';

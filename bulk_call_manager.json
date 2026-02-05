@@ -160,7 +160,7 @@
                         {
                             "name": "estado_api",
                             "type": "string",
-                            "value": "={{ $node[\"Call Vapi AI\"].json.id ? 'Call Initiated' : 'Error API' }}",
+                            "value": "={{ $node[\"Call Vapi AI\"].json.id ? 'Call Initiated' : 'Error: ' + (Array.isArray($json.message) ? $json.message.join(', ') : ($json.message || $json.error || 'API Error')) }}",
                             "id": "estado-api"
                         }
                     ]
@@ -230,7 +230,7 @@
                         {
                             "name": "ended_reason",
                             "type": "string",
-                            "value": "={{ $node[\"Call Vapi AI\"].json.id ? 'Call Initiated' : 'API Error' }}",
+                            "value": "={{ $node[\"Call Vapi AI\"].json.id ? 'Call Initiated' : 'Error: ' + (Array.isArray($json.message) ? $json.message.join(', ') : ($json.message || $json.error || 'API Error')) }}",
                             "id": "ended-reason"
                         }
                     ]
