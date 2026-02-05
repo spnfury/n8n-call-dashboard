@@ -133,13 +133,25 @@
                 </div>
             </div>
 
-            <div class="section-title">📝 Notas del Agente</div>
-
-            <textarea id="modal-notes" class="notes-area"
-                placeholder="Escribe aquí tus observaciones sobre la llamada..."></textarea>
-            <button id="save-notes-btn" class="refresh-btn" style="width: 100%; margin-top: 10px;">💾 Guardar
-                Notas</button>
+            <div id="confirmed-section"
+                style="display: none; background: rgba(245, 158, 11, 0.1); padding: 16px; border-radius: 12px; border: 1px solid var(--warning); margin-bottom: 24px;">
+                <div class="section-title" style="margin-bottom: 8px;">✅ Datos Confirmados</div>
+                <div style="font-size: 14px;">
+                    <p><strong>Nombre:</strong> <span id="conf-name"></span></p>
+                    <p><strong>Teléfono:</strong> <span id="conf-phone"></span></p>
+                    <p><strong>Email:</strong> <span id="conf-email"></span></p>
+                </div>
+            </div>
         </div>
+    </div>
+
+    <div class="section-title">📝 Notas del Agente</div>
+
+    <textarea id="modal-notes" class="notes-area"
+        placeholder="Escribe aquí tus observaciones sobre la llamada..."></textarea>
+    <button id="save-notes-btn" class="refresh-btn" style="width: 100%; margin-top: 10px;">💾 Guardar
+        Notas</button>
+    </div>
     </div>
 
     <!-- Floating Action Button for Manual Call -->

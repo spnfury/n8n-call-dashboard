@@ -38,128 +38,102 @@ function formatDuration(seconds) {
     return `${Math.floor(s / 60)}m ${s % 60}s`;
 }
 
-function updateChart(calls) {
-    const ctx = document.getElementById('call-chart').getContext('2d');
+function renderChart(calls) {
+    const ctx = document.getElementById('callsChart').getContext('2d');
 
-    // Group calls by day
-    const grouped = {};
-    calls.forEach(c => {
-        const day = formatDate(c.CreatedAt || c.call_time, true);
-        grouped[day] = (grouped[day] || 0) + 1;
+    // Process data for the last 7 days or matching the filter
+    const last7Days = [...Array(7)].map((_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        return d.toISOString().split('T')[0];
+    }).reverse();
+
+    const statsByDate = last7Days.reduce((acc, date) => {
+        acc[date] = { total: 0, success: 0 };
+        return acc;
+    }, {});
+
+    calls.forEach(call => {
+        const date = new Date(call.call_time || call.CreatedAt).toISOString().split('T')[0];
+        if (statsByDate[date]) {
+            statsByDate[date].total++;
+            if (getBadgeClass(call.evaluation) === 'success') {
+                statsByDate[date].success++;
+            }
+        }
     });
 
-    const labels = Object.keys(grouped).reverse();
-    const data = Object.values(grouped).reverse();
+    const labels = Object.keys(statsByDate).map(d => d.split('-').slice(1).reverse().join('/'));
+    const totalData = Object.values(statsByDate).map(s => s.total);
+    const successData = Object.values(statsByDate).map(s => s.success);
 
-    if (chartInstance) {
-        chartInstance.destroy();
+    if (callsChart) {
+        callsChart.destroy();
     }
 
-    chartInstance = new Chart(ctx, {
+    callsChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels,
-            datasets: [{
-                label: 'Llamadas por Día',
-                data,
-                borderColor: '#6366f1',
-                backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                fill: true,
-                tension: 0.4,
-                borderWidth: 2,
-                pointBackgroundColor: '#6366f1',
-                pointRadius: 4
-            }]
+            datasets: [
+                {
+                    label: 'Total Llamadas',
+                    data: totalData,
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#6366f1'
+                },
+                {
+                    label: 'Éxitos',
+                    data: successData,
+                    borderColor: '#10b981',
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    tension: 0.4,
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#10b981'
+                }
+            ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: false }
+                legend: {
+                    display: true,
+                    labels: { color: '#94a3b8', font: { family: 'Inter', size: 12 } }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 15, 20, 0.9)',
+                    titleColor: '#fff',
+                    bodyColor: '#94a3b8',
+                    borderColor: 'rgba(255,255,255,0.1)',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: true
+                }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                    ticks: { color: '#a0a0a0', stepSize: 1 }
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { color: '#94a3b8', stepSize: 1 }
                 },
                 x: {
                     grid: { display: false },
-                    ticks: { color: '#a0a0a0' }
+                    ticks: { color: '#94a3b8' }
                 }
             }
         }
     });
 }
 
-function renderDashboard(calls) {
-    currentCallsPage = calls;
-
-    // Stats
-    const totalCalls = calls.length;
-    const successCalls = calls.filter(c => getBadgeClass(c.evaluation) === 'success').length;
-    const successRate = totalCalls > 0 ? Math.round((successCalls / totalCalls) * 100) : 0;
-    const totalDuration = calls.reduce((sum, c) => sum + (parseInt(c.duration_seconds) || 0), 0);
-    const avgDuration = totalCalls > 0 ? Math.round(totalDuration / totalCalls) : 0;
-
-    document.getElementById('total-calls').textContent = totalCalls;
-    document.getElementById('success-rate').textContent = successRate + '%';
-    document.getElementById('avg-duration').textContent = formatDuration(avgDuration);
-
-    // Table
-    const tbody = document.getElementById('call-table');
-    if (calls.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No hay llamadas para el periodo seleccionado</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = '';
-    calls.forEach((call, index) => {
-        const tr = document.createElement('tr');
-        const vapiId = call.vapi_call_id || call.lead_id || call.id || call.Id || '-';
-        const shortId = vapiId.length > 20 ? vapiId.substring(0, 8) + '...' : vapiId;
-
-        tr.innerHTML = `
-            <td><code style="font-family: monospace; color: var(--accent); font-size: 11px;" title="${vapiId}">${shortId}</code></td>
-            <td><strong>${call.lead_name || '-'}</strong></td>
-            <td class="phone">${call.phone_called || '-'}</td>
-            <td>${formatDate(call.call_time || call.CreatedAt)}</td>
-            <td>${call.ended_reason || '-'}</td>
-            <td><span class="badge ${getBadgeClass(call.evaluation)}">${call.evaluation || 'Pendiente'}</span></td>
-            <td>${formatDuration(call.duration_seconds)}</td>
-            <td class="table-notes">${call.notes || '-'}</td>
-            <td>
-                <button class="action-btn" data-index="${index}">👁 Ver Detalle</button>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-
-    updateChart(calls);
-}
-
-function applyFilters() {
-    const from = document.getElementById('date-from').value;
-    const to = document.getElementById('date-to').value;
-
-    let filtered = allCalls;
-
-    if (from) {
-        const fromDate = new Date(from);
-        fromDate.setHours(0, 0, 0, 0);
-        filtered = filtered.filter(c => new Date(c.CreatedAt || c.call_time) >= fromDate);
-    }
-
-    if (to) {
-        const toDate = new Date(to);
-        toDate.setHours(23, 59, 59, 999);
-        filtered = filtered.filter(c => new Date(c.CreatedAt || c.call_time) <= toDate);
-    }
-
-    renderDashboard(filtered);
-}
-
-function openDetail(index) {
+async function openDetail(index) {
     const call = currentCallsPage[index];
     if (!call) return;
 
@@ -168,6 +142,31 @@ function openDetail(index) {
     document.getElementById('modal-transcript').textContent = call.transcript || 'No hay transcripción disponible.';
     document.getElementById('modal-notes').value = call.notes || '';
     document.getElementById('save-notes-btn').setAttribute('data-id', call.id || call.Id);
+
+    // Initial Hide Confirmed Section
+    const confirmedSec = document.getElementById('confirmed-section');
+    if (confirmedSec) confirmedSec.style.display = 'none';
+
+    // Fetch Confirmed Data if applicable
+    if (call.is_confirmed === true || call.is_confirmed === 1 || call.is_confirmed === '1') {
+        try {
+            const CONFIRMED_TABLE = 'mtoilizta888pej'; // Table ID for confirmed_data
+            const res = await fetch(`${API_BASE}/${CONFIRMED_TABLE}/records?where=(vapi_call_id,eq,${call.vapi_call_id})`, {
+                headers: { 'xc-token': XC_TOKEN }
+            });
+            const data = await res.json();
+            const confirmed = data.list ? data.list[0] : null;
+
+            if (confirmed && confirmedSec) {
+                confirmedSec.style.display = 'block';
+                document.getElementById('conf-name').textContent = confirmed.name || '-';
+                document.getElementById('conf-phone').textContent = confirmed.phone || '-';
+                document.getElementById('conf-email').textContent = confirmed.email || '-';
+            }
+        } catch (err) {
+            console.error('Error fetching confirmed data:', err);
+        }
+    }
 
     const audioSec = document.getElementById('recording-section');
     const audio = document.getElementById('modal-audio');
@@ -315,14 +314,11 @@ async function saveNotes() {
     }
 }
 
-
 // Event listeners
 document.getElementById('refresh-btn').addEventListener('click', loadData);
 document.getElementById('filter-confirmed').addEventListener('change', loadData);
 document.getElementById('close-modal').addEventListener('click', closeModal);
 document.getElementById('save-notes-btn').addEventListener('click', saveNotes);
-document.getElementById('date-from').addEventListener('change', applyFilters);
-document.getElementById('date-to').addEventListener('change', applyFilters);
 
 document.getElementById('call-table').addEventListener('click', (e) => {
     if (e.target.classList.contains('action-btn')) {
@@ -332,7 +328,7 @@ document.getElementById('call-table').addEventListener('click', (e) => {
 });
 
 document.getElementById('detail-modal').addEventListener('click', (e) => {
-    if (e.target.id === 'detail-modal') closeModal();
+    if (e.target.id === 'detail-modal' || e.target.classList.contains('modal')) closeModal();
 });
 
 document.getElementById('login-form').addEventListener('submit', (e) => {
