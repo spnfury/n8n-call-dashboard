@@ -6,6 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard de Llamadas - GeneralProtect</title>
     <link rel="stylesheet" href="./style.css">
+    <!-- Extra Dependencies -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 </head>
 
 <body class="auth-hidden">
@@ -30,13 +36,40 @@
                 <img src="./logo.png" alt="SkyPulse" class="header-logo">
                 SkyPulse Dashboard
             </h1>
-            <button class="refresh-btn" id="refresh-btn">🔄 Actualizar</button>
+            <div class="header-actions">
+                <div class="filter-group">
+                    <div class="filter-container">
+                        <input type="checkbox" id="filter-confirmed">
+                        <label for="filter-confirmed">Confirmados</label>
+                    </div>
+                    <div class="date-filter-container">
+                        <span class="icon">📅</span>
+                        <input type="text" id="date-range" placeholder="Filtrar por fechas...">
+                    </div>
+                </div>
+                <button class="refresh-btn" id="refresh-btn">🔄 Actualizar</button>
+            </div>
         </header>
+
+        <div class="analytics-section">
+            <div class="section-title">📊 Análisis de Rendimiento</div>
+            <div class="chart-container glass-effect">
+                <canvas id="callsChart"></canvas>
+            </div>
+        </div>
 
         <div class="stats-grid" id="stats">
             <div class="stat-card">
                 <div class="stat-value" id="total-calls">-</div>
                 <div class="stat-label">Total Llamadas</div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-value" id="confirmed-count">0</div>
+                <div class="stat-label">Confirmados</div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-value" id="confirmation-rate">0%</div>
+                <div class="stat-label">% Confirmados</div>
             </div>
             <div class="stat-card success">
                 <div class="stat-value" id="success-rate">-</div>
@@ -61,12 +94,13 @@
                         <th>Evaluación</th>
                         <th>Duración</th>
                         <th>Notas</th>
+                        <th>Confirmado</th>
                         <th>Detalle</th>
                     </tr>
                 </thead>
                 <tbody id="call-table">
                     <tr>
-                        <td colspan="9" class="loading">Cargando datos...</td>
+                        <td colspan="10" class="loading">Cargando datos...</td>
                     </tr>
                 </tbody>
             </table>
@@ -97,6 +131,46 @@
                 placeholder="Escribe aquí tus observaciones sobre la llamada..."></textarea>
             <button id="save-notes-btn" class="refresh-btn" style="width: 100%; margin-top: 10px;">💾 Guardar
                 Notas</button>
+        </div>
+    </div>
+
+    <!-- Floating Action Button for Manual Call -->
+    <button id="manual-call-fab" class="fab" title="Nueva Llamada Manual">
+        <span>📞</span>
+    </button>
+
+    <!-- Modal for Manual Call -->
+    <div class="modal" id="manual-call-modal">
+        <div class="modal-content">
+            <button class="close-modal" id="close-manual-modal">×</button>
+            <div class="modal-header">
+                <h2>📞 Nueva Llamada Manual</h2>
+                <p style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;">Introduce los datos del
+                    cliente para forzar la llamada</p>
+            </div>
+
+            <div class="form-group">
+                <label for="manual-lead-name">Nombre del Cliente</label>
+                <input type="text" id="manual-lead-name" placeholder="Ej: Juan Pérez" required>
+            </div>
+
+            <div class="form-group">
+                <label for="manual-company">Empresa / Nombre Comercial</label>
+                <input type="text" id="manual-company" placeholder="Ej: Talleres Pérez" required>
+            </div>
+
+            <div class="form-group">
+                <label for="manual-phone">Teléfono</label>
+                <input type="tel" id="manual-phone" placeholder="Ej: 600123456" required>
+            </div>
+
+            <button id="trigger-call-btn" class="refresh-btn"
+                style="width: 100%; margin-top: 20px; background: var(--success); border-color: var(--success);">
+                🚀 Lanzar Llamada
+            </button>
+
+            <div id="call-feedback" style="margin-top: 15px; text-align: center; font-weight: 500; min-height: 24px;">
+            </div>
         </div>
     </div>
 
