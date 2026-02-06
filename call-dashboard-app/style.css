@@ -471,12 +471,20 @@ input[type="password"]:focus {
 }
 
 .table-notes {
-    max-width: 150px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 12px;
-    color: var(--text-secondary);
+    text-align: center;
+    font-size: 14px;
+}
+
+.note-indicator {
+    cursor: help;
+    display: inline-block;
+    transition: transform 0.2s;
+    font-size: 16px;
+    filter: drop-shadow(0 0 5px var(--accent-glow));
+}
+
+.note-indicator:hover {
+    transform: scale(1.2);
 }
 
 .filter-section {

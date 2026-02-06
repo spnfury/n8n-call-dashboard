@@ -137,17 +137,62 @@ async function openDetail(index) {
     const call = currentCallsPage[index];
     if (!call) return;
 
+    const vapiId = call.vapi_call_id || call.lead_id || call.id || call.Id;
+
     document.getElementById('modal-title').textContent = call.lead_name || 'Llamada';
     document.getElementById('modal-subtitle').textContent = `${call.phone_called} • ${formatDate(call.call_time || call.CreatedAt)}`;
-    document.getElementById('modal-transcript').textContent = call.transcript || 'No hay transcripción disponible.';
-    document.getElementById('modal-notes').value = call.notes || '';
+
+    // Set loading state for Vapi data
+    const transcriptEl = document.getElementById('modal-transcript');
+    const audioSec = document.getElementById('recording-section');
+    const audio = document.getElementById('modal-audio');
+
+    transcriptEl.innerHTML = '<span class="loading-pulse">⌛ Obteniendo transcripción en tiempo real desde Vapi...</span>';
+    audioSec.style.display = 'none';
+
+    document.getElementById('modal-notes').value = call.Notes || '';
     document.getElementById('save-notes-btn').setAttribute('data-id', call.id || call.Id);
 
     // Initial Hide Confirmed Section
     const confirmedSec = document.getElementById('confirmed-section');
     if (confirmedSec) confirmedSec.style.display = 'none';
 
-    // Fetch Confirmed Data if applicable
+    // Show Modal early so user sees loading state
+    document.getElementById('detail-modal').style.display = 'flex';
+
+    // 1. Fetch Real-time data from Vapi
+    if (vapiId && vapiId.startsWith('019')) { // Vapi IDs usually start with 019
+        try {
+            const vapiRes = await fetch(`https://api.vapi.ai/call/${vapiId}`, {
+                headers: { 'Authorization': `Bearer ${VAPI_API_KEY}` }
+            });
+
+            if (vapiRes.ok) {
+                const vapiData = await vapiRes.json();
+                transcriptEl.textContent = vapiData.transcript || 'No hay transcripción disponible en Vapi.';
+
+                if (vapiData.recordingUrl) {
+                    audioSec.style.display = 'block';
+                    audio.src = vapiData.recordingUrl;
+                }
+            } else {
+                console.warn('Vapi API error:', vapiRes.status);
+                transcriptEl.textContent = call.transcript || 'No hay transcripción disponible (error API Vapi).';
+            }
+        } catch (err) {
+            console.error('Error fetching Vapi detail:', err);
+            transcriptEl.textContent = call.transcript || 'No hay transcripción disponible (error de conexión).';
+        }
+    } else {
+        // Fallback to local data if no valid Vapi ID
+        transcriptEl.textContent = call.transcript || 'No hay transcripción disponible.';
+        if (call.recording_url) {
+            audioSec.style.display = 'block';
+            audio.src = call.recording_url;
+        }
+    }
+
+    // 2. Fetch Confirmed Data if applicable
     if (call.is_confirmed === true || call.is_confirmed === 1 || call.is_confirmed === '1') {
         try {
             const CONFIRMED_TABLE = 'mtoilizta888pej'; // Table ID for confirmed_data
@@ -168,16 +213,6 @@ async function openDetail(index) {
         }
     }
 
-    const audioSec = document.getElementById('recording-section');
-    const audio = document.getElementById('modal-audio');
-    if (call.recording_url) {
-        audioSec.style.display = 'block';
-        audio.src = call.recording_url;
-    } else {
-        audioSec.style.display = 'none';
-        audio.src = '';
-    }
-
     const errorSec = document.getElementById('error-section');
     const errorDetail = document.getElementById('modal-error-detail');
     if (call.ended_reason && (call.ended_reason.includes('Error') || call.ended_reason.includes('fail'))) {
@@ -186,8 +221,6 @@ async function openDetail(index) {
     } else {
         errorSec.style.display = 'none';
     }
-
-    document.getElementById('detail-modal').style.display = 'flex';
 }
 
 function closeModal() {
@@ -208,7 +241,7 @@ async function loadData() {
 
         // Apply Confirmed Filter
         if (showConfirmedOnly) {
-            filteredCalls = filteredCalls.filter(c => c.is_confirmed === true || c.is_confirmed === 1 || c.is_confirmed === '1');
+            filteredCalls = filteredCalls.filter(c => c['Data Confirmada'] === true || c['Data Confirmada'] === 1 || c['Data Confirmada'] === '1' || c.is_confirmed === true || c.is_confirmed === 1);
         }
 
         // Apply Date Filter
@@ -224,7 +257,7 @@ async function loadData() {
         }
 
         const totalCalls = calls.length;
-        const confirmedCalls = calls.filter(c => c.is_confirmed === true || c.is_confirmed === 1 || c.is_confirmed === '1').length;
+        const confirmedCalls = calls.filter(c => c['Data Confirmada'] === true || c['Data Confirmada'] === 1 || c['Data Confirmada'] === '1' || c.is_confirmed === true || c.is_confirmed === 1).length;
         const confirmationRate = totalCalls > 0 ? Math.round((confirmedCalls / totalCalls) * 100) : 0;
 
         const successCalls = calls.filter(c => getBadgeClass(c.evaluation) === 'success').length;
@@ -252,7 +285,7 @@ async function loadData() {
             const vapiId = call.vapi_call_id || call.lead_id || call.id || call.Id || '-';
             const shortId = vapiId.length > 20 ? vapiId.substring(0, 8) + '...' : vapiId;
 
-            const isConfirmed = call.is_confirmed === true || call.is_confirmed === 1 || call.is_confirmed === '1';
+            const isConfirmed = call['Data Confirmada'] === true || call['Data Confirmada'] === 1 || call['Data Confirmada'] === '1' || call.is_confirmed === true || call.is_confirmed === 1;
             if (isConfirmed) tr.classList.add('confirmed-row');
 
             tr.innerHTML = `
@@ -263,7 +296,7 @@ async function loadData() {
                 <td>${call.ended_reason || '-'}</td>
                 <td><span class="badge ${getBadgeClass(call.evaluation)}">${call.evaluation || 'Pendiente'}</span></td>
                 <td>${formatDuration(call.duration_seconds)}</td>
-                <td class="table-notes">${call.notes || '-'}</td>
+                <td class="table-notes">${call.Notes ? `<span class="note-indicator" data-index="${index}" title="${call.Notes}" style="cursor: pointer;">📝</span>` : '-'}</td>
                 <td>${isConfirmed ? '✅' : '❌'}</td>
                 <td>
                     <button class="action-btn" data-index="${index}">👁 Ver Detalle</button>
@@ -294,7 +327,7 @@ async function saveNotes() {
         const res = await fetch(`${API_BASE}/${CALL_LOGS_TABLE}/records`, {
             method: 'PATCH',
             headers: { 'xc-token': XC_TOKEN, 'Content-Type': 'application/json' },
-            body: JSON.stringify([{ id: id, notes: notes }])
+            body: JSON.stringify([{ id: id, Notes: notes }])
         });
 
         if (res.ok) {
@@ -321,8 +354,9 @@ document.getElementById('close-modal').addEventListener('click', closeModal);
 document.getElementById('save-notes-btn').addEventListener('click', saveNotes);
 
 document.getElementById('call-table').addEventListener('click', (e) => {
-    if (e.target.classList.contains('action-btn')) {
-        const index = parseInt(e.target.getAttribute('data-index'));
+    const target = e.target;
+    if (target.classList.contains('action-btn') || target.classList.contains('note-indicator')) {
+        const index = parseInt(target.getAttribute('data-index'));
         openDetail(index);
     }
 });
