@@ -289,15 +289,15 @@ async function loadData() {
             if (isConfirmed) tr.classList.add('confirmed-row');
 
             tr.innerHTML = `
-                <td><code style="font-family: monospace; color: var(--accent); font-size: 11px;" title="${vapiId}">${shortId}</code></td>
-                <td><strong>${call.lead_name || '-'}</strong></td>
-                <td class="phone">${call.phone_called || '-'}</td>
-                <td>${formatDate(call.call_time || call.CreatedAt)}</td>
-                <td>${call.ended_reason || '-'}</td>
-                <td><span class="badge ${getBadgeClass(call.evaluation)}">${call.evaluation || 'Pendiente'}</span></td>
-                <td>${formatDuration(call.duration_seconds)}</td>
-                <td class="table-notes">${call.Notes ? `<span class="note-indicator" data-index="${index}" title="${call.Notes}" style="cursor: pointer;">📝</span>` : '-'}</td>
-                <td>${isConfirmed ? '✅' : '❌'}</td>
+                <td data-label="Call ID"><code style="font-family: monospace; color: var(--accent); font-size: 11px;" title="${vapiId}">${shortId}</code></td>
+                <td data-label="Empresa"><strong>${call.lead_name || '-'}</strong></td>
+                <td data-label="Teléfono" class="phone">${call.phone_called || '-'}</td>
+                <td data-label="Fecha">${formatDate(call.call_time || call.CreatedAt)}</td>
+                <td data-label="Resultado">${call.ended_reason || '-'}</td>
+                <td data-label="Evaluación"><span class="badge ${getBadgeClass(call.evaluation)}">${call.evaluation || 'Pendiente'}</span></td>
+                <td data-label="Duración">${formatDuration(call.duration_seconds)}</td>
+                <td data-label="Notas" class="table-notes">${call.Notes ? `<span class="note-indicator" data-index="${index}" title="${call.Notes}" style="cursor: pointer;">📝</span>` : '-'}</td>
+                <td data-label="Confirmado">${isConfirmed ? '✅' : '❌'}</td>
                 <td>
                     <button class="action-btn" data-index="${index}">👁 Ver Detalle</button>
                 </td>
