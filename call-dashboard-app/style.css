@@ -691,159 +691,160 @@ input[type="password"]:focus {
     border-radius: 8px;
     border: 1px solid var(--border);
     font-size: 14px;
+}
 
-    .filter-container input {
-        cursor: pointer;
+.filter-container input {
+    cursor: pointer;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 992px) {
+    body {
+        padding: 16px;
     }
 
-    /* Mobile Responsiveness */
-    @media (max-width: 992px) {
-        body {
-            padding: 16px;
-        }
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
+}
 
-        .stats-grid {
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        }
+@media (max-width: 768px) {
+    header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+        padding-bottom: 20px;
     }
 
-    @media (max-width: 768px) {
-        header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 16px;
-            padding-bottom: 20px;
-        }
-
-        .header-actions {
-            width: 100%;
-            justify-content: space-between;
-        }
-
-        .filter-group {
-            width: 100%;
-            flex-direction: column;
-            align-items: stretch;
-        }
-
-        .date-filter-container {
-            width: 100%;
-        }
-
-        .date-filter-container input {
-            width: 100%;
-        }
-
-        .refresh-btn {
-            width: 100%;
-        }
-
-        /* Table to Cards Transformation */
-        .table-container {
-            background: transparent;
-            border: none;
-            overflow: visible;
-        }
-
-        table,
-        thead,
-        tbody,
-        th,
-        td,
-        tr {
-            display: block;
-        }
-
-        thead tr {
-            position: absolute;
-            top: -9999px;
-            left: -9999px;
-        }
-
-        tr {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            margin-bottom: 16px;
-            padding: 16px;
-            position: relative;
-        }
-
-        td {
-            border: none;
-            position: relative;
-            padding: 8px 0 8px 45%;
-            min-height: 40px;
-            display: flex;
-            align-items: center;
-            width: 100%;
-        }
-
-        td:before {
-            position: absolute;
-            left: 0;
-            width: 40%;
-            padding-right: 10px;
-            white-space: nowrap;
-            font-weight: 600;
-            font-size: 11px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            content: attr(data-label);
-        }
-
-        /* Exceptions for card layout */
-        td:last-child {
-            border-top: 1px solid var(--border);
-            margin-top: 8px;
-            padding-top: 16px;
-            padding-left: 0;
-            justify-content: center;
-        }
-
-        td:last-child:before {
-            content: none;
-        }
-
-        .action-btn {
-            width: 100%;
-            padding: 12px;
-            font-size: 14px;
-        }
-
-        /* Modal adjustments */
-        .modal-content {
-            padding: 24px;
-            border-radius: 20px;
-            margin: 10px;
-        }
-
-        .modal-header h2 {
-            font-size: 20px;
-        }
-
-        .stat-value {
-            font-size: 28px;
-        }
-
-        .fab {
-            bottom: 20px;
-            right: 20px;
-            width: 55px;
-            height: 55px;
-        }
+    .header-actions {
+        width: 100%;
+        justify-content: space-between;
     }
 
-    @media (max-width: 480px) {
-        .stats-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .stat-card {
-            padding: 16px;
-        }
-
-        h1 {
-            font-size: 20px;
-        }
+    .filter-group {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
     }
+
+    .date-filter-container {
+        width: 100%;
+    }
+
+    .date-filter-container input {
+        width: 100%;
+    }
+
+    .refresh-btn {
+        width: 100%;
+    }
+
+    /* Table to Cards Transformation */
+    .table-container {
+        background: transparent;
+        border: none;
+        overflow: visible;
+    }
+
+    table,
+    thead,
+    tbody,
+    th,
+    td,
+    tr {
+        display: block;
+    }
+
+    thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+
+    tr {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        margin-bottom: 16px;
+        padding: 16px;
+        position: relative;
+    }
+
+    td {
+        border: none;
+        position: relative;
+        padding: 8px 0 8px 45%;
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+        width: 100%;
+    }
+
+    td:before {
+        position: absolute;
+        left: 0;
+        width: 40%;
+        padding-right: 10px;
+        white-space: nowrap;
+        font-weight: 600;
+        font-size: 11px;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        content: attr(data-label);
+    }
+
+    /* Exceptions for card layout */
+    td:last-child {
+        border-top: 1px solid var(--border);
+        margin-top: 8px;
+        padding-top: 16px;
+        padding-left: 0;
+        justify-content: center;
+    }
+
+    td:last-child:before {
+        content: none;
+    }
+
+    .action-btn {
+        width: 100%;
+        padding: 12px;
+        font-size: 14px;
+    }
+
+    /* Modal adjustments */
+    .modal-content {
+        padding: 24px;
+        border-radius: 20px;
+        margin: 10px;
+    }
+
+    .modal-header h2 {
+        font-size: 20px;
+    }
+
+    .stat-value {
+        font-size: 28px;
+    }
+
+    .fab {
+        bottom: 20px;
+        right: 20px;
+        width: 55px;
+        height: 55px;
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stat-card {
+        padding: 16px;
+    }
+
+    h1 {
+        font-size: 20px;
+    }
+}
