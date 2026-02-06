@@ -294,7 +294,7 @@ async function saveNotes() {
         const res = await fetch(`${API_BASE}/${CALL_LOGS_TABLE}/records`, {
             method: 'PATCH',
             headers: { 'xc-token': XC_TOKEN, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ Id: id, notes: notes })
+            body: JSON.stringify([{ id: id, notes: notes }])
         });
 
         if (res.ok) {
