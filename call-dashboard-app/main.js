@@ -1,5 +1,6 @@
 const API_BASE = 'https://nocodb.srv889387.hstgr.cloud/api/v2/tables';
 const CALL_LOGS_TABLE = 'm013en5u2cyu30j';
+const CONFIRMED_TABLE = 'mtoilizta888pej';
 const XC_TOKEN = 'jx3uoKeVaidZLF7M0skVb9pV6yvNsam0Hu-Vfeww';
 
 let currentCalls = [];
@@ -7,6 +8,7 @@ let allCalls = [];
 let callsChart = null;
 let dateFilter = null;
 let currentCallsPage = [];
+let confirmedDataMap = {}; // vapi_call_id -> { name, phone, email }
 
 async function fetchData(tableId, limit = 100) {
     const res = await fetch(`${API_BASE}/${tableId}/records?limit=${limit}&sort=-CreatedAt`, {
@@ -36,6 +38,37 @@ function formatDuration(seconds) {
     const s = parseInt(seconds);
     if (s < 60) return `${s}s`;
     return `${Math.floor(s / 60)}m ${s % 60}s`;
+}
+
+// Unified helper to detect if a call is confirmed
+function isConfirmed(call) {
+    const callId = call.vapi_call_id || (typeof call.id === 'string' ? call.id : '');
+    return call['Data Confirmada'] === true || call['Data Confirmada'] === 1 || call['Data Confirmada'] === '1'
+        || call.is_confirmed === true || call.is_confirmed === 1 || call.is_confirmed === '1'
+        || (callId && confirmedDataMap[callId]);
+}
+
+// Pre-fetch all confirmed data into a map keyed by vapi_call_id
+async function fetchConfirmedData() {
+    try {
+        const res = await fetch(`${API_BASE}/${CONFIRMED_TABLE}/records?limit=200`, {
+            headers: { 'xc-token': XC_TOKEN }
+        });
+        const data = await res.json();
+        confirmedDataMap = {};
+        (data.list || []).forEach(row => {
+            const callId = row['Vapi Call ID'] || row.vapi_call_id || '';
+            if (callId) {
+                confirmedDataMap[callId] = {
+                    name: row['Nombre Confirmado'] || row.name || '-',
+                    phone: row['Teléfono Confirmado'] || row.phone || '-',
+                    email: row['Email Confirmado'] || row.email || '-'
+                };
+            }
+        });
+    } catch (err) {
+        console.error('Error fetching confirmed data:', err);
+    }
 }
 
 function renderChart(calls) {
@@ -192,24 +225,32 @@ async function openDetail(index) {
         }
     }
 
-    // 2. Fetch Confirmed Data if applicable
-    if (call.is_confirmed === true || call.is_confirmed === 1 || call.is_confirmed === '1') {
-        try {
-            const CONFIRMED_TABLE = 'mtoilizta888pej'; // Table ID for confirmed_data
-            const res = await fetch(`${API_BASE}/${CONFIRMED_TABLE}/records?where=(vapi_call_id,eq,${call.vapi_call_id})`, {
-                headers: { 'xc-token': XC_TOKEN }
-            });
-            const data = await res.json();
-            const confirmed = data.list ? data.list[0] : null;
+    // 2. Show Confirmed Data if applicable (use pre-fetched map first, fallback to API)
+    if (isConfirmed(call)) {
+        const confData = confirmedDataMap[call.vapi_call_id];
+        if (confData && confirmedSec) {
+            confirmedSec.style.display = 'block';
+            document.getElementById('conf-name').textContent = confData.name;
+            document.getElementById('conf-phone').textContent = confData.phone;
+            document.getElementById('conf-email').textContent = confData.email;
+        } else {
+            // Fallback: fetch from API if not in map
+            try {
+                const res = await fetch(`${API_BASE}/${CONFIRMED_TABLE}/records?where=(vapi_call_id,eq,${call.vapi_call_id})`, {
+                    headers: { 'xc-token': XC_TOKEN }
+                });
+                const data = await res.json();
+                const confirmed = data.list ? data.list[0] : null;
 
-            if (confirmed && confirmedSec) {
-                confirmedSec.style.display = 'block';
-                document.getElementById('conf-name').textContent = confirmed.name || '-';
-                document.getElementById('conf-phone').textContent = confirmed.phone || '-';
-                document.getElementById('conf-email').textContent = confirmed.email || '-';
+                if (confirmed && confirmedSec) {
+                    confirmedSec.style.display = 'block';
+                    document.getElementById('conf-name').textContent = confirmed.name || '-';
+                    document.getElementById('conf-phone').textContent = confirmed.phone || '-';
+                    document.getElementById('conf-email').textContent = confirmed.email || '-';
+                }
+            } catch (err) {
+                console.error('Error fetching confirmed data:', err);
             }
-        } catch (err) {
-            console.error('Error fetching confirmed data:', err);
         }
     }
 
@@ -230,18 +271,38 @@ function closeModal() {
 
 async function loadData() {
     try {
-        const calls = await fetchData(CALL_LOGS_TABLE);
+        // Pre-fetch confirmed data in parallel with call logs
+        const [calls] = await Promise.all([
+            fetchData(CALL_LOGS_TABLE),
+            fetchConfirmedData()
+        ]);
         allCalls = calls;
         currentCalls = calls;
 
         const showConfirmedOnly = document.getElementById('filter-confirmed').checked;
+        const statusFilter = document.getElementById('filter-status').value;
+        const companyFilter = document.getElementById('filter-company').value.toLowerCase();
         const dateRange = document.getElementById('date-range').value;
 
         let filteredCalls = calls;
 
+        // Apply Company Filter
+        if (companyFilter) {
+            filteredCalls = filteredCalls.filter(c =>
+                (c.lead_name || '').toLowerCase().includes(companyFilter)
+            );
+        }
+
+        // Apply Status Filter (Success/Fail)
+        if (statusFilter === 'success') {
+            filteredCalls = filteredCalls.filter(c => getBadgeClass(c.evaluation) === 'success');
+        } else if (statusFilter === 'fail') {
+            filteredCalls = filteredCalls.filter(c => getBadgeClass(c.evaluation) === 'fail');
+        }
+
         // Apply Confirmed Filter
         if (showConfirmedOnly) {
-            filteredCalls = filteredCalls.filter(c => c['Data Confirmada'] === true || c['Data Confirmada'] === 1 || c['Data Confirmada'] === '1' || c.is_confirmed === true || c.is_confirmed === 1);
+            filteredCalls = filteredCalls.filter(c => isConfirmed(c));
         }
 
         // Apply Date Filter
@@ -257,7 +318,7 @@ async function loadData() {
         }
 
         const totalCalls = calls.length;
-        const confirmedCalls = calls.filter(c => c['Data Confirmada'] === true || c['Data Confirmada'] === 1 || c['Data Confirmada'] === '1' || c.is_confirmed === true || c.is_confirmed === 1).length;
+        const confirmedCalls = calls.filter(c => isConfirmed(c)).length;
         const confirmationRate = totalCalls > 0 ? Math.round((confirmedCalls / totalCalls) * 100) : 0;
 
         const successCalls = calls.filter(c => getBadgeClass(c.evaluation) === 'success').length;
@@ -275,7 +336,7 @@ async function loadData() {
 
         const tbody = document.getElementById('call-table');
         if (filteredCalls.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No hay llamadas registradas que coincidan con el filtro</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="11" class="empty-state">No hay llamadas registradas que coincidan con el filtro</td></tr>';
             return;
         }
 
@@ -285,8 +346,25 @@ async function loadData() {
             const vapiId = call.vapi_call_id || call.lead_id || call.id || call.Id || '-';
             const shortId = vapiId.length > 20 ? vapiId.substring(0, 8) + '...' : vapiId;
 
-            const isConfirmed = call['Data Confirmada'] === true || call['Data Confirmada'] === 1 || call['Data Confirmada'] === '1' || call.is_confirmed === true || call.is_confirmed === 1;
-            if (isConfirmed) tr.classList.add('confirmed-row');
+            const confirmed = isConfirmed(call);
+            if (confirmed) tr.classList.add('confirmed-row');
+
+            // Get confirmed data from pre-fetched map
+            const confData = confirmedDataMap[call.vapi_call_id];
+            let confirmedCell = '❌';
+            if (confirmed && confData) {
+                confirmedCell = `
+                    <div class="confirmed-inline">
+                        <span class="confirmed-badge">✅ Confirmado</span>
+                        <div class="confirmed-details">
+                            <div class="confirmed-detail-item"><span class="confirmed-label">👤</span> ${confData.name}</div>
+                            <div class="confirmed-detail-item"><span class="confirmed-label">📧</span> ${confData.email}</div>
+                            <div class="confirmed-detail-item"><span class="confirmed-label">📞</span> ${confData.phone}</div>
+                        </div>
+                    </div>`;
+            } else if (confirmed) {
+                confirmedCell = '<span class="confirmed-badge">✅ Confirmado</span>';
+            }
 
             tr.innerHTML = `
                 <td data-label="Call ID"><code style="font-family: monospace; color: var(--accent); font-size: 11px;" title="${vapiId}">${shortId}</code></td>
@@ -297,7 +375,7 @@ async function loadData() {
                 <td data-label="Evaluación"><span class="badge ${getBadgeClass(call.evaluation)}">${call.evaluation || 'Pendiente'}</span></td>
                 <td data-label="Duración">${formatDuration(call.duration_seconds)}</td>
                 <td data-label="Notas" class="table-notes">${call.Notes ? `<span class="note-indicator" data-index="${index}" title="${call.Notes}" style="cursor: pointer;">📝</span>` : '-'}</td>
-                <td data-label="Confirmado">${isConfirmed ? '✅' : '❌'}</td>
+                <td data-label="Confirmado">${confirmedCell}</td>
                 <td>
                     <button class="action-btn" data-index="${index}">👁 Ver Detalle</button>
                 </td>
@@ -310,7 +388,7 @@ async function loadData() {
         currentCallsPage = filteredCalls;
     } catch (err) {
         console.error('Error:', err);
-        document.getElementById('call-table').innerHTML = '<tr><td colspan="10" class="empty-state">Error al cargar datos</td></tr>';
+        document.getElementById('call-table').innerHTML = '<tr><td colspan="11" class="empty-state">Error al cargar datos</td></tr>';
     }
 }
 
@@ -350,6 +428,8 @@ async function saveNotes() {
 // Event listeners
 document.getElementById('refresh-btn').addEventListener('click', loadData);
 document.getElementById('filter-confirmed').addEventListener('change', loadData);
+document.getElementById('filter-status').addEventListener('change', loadData);
+document.getElementById('filter-company').addEventListener('input', loadData);
 document.getElementById('close-modal').addEventListener('click', closeModal);
 document.getElementById('save-notes-btn').addEventListener('click', saveNotes);
 

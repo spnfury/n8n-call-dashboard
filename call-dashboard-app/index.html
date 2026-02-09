@@ -43,6 +43,19 @@
                         <input type="checkbox" id="filter-confirmed">
                         <label for="filter-confirmed">Confirmados</label>
                     </div>
+                    <div class="filter-container">
+                        <span class="icon" style="font-size: 14px;">🚦</span>
+                        <select id="filter-status" class="filter-select">
+                            <option value="all">Todos los resultados</option>
+                            <option value="success">Aceptadas (Éxito)</option>
+                            <option value="fail">Fallidas (Error)</option>
+                        </select>
+                    </div>
+                    <div class="filter-container">
+                        <span class="icon" style="font-size: 14px;">🏢</span>
+                        <input type="text" id="filter-company" class="filter-input-text"
+                            placeholder="Buscar empresa...">
+                    </div>
                     <div class="date-filter-container">
                         <span class="icon">📅</span>
                         <input type="text" id="date-range" placeholder="Filtrar por fechas...">
