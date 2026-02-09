@@ -268,6 +268,11 @@ tr:hover {
     color: var(--warning);
 }
 
+.badge.warning {
+    background: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
+}
+
 .phone {
     font-family: monospace;
     color: var(--text-secondary);

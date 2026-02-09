@@ -9,6 +9,7 @@ let callsChart = null;
 let dateFilter = null;
 let currentCallsPage = [];
 let confirmedDataMap = {}; // vapi_call_id -> { name, phone, email }
+let isEnriching = false; // Guard against multiple enrichment runs
 
 async function fetchData(tableId, limit = 100) {
     const res = await fetch(`${API_BASE}/${tableId}/records?limit=${limit}&sort=-CreatedAt`, {
@@ -28,8 +29,9 @@ function formatDate(dateStr, short = false) {
 function getBadgeClass(evaluation) {
     if (!evaluation) return 'pending';
     const e = evaluation.toLowerCase();
-    if (e.includes('success') || e.includes('completed')) return 'success';
-    if (e.includes('fail') || e.includes('error')) return 'fail';
+    if (e.includes('success') || e.includes('completed') || e.includes('confirmada') || e.includes('ok')) return 'success';
+    if (e.includes('fail') || e.includes('error') || e.includes('no contesta') || e.includes('rechazada')) return 'fail';
+    if (e.includes('sin datos') || e.includes('incompleta')) return 'warning';
     return 'pending';
 }
 
@@ -48,6 +50,31 @@ function isConfirmed(call) {
         || (callId && confirmedDataMap[callId]);
 }
 
+// Sanitize AI-generated contact data
+function sanitizeEmail(email) {
+    if (!email || email === '-') return '-';
+    // Convert spoken Spanish format to real email
+    let e = email.toLowerCase().trim();
+    e = e.replace(/\s*arroba\s*/gi, '@');
+    e = e.replace(/\s*punto\s*/gi, '.');
+    e = e.replace(/\s+/g, ''); // remove remaining spaces
+    return e;
+}
+
+function sanitizePhone(phone, fallbackPhone) {
+    if (!phone || phone === '-') return fallbackPhone || '-';
+    // If it contains too many letters, it's not a real phone number — use fallback
+    const letterCount = (phone.match(/[a-záéíóúñ]/gi) || []).length;
+    if (letterCount > 3) return fallbackPhone || '-';
+    return phone.replace(/[^\d+\s()-]/g, '').trim() || fallbackPhone || '-';
+}
+
+function sanitizeName(name) {
+    if (!name || name === '-') return '-';
+    // Capitalize each word
+    return name.replace(/\b\w/g, c => c.toUpperCase());
+}
+
 // Pre-fetch all confirmed data into a map keyed by vapi_call_id
 async function fetchConfirmedData() {
     try {
@@ -59,16 +86,99 @@ async function fetchConfirmedData() {
         (data.list || []).forEach(row => {
             const callId = row['Vapi Call ID'] || row.vapi_call_id || '';
             if (callId) {
+                // Store raw phone for later cross-referencing with call log
                 confirmedDataMap[callId] = {
-                    name: row['Nombre Confirmado'] || row.name || '-',
-                    phone: row['Teléfono Confirmado'] || row.phone || '-',
-                    email: row['Email Confirmado'] || row.email || '-'
+                    name: sanitizeName(row['Nombre Confirmado'] || row.name || '-'),
+                    rawPhone: row['Teléfono Confirmado'] || row.phone || '-',
+                    email: sanitizeEmail(row['Email Confirmado'] || row.email || '-')
                 };
             }
         });
     } catch (err) {
         console.error('Error fetching confirmed data:', err);
     }
+}
+
+// Enrich calls with missing data from Vapi API
+async function enrichCallsFromVapi(calls) {
+    const callsToEnrich = calls.filter(c =>
+        c.vapi_call_id && c.vapi_call_id.startsWith('019') && !c.duration_seconds
+    ).slice(0, 15); // Limit to 15 most recent
+
+    if (callsToEnrich.length === 0) return false;
+
+    let updated = false;
+    const enrichPromises = callsToEnrich.map(async (call) => {
+        try {
+            const res = await fetch(`https://api.vapi.ai/call/${call.vapi_call_id}`, {
+                headers: { 'Authorization': `Bearer ${VAPI_API_KEY}` }
+            });
+            if (!res.ok) return;
+            const vapiData = await res.json();
+
+            if (vapiData.status !== 'ended') return; // Call still in progress
+
+            // Calculate duration from messages or timestamps
+            let duration = null;
+            const msgs = vapiData.artifact?.messages || [];
+            if (msgs.length > 0) {
+                duration = Math.round(msgs[msgs.length - 1].secondsFromStart || 0);
+            } else if (vapiData.startedAt && vapiData.endedAt) {
+                duration = Math.round((new Date(vapiData.endedAt) - new Date(vapiData.startedAt)) / 1000);
+            }
+
+            // Determine evaluation
+            const isConf = confirmedDataMap[call.vapi_call_id];
+            let evaluation = 'Sin datos';
+            if (isConf) {
+                evaluation = 'Confirmada ✓';
+            } else if (vapiData.endedReason === 'voicemail') {
+                evaluation = 'Buzón';
+            } else if (duration && duration < 10) {
+                evaluation = 'No contesta';
+            } else if (vapiData.endedReason === 'customer-ended-call' && duration > 30) {
+                evaluation = 'Completada';
+            } else if (vapiData.endedReason === 'assistant-error') {
+                evaluation = 'Error';
+            }
+
+            const endedReason = vapiData.endedReason || call.ended_reason;
+
+            // Update local data
+            call.duration_seconds = duration;
+            call.evaluation = evaluation;
+            call.ended_reason = endedReason;
+            call.transcript = vapiData.artifact?.transcript || call.transcript;
+            call.recording_url = vapiData.artifact?.recordingUrl || call.recording_url;
+
+            // Update NocoDB in background
+            const updateData = {
+                id: call.id || call.Id,
+                duration_seconds: duration,
+                evaluation: evaluation,
+                ended_reason: endedReason
+            };
+            if (vapiData.artifact?.transcript) {
+                updateData.transcript = vapiData.artifact.transcript.substring(0, 5000);
+            }
+            if (vapiData.artifact?.recordingUrl) {
+                updateData.recording_url = vapiData.artifact.recordingUrl;
+            }
+
+            fetch(`${API_BASE}/${CALL_LOGS_TABLE}/records`, {
+                method: 'PATCH',
+                headers: { 'xc-token': XC_TOKEN, 'Content-Type': 'application/json' },
+                body: JSON.stringify([updateData])
+            }).catch(err => console.warn('Failed to update call log:', err));
+
+            updated = true;
+        } catch (err) {
+            console.warn('Error enriching call', call.vapi_call_id, err);
+        }
+    });
+
+    await Promise.all(enrichPromises);
+    return updated;
 }
 
 function renderChart(calls) {
@@ -231,7 +341,7 @@ async function openDetail(index) {
         if (confData && confirmedSec) {
             confirmedSec.style.display = 'block';
             document.getElementById('conf-name').textContent = confData.name;
-            document.getElementById('conf-phone').textContent = confData.phone;
+            document.getElementById('conf-phone').textContent = sanitizePhone(confData.rawPhone, call.phone_called);
             document.getElementById('conf-email').textContent = confData.email;
         } else {
             // Fallback: fetch from API if not in map
@@ -276,8 +386,31 @@ async function loadData() {
             fetchData(CALL_LOGS_TABLE),
             fetchConfirmedData()
         ]);
+
+        // Auto-evaluate confirmed calls that have no evaluation yet
+        calls.forEach(call => {
+            if (!call.evaluation && confirmedDataMap[call.vapi_call_id]) {
+                call.evaluation = 'Confirmada ✓';
+            }
+        });
+
         allCalls = calls;
         currentCalls = calls;
+
+        // Enrich calls with missing data from Vapi (runs in background after render)
+        if (!isEnriching) {
+            setTimeout(async () => {
+                isEnriching = true;
+                try {
+                    const wasUpdated = await enrichCallsFromVapi(calls);
+                    if (wasUpdated) {
+                        loadData(); // Re-render with enriched data
+                    }
+                } finally {
+                    isEnriching = false;
+                }
+            }, 100);
+        }
 
         const showConfirmedOnly = document.getElementById('filter-confirmed').checked;
         const statusFilter = document.getElementById('filter-status').value;
@@ -353,13 +486,14 @@ async function loadData() {
             const confData = confirmedDataMap[call.vapi_call_id];
             let confirmedCell = '❌';
             if (confirmed && confData) {
+                const resolvedPhone = sanitizePhone(confData.rawPhone, call.phone_called);
                 confirmedCell = `
                     <div class="confirmed-inline">
                         <span class="confirmed-badge">✅ Confirmado</span>
                         <div class="confirmed-details">
                             <div class="confirmed-detail-item"><span class="confirmed-label">👤</span> ${confData.name}</div>
                             <div class="confirmed-detail-item"><span class="confirmed-label">📧</span> ${confData.email}</div>
-                            <div class="confirmed-detail-item"><span class="confirmed-label">📞</span> ${confData.phone}</div>
+                            <div class="confirmed-detail-item"><span class="confirmed-label">📞</span> ${resolvedPhone}</div>
                         </div>
                     </div>`;
             } else if (confirmed) {
