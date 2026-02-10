@@ -56,6 +56,17 @@
                         <input type="text" id="filter-company" class="filter-input-text"
                             placeholder="Buscar empresa...">
                     </div>
+                    <div class="filter-container">
+                        <span class="icon" style="font-size: 14px;">🏆</span>
+                        <select id="filter-score" class="filter-select">
+                            <option value="all">Todos los scores</option>
+                            <option value="80-100">🟢 Excelente (80-100)</option>
+                            <option value="60-79">🔵 Buena (60-79)</option>
+                            <option value="40-59">🟡 Regular (40-59)</option>
+                            <option value="20-39">🟠 Deficiente (20-39)</option>
+                            <option value="0-19">🔴 Muy mala (0-19)</option>
+                        </select>
+                    </div>
                     <div class="date-filter-container">
                         <span class="icon">📅</span>
                         <input type="text" id="date-range" placeholder="Filtrar por fechas...">
@@ -93,6 +104,10 @@
                 <div class="stat-value" id="avg-duration">-</div>
                 <div class="stat-label">Duración Media</div>
             </div>
+            <div class="stat-card score">
+                <div class="stat-value" id="avg-score">-</div>
+                <div class="stat-label" id="avg-score-label">Score Medio</div>
+            </div>
         </div>
 
         <div class="section-title">📋 Historial de Llamadas</div>
@@ -107,6 +122,7 @@
                         <th>Resultado</th>
                         <th>Evaluación</th>
                         <th>Duración</th>
+                        <th>Score</th>
                         <th>Notas</th>
                         <th>Confirmado</th>
                         <th>Detalle</th>
@@ -114,7 +130,7 @@
                 </thead>
                 <tbody id="call-table">
                     <tr>
-                        <td colspan="10" class="loading">Cargando datos...</td>
+                        <td colspan="12" class="loading">Cargando datos...</td>
                     </tr>
                 </tbody>
             </table>
@@ -129,6 +145,8 @@
                 <h2 id="modal-title">Detalle de la Llamada</h2>
                 <p id="modal-subtitle" style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;"></p>
             </div>
+
+            <div id="score-section" style="display: none; margin-bottom: 24px;"></div>
 
             <div class="section-title">📝 Transscripción</div>
             <div class="transcript-text" id="modal-transcript">No hay transcripción disponible para esta llamada.</div>

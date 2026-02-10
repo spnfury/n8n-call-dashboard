@@ -42,6 +42,73 @@ function formatDuration(seconds) {
     return `${Math.floor(s / 60)}m ${s % 60}s`;
 }
 
+// ── Call Quality Score System ──
+function calculateCallScore(call) {
+    const breakdown = { duration: 0, evaluation: 0, confirmed: 0, endReason: 0, transcript: 0 };
+
+    // 1. Duration (max 25)
+    const dur = parseInt(call.duration_seconds) || 0;
+    if (dur >= 60) breakdown.duration = 25;
+    else if (dur >= 30) breakdown.duration = 18;
+    else if (dur >= 15) breakdown.duration = 10;
+    else if (dur >= 10) breakdown.duration = 5;
+    else breakdown.duration = 0;
+
+    // 2. Evaluation (max 30)
+    const evalText = (call.evaluation || '').toLowerCase();
+    if (evalText.includes('confirmada')) breakdown.evaluation = 30;
+    else if (evalText.includes('completada')) breakdown.evaluation = 22;
+    else if (evalText.includes('sin datos') || evalText.includes('incompleta')) breakdown.evaluation = 10;
+    else if (evalText.includes('buzón') || evalText.includes('no contesta')) breakdown.evaluation = 5;
+    else if (evalText.includes('error') || evalText.includes('rechazada')) breakdown.evaluation = 0;
+    else breakdown.evaluation = 8; // Pendiente
+
+    // 3. Confirmed data (max 20)
+    const callId = call.vapi_call_id || '';
+    const confData = confirmedDataMap[callId];
+    if (confData) {
+        let confPoints = 0;
+        if (confData.name && confData.name !== '-') confPoints += 7;
+        if (confData.email && confData.email !== '-') confPoints += 7;
+        if (confData.rawPhone && confData.rawPhone !== '-') confPoints += 6;
+        breakdown.confirmed = confPoints;
+    }
+
+    // 4. End reason (max 15)
+    const reason = (call.ended_reason || '').toLowerCase();
+    if (reason.includes('customer-ended') || reason.includes('customer_ended')) breakdown.endReason = 15;
+    else if (reason.includes('assistant-ended') || reason.includes('assistant_ended')) breakdown.endReason = 12;
+    else if (reason.includes('manual') || reason === '') breakdown.endReason = 8;
+    else if (reason.includes('voicemail') || reason.includes('buzón')) breakdown.endReason = 5;
+    else if (reason.includes('error') || reason.includes('fail')) breakdown.endReason = 0;
+    else breakdown.endReason = 7;
+
+    // 5. Transcript (max 10)
+    const transcript = call.transcript || '';
+    if (transcript.length > 200) breakdown.transcript = 10;
+    else if (transcript.length > 50) breakdown.transcript = 5;
+    else breakdown.transcript = 0;
+
+    const total = breakdown.duration + breakdown.evaluation + breakdown.confirmed + breakdown.endReason + breakdown.transcript;
+    return { total, breakdown };
+}
+
+function getScoreLabel(score) {
+    if (score >= 80) return { emoji: '🟢', text: 'Excelente', cls: 'score-excellent' };
+    if (score >= 60) return { emoji: '🔵', text: 'Buena', cls: 'score-good' };
+    if (score >= 40) return { emoji: '🟡', text: 'Regular', cls: 'score-regular' };
+    if (score >= 20) return { emoji: '🟠', text: 'Deficiente', cls: 'score-poor' };
+    return { emoji: '🔴', text: 'Muy mala', cls: 'score-bad' };
+}
+
+function getScoreColor(score) {
+    if (score >= 80) return '#10b981';
+    if (score >= 60) return '#3b82f6';
+    if (score >= 40) return '#f59e0b';
+    if (score >= 20) return '#f97316';
+    return '#ef4444';
+}
+
 // Unified helper to detect if a call is confirmed
 function isConfirmed(call) {
     const callId = call.vapi_call_id || (typeof call.id === 'string' ? call.id : '');
@@ -300,6 +367,47 @@ async function openDetail(index) {
     const confirmedSec = document.getElementById('confirmed-section');
     if (confirmedSec) confirmedSec.style.display = 'none';
 
+    // ── Render Score Gauge ──
+    const scoreSec = document.getElementById('score-section');
+    if (scoreSec) {
+        const scoreResult = call._scoreBreakdown ? { total: call._score, breakdown: call._scoreBreakdown } : calculateCallScore(call);
+        const label = getScoreLabel(scoreResult.total);
+        const color = getScoreColor(scoreResult.total);
+        const bd = scoreResult.breakdown;
+        const dims = [
+            { name: 'Duración', val: bd.duration, max: 25, icon: '⏱️' },
+            { name: 'Evaluación', val: bd.evaluation, max: 30, icon: '📊' },
+            { name: 'Datos Confirmados', val: bd.confirmed, max: 20, icon: '✅' },
+            { name: 'Motivo Fin', val: bd.endReason, max: 15, icon: '🔚' },
+            { name: 'Transcripción', val: bd.transcript, max: 10, icon: '📝' }
+        ];
+        scoreSec.style.display = 'block';
+        scoreSec.innerHTML = `
+            <div class="section-title">🏆 Score de Calidad</div>
+            <div class="score-gauge-container">
+                <div class="score-gauge-ring" style="--score-pct: ${scoreResult.total}%; --score-clr: ${color}">
+                    <div class="score-gauge-inner">
+                        <span class="score-gauge-value" style="color: ${color}">${scoreResult.total}</span>
+                        <span class="score-gauge-label">${label.emoji} ${label.text}</span>
+                    </div>
+                </div>
+                <div class="score-breakdown">
+                    ${dims.map(d => `
+                        <div class="score-dim">
+                            <div class="score-dim-header">
+                                <span>${d.icon} ${d.name}</span>
+                                <span class="score-dim-val">${d.val}/${d.max}</span>
+                            </div>
+                            <div class="score-dim-bar">
+                                <div class="score-dim-fill" style="width: ${(d.val / d.max) * 100}%; background: ${getScoreColor((d.val / d.max) * 100)}"></div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
     // Show Modal early so user sees loading state
     document.getElementById('detail-modal').style.display = 'flex';
 
@@ -397,6 +505,13 @@ async function loadData() {
         allCalls = calls;
         currentCalls = calls;
 
+        // Calculate scores for all calls (before filters)
+        calls.forEach(c => {
+            const scoreResult = calculateCallScore(c);
+            c._score = scoreResult.total;
+            c._scoreBreakdown = scoreResult.breakdown;
+        });
+
         // Enrich calls with missing data from Vapi (runs in background after render)
         if (!isEnriching) {
             setTimeout(async () => {
@@ -415,6 +530,7 @@ async function loadData() {
         const showConfirmedOnly = document.getElementById('filter-confirmed').checked;
         const statusFilter = document.getElementById('filter-status').value;
         const companyFilter = document.getElementById('filter-company').value.toLowerCase();
+        const scoreFilter = document.getElementById('filter-score').value;
         const dateRange = document.getElementById('date-range').value;
 
         let filteredCalls = calls;
@@ -434,6 +550,12 @@ async function loadData() {
         }
 
         // Apply Confirmed Filter
+        // Apply Score Filter
+        if (scoreFilter !== 'all') {
+            const [minS, maxS] = scoreFilter.split('-').map(Number);
+            filteredCalls = filteredCalls.filter(c => (c._score || 0) >= minS && (c._score || 0) <= maxS);
+        }
+
         if (showConfirmedOnly) {
             filteredCalls = filteredCalls.filter(c => isConfirmed(c));
         }
@@ -450,6 +572,7 @@ async function loadData() {
             });
         }
 
+
         const totalCalls = calls.length;
         const confirmedCalls = calls.filter(c => isConfirmed(c)).length;
         const confirmationRate = totalCalls > 0 ? Math.round((confirmedCalls / totalCalls) * 100) : 0;
@@ -458,10 +581,15 @@ async function loadData() {
         const successRate = totalCalls > 0 ? Math.round((successCalls / totalCalls) * 100) : 0;
         const totalDuration = calls.reduce((sum, c) => sum + (parseInt(c.duration_seconds) || 0), 0);
         const avgDuration = totalCalls > 0 ? Math.round(totalDuration / totalCalls) : 0;
+        const avgScore = totalCalls > 0 ? Math.round(calls.reduce((sum, c) => sum + (c._score || 0), 0) / totalCalls) : 0;
 
         document.getElementById('total-calls').textContent = totalCalls;
         document.getElementById('success-rate').textContent = successRate + '%';
         document.getElementById('avg-duration').textContent = formatDuration(avgDuration);
+        document.getElementById('avg-score').textContent = avgScore;
+        const avgScoreLabel = getScoreLabel(avgScore);
+        document.getElementById('avg-score').style.color = getScoreColor(avgScore);
+        document.getElementById('avg-score-label').textContent = avgScoreLabel.emoji + ' ' + avgScoreLabel.text;
 
         // New KPIs
         document.getElementById('confirmed-count').textContent = confirmedCalls;
@@ -469,7 +597,7 @@ async function loadData() {
 
         const tbody = document.getElementById('call-table');
         if (filteredCalls.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="11" class="empty-state">No hay llamadas registradas que coincidan con el filtro</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="12" class="empty-state">No hay llamadas registradas que coincidan con el filtro</td></tr>';
             return;
         }
 
@@ -500,6 +628,10 @@ async function loadData() {
                 confirmedCell = '<span class="confirmed-badge">✅ Confirmado</span>';
             }
 
+            const scoreVal = call._score || 0;
+            const scoreLbl = getScoreLabel(scoreVal);
+            const scoreClr = getScoreColor(scoreVal);
+
             tr.innerHTML = `
                 <td data-label="Call ID"><code style="font-family: monospace; color: var(--accent); font-size: 11px;" title="${vapiId}">${shortId}</code></td>
                 <td data-label="Empresa"><strong>${call.lead_name || '-'}</strong></td>
@@ -508,6 +640,7 @@ async function loadData() {
                 <td data-label="Resultado">${call.ended_reason || '-'}</td>
                 <td data-label="Evaluación"><span class="badge ${getBadgeClass(call.evaluation)}">${call.evaluation || 'Pendiente'}</span></td>
                 <td data-label="Duración">${formatDuration(call.duration_seconds)}</td>
+                <td data-label="Score"><span class="score-badge ${scoreLbl.cls}" style="--score-color: ${scoreClr}">${scoreLbl.emoji} ${scoreVal}</span></td>
                 <td data-label="Notas" class="table-notes">${call.Notes ? `<span class="note-indicator" data-index="${index}" title="${call.Notes}" style="cursor: pointer;">📝</span>` : '-'}</td>
                 <td data-label="Confirmado">${confirmedCell}</td>
                 <td>
@@ -522,7 +655,7 @@ async function loadData() {
         currentCallsPage = filteredCalls;
     } catch (err) {
         console.error('Error:', err);
-        document.getElementById('call-table').innerHTML = '<tr><td colspan="11" class="empty-state">Error al cargar datos</td></tr>';
+        document.getElementById('call-table').innerHTML = '<tr><td colspan="12" class="empty-state">Error al cargar datos</td></tr>';
     }
 }
 
@@ -564,6 +697,7 @@ document.getElementById('refresh-btn').addEventListener('click', loadData);
 document.getElementById('filter-confirmed').addEventListener('change', loadData);
 document.getElementById('filter-status').addEventListener('change', loadData);
 document.getElementById('filter-company').addEventListener('input', loadData);
+document.getElementById('filter-score').addEventListener('change', loadData);
 document.getElementById('close-modal').addEventListener('click', closeModal);
 document.getElementById('save-notes-btn').addEventListener('click', saveNotes);
 
