@@ -9,6 +9,7 @@ let callsChart = null;
 let dateFilter = null;
 let currentCallsPage = [];
 let confirmedDataMap = {}; // vapi_call_id -> { name, phone, email }
+let activeDetailCall = null; // Global state for the currently active call in the detail view
 let isEnriching = false; // Guard against multiple enrichment runs
 
 async function fetchData(tableId, limit = 100) {
@@ -351,6 +352,7 @@ function renderChart(calls) {
 async function openDetail(index) {
     const call = currentCallsPage[index];
     if (!call) return;
+    activeDetailCall = call;
 
     const vapiId = call.vapi_call_id || call.lead_id || call.id || call.Id;
 
@@ -430,6 +432,12 @@ async function openDetail(index) {
                 if (vapiData.recordingUrl) {
                     audioSec.style.display = 'block';
                     audio.src = vapiData.recordingUrl;
+                }
+
+                // Show extraction tools if transcript exists
+                if (vapiData.transcript) {
+                    document.getElementById('extraction-tools').style.display = 'block';
+                    document.getElementById('extraction-results').style.display = 'none';
                 }
             } else {
                 console.warn('Vapi API error:', vapiRes.status);
@@ -525,6 +533,8 @@ async function fetchScheduledLeads() {
 
             const card = document.createElement('div');
             card.className = `planned-card ${isDue ? 'due' : ''}`;
+            card.style.cursor = 'pointer';
+            card.title = 'Click para editar este lead';
             card.innerHTML = `
                 <div class="planned-card-header">
                     <div class="planned-card-time">${isDue ? '⚡ PRIORITARIO' : '📅 ' + timeStr}</div>
@@ -536,6 +546,39 @@ async function fetchScheduledLeads() {
                     <div class="planned-card-item"><span>📍</span> ${lead.address || '-'}</div>
                 </div>
             `;
+
+            // Click to edit this lead
+            card.addEventListener('click', () => {
+                const leadId = lead.Id || lead.id || lead.unique_id;
+                console.log('Card clicked, lead:', leadId, lead);
+
+                const modal = document.getElementById('lead-modal');
+                const form = document.getElementById('lead-form');
+                const title = document.getElementById('lead-modal-title');
+
+                form.reset();
+                title.innerText = 'Editar Lead';
+                document.getElementById('edit-lead-id').value = leadId || '';
+                document.getElementById('edit-lead-name').value = lead.name || '';
+                document.getElementById('edit-lead-phone').value = lead.phone || '';
+                document.getElementById('edit-lead-email').value = lead.email || '';
+                document.getElementById('edit-lead-sector').value = lead.sector || '';
+                document.getElementById('edit-lead-status').value = lead.status || 'Nuevo';
+                document.getElementById('edit-lead-summary').value = lead.summary || '';
+                document.getElementById('edit-lead-address').value = lead.address || '';
+
+                if (lead.fecha_planificada) {
+                    const parts = lead.fecha_planificada.split(' ');
+                    const date = parts[0];
+                    const time = parts[1] ? parts[1].substring(0, 5) : '00:00';
+                    document.getElementById('edit-lead-planned').value = `${date}T${time}`;
+                } else {
+                    document.getElementById('edit-lead-planned').value = '';
+                }
+
+                modal.classList.add('active');
+            });
+
             plannedGrid.appendChild(card);
         });
     } catch (err) {
@@ -599,7 +642,8 @@ async function initAutomationToggle() {
     const CONFIG_TABLE = 'm4044lwk0p6f721';
 
     try {
-        const res = await fetch(`${API_BASE}/${CONFIG_TABLE}/records?where=(key,eq,automation_enabled)`, {
+        const query = encodeURIComponent('(key,eq,automation_enabled)');
+        const res = await fetch(`${API_BASE}/${CONFIG_TABLE}/records?where=${query}`, {
             headers: { 'xc-token': XC_TOKEN }
         });
         const data = await res.json();
@@ -1355,3 +1399,170 @@ document.getElementById('manual-call-modal').addEventListener('click', (e) => {
         closeManualModal();
     }
 });
+
+// --- Transcript Extraction Logic ---
+
+function extractInfoFromTranscript(text) {
+    if (!text) return { name: '', email: '', phone: '' };
+
+    const lines = text.split('\n');
+    let email = '', phone = '', name = '';
+
+    // Standard Email Regex
+    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+    // Spanish Phone Regex
+    const phoneRegex = /(?:\+34|0034|34)?[ -]?(?:[6789]\d{8}|[6789]\d{2}[ -]\d{3}[ -]\d{3}|[6789]\d{2}[ -]\d{2}[ -]\d{2}[ -]\d{2})/;
+    // Name Heuristics (Simplified and case-insensitive)
+    const nameHeuristics = [
+        /soy\s+([A-ZÁÉÍÓÚÑa-z]+(?:\s+[A-ZÁÉÍÓÚÑa-z]+){0,4})/i,
+        /me llamo\s+([A-ZÁÉÍÓÚÑa-z]+(?:\s+[A-ZÁÉÍÓÚÑa-z]+){0,4})/i,
+        /soy el\s+([A-ZÁÉÍÓÚÑa-z]+(?:\s+[A-ZÁÉÍÓÚÑa-z]+){0,4})/i,
+        /soy la\s+([A-ZÁÉÍÓÚÑa-z]+(?:\s+[A-ZÁÉÍÓÚÑa-z]+){0,4})/i,
+        /nombre es\s+([A-ZÁÉÍÓÚÑa-z]+(?:\s+[A-ZÁÉÍÓÚÑa-z]+){0,4})/i
+    ];
+
+    for (const line of lines) {
+        const isUser = line.toLowerCase().includes('user:') || line.toLowerCase().includes('lead:');
+
+        // Extract Email
+        if (!email) {
+            const m = line.match(emailRegex);
+            if (m) email = m[0];
+        }
+
+        // Extract Phone
+        if (!phone) {
+            const m = line.match(phoneRegex);
+            if (m) phone = m[0].trim();
+        }
+
+        // Extract Name (Prioritize User lines)
+        if (!name || (isUser && name.toLowerCase().includes('violeta'))) {
+            for (const regex of nameHeuristics) {
+                const m = line.match(regex);
+                if (m && m[1]) {
+                    const detected = m[1].trim();
+                    const lower = detected.toLowerCase();
+                    if (!['violeta', 'marcos', 'asistente', 'compañera'].some(forbidden => lower.includes(forbidden))) {
+                        name = detected;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    return { email, phone, name };
+}
+
+document.getElementById('extract-transcript-btn').addEventListener('click', () => {
+    const transcript = document.getElementById('modal-transcript').textContent;
+    const results = extractInfoFromTranscript(transcript);
+    const feedback = document.getElementById('extraction-feedback');
+
+    document.getElementById('ext-name').value = results.name;
+    document.getElementById('ext-email').value = results.email;
+    document.getElementById('ext-phone').value = results.phone;
+
+    document.getElementById('extraction-results').style.display = 'block';
+    feedback.textContent = '✨ Análisis completado. Revisa y pulsa Actualizar.';
+    feedback.style.color = 'var(--accent)';
+});
+
+document.getElementById('apply-extraction-btn').addEventListener('click', async () => {
+    if (!activeDetailCall) return;
+
+    const btn = document.getElementById('apply-extraction-btn');
+    const feedback = document.getElementById('extraction-feedback');
+
+    const name = document.getElementById('ext-name').value;
+    const email = document.getElementById('ext-email').value;
+    const phone = document.getElementById('ext-phone').value;
+
+    btn.disabled = true;
+    btn.textContent = '⌛ Actualizando Lead...';
+    feedback.textContent = 'Buscando lead asociado en NocoDB...';
+
+    try {
+        const LEADS_TABLE = 'mgot1kl4sglenym';
+        const phoneCalled = activeDetailCall.phone_called;
+        const normalizedSearch = normalizePhone(phoneCalled);
+
+        // 1. Find the lead by normalized phone
+        const searchRes = await fetch(`${API_BASE}/${LEADS_TABLE}/records?where=(phone,eq,${normalizedSearch})`, {
+            headers: { 'xc-token': XC_TOKEN }
+        });
+        const searchData = await searchRes.json();
+        const lead = searchData.list && searchData.list[0];
+
+        if (!lead) {
+            throw new Error('No se encontró un lead con el teléfono ' + phoneCalled);
+        }
+
+        const leadId = lead.id || lead.Id;
+
+        // 2. Update the lead
+        const updatePayload = {
+            name: name || lead.name,
+            email: email || lead.email,
+            phone: phone || lead.phone,
+            status: 'Interesado' // Auto-update status as we have contact info
+        };
+
+        const updateRes = await fetch(`${API_BASE}/${LEADS_TABLE}/records/${leadId}`, {
+            method: 'PATCH',
+            headers: {
+                'xc-token': XC_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updatePayload)
+        });
+
+        if (updateRes.ok) {
+            feedback.textContent = '✅ ¡Lead actualizado con éxito!';
+            feedback.style.color = 'var(--success)';
+            setTimeout(() => {
+                document.getElementById('extraction-results').style.display = 'none';
+                loadData();
+                fetchScheduledLeads();
+            }, 2000);
+        } else {
+            throw new Error('Error al actualizar en NocoDB');
+        }
+
+    } catch (err) {
+        console.error('Extraction Apply Error:', err);
+        feedback.textContent = `❌ ${err.message}`;
+        feedback.style.color = 'var(--danger)';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '💾 Actualizar Lead Relacionado';
+    }
+});
+
+// --- Live Clock Logic ---
+function updateLiveClock() {
+    const clockEl = document.getElementById('live-clock');
+    if (!clockEl) return;
+
+    const now = new Date();
+    const options = {
+        timeZone: 'Europe/Madrid',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    };
+
+    try {
+        const timeStr = new Intl.DateTimeFormat('es-ES', options).format(now);
+        clockEl.textContent = timeStr;
+    } catch (err) {
+        clockEl.textContent = now.toLocaleTimeString('es-ES');
+    }
+}
+
+// Start the clock and update every second
+setInterval(updateLiveClock, 1000);
+document.addEventListener('DOMContentLoaded', updateLiveClock);
+updateLiveClock();

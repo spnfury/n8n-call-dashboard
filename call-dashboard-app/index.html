@@ -209,6 +209,37 @@
 
             <div class="section-title">📝 Transscripción</div>
             <div class="transcript-text" id="modal-transcript">No hay transcripción disponible para esta llamada.</div>
+            <div id="extraction-tools" style="margin: 15px 0; display: none;">
+                <button id="extract-transcript-btn" class="refresh-btn"
+                    style="background: var(--accent); width: 100%;">✨ Extraer Info de Contacto</button>
+            </div>
+
+            <div id="extraction-results"
+                style="display: none; background: rgba(99, 102, 241, 0.1); padding: 16px; border-radius: 12px; border: 1px solid var(--accent); margin-bottom: 24px;">
+                <div class="section-title" style="margin-bottom: 12px; font-size: 14px; color: var(--accent);">📋
+                    Información Detectada</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="form-group">
+                        <label style="font-size: 11px; margin-bottom: 4px;">Nombre</label>
+                        <input type="text" id="ext-name"
+                            style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 8px; border-radius: 6px; color: white; font-size: 13px;">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size: 11px; margin-bottom: 4px;">Teléfono</label>
+                        <input type="text" id="ext-phone"
+                            style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 8px; border-radius: 6px; color: white; font-size: 13px;">
+                    </div>
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label style="font-size: 11px; margin-bottom: 4px;">Email</label>
+                        <input type="text" id="ext-email"
+                            style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 8px; border-radius: 6px; color: white; font-size: 13px;">
+                    </div>
+                </div>
+                <button id="apply-extraction-btn" class="refresh-btn"
+                    style="width: 100%; margin-top: 15px; background: var(--success); border-color: var(--success);">💾
+                    Actualizar Lead Relacionado</button>
+                <p id="extraction-feedback" style="font-size: 11px; text-align: center; margin-top: 8px;"></p>
+            </div>
 
             <div id="recording-section" style="display: none;">
                 <div class="section-title">🔊 Grabación</div>
@@ -370,6 +401,20 @@
             </form>
         </div>
     </div>
+
+    <footer class="dashboard-footer">
+        <div class="footer-left">
+            <span>&copy; 2026 SkyPulse - GeneralProtect</span>
+            <span class="footer-separator">|</span>
+            <span id="system-status"><span class="status-dot"></span> Sistema Activo</span>
+        </div>
+        <div class="footer-right">
+            <span class="icon">📍</span>
+            <span id="local-time-label" style="font-size: 11px; color: var(--text-secondary); margin-right: 5px;">Hora
+                Local (España):</span>
+            <span id="live-clock" class="live-clock">--:--:--</span>
+        </div>
+    </footer>
 
     <script type="module" src="./main.js"></script>
 </body>
