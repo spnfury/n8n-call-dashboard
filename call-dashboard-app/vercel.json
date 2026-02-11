@@ -8,5 +8,11 @@
                 "distDir": "dist"
             }
         }
+    ],
+    "rewrites": [
+        {
+            "source": "/vapi-api/(.*)",
+            "destination": "https://api.vapi.ai/$1"
+        }
     ]
 }

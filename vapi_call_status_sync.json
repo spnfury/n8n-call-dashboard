@@ -1,0 +1,155 @@
+{
+    "name": "Vapi Call Status Sync",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "vapi-call-status",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-status",
+            "name": "Webhook: Call Status",
+            "type": "n8n-nodes-base.webhook",
+            "position": [
+                -200,
+                200
+            ],
+            "typeVersion": 1
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "{\"status\": \"received\"}",
+                "options": {}
+            },
+            "id": "respond-ok",
+            "name": "Respond OK",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "position": [
+                0,
+                200
+            ],
+            "typeVersion": 1
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "conditions": [
+                        {
+                            "id": "is-ended",
+                            "leftValue": "={{ $json.body.message.type }}",
+                            "operator": {
+                                "operation": "equals",
+                                "type": "string"
+                            },
+                            "rightValue": "call.ended"
+                        }
+                    ]
+                }
+            },
+            "id": "filter-ended",
+            "name": "Filter: Call Ended?",
+            "type": "n8n-nodes-base.filter",
+            "position": [
+                200,
+                200
+            ],
+            "typeVersion": 2.2
+        },
+        {
+            "parameters": {
+                "jsCode": "const call = $json.body.message.call;\nconst analysis = $json.body.message.analysis || {};\nconst variables = call.assistantOverrides?.variableValues || {};\n\nlet status = 'Nuevo';\nlet nextCall = null;\n\n// Determine success\nconst answered = call.customerAnswered === true;\nconst successReasons = ['customer-ended-call', 'assistant-ended-call', 'tool-calls'];\nconst isSuccess = answered && successReasons.includes(call.endedReason);\n\nif (isSuccess) {\n  status = 'Completado';\n} else {\n  status = 'Re-intentar';\n  // Schedule for 4 hours from now\n  const now = new Date();\n  now.setHours(now.getHours() + 4);\n  nextCall = now.toISOString();\n}\n\nreturn {\n  leadId: variables.leadId || null,\n  phone: call.customer?.number,\n  status: status,\n  fecha_planificada: nextCall,\n  endedReason: call.endedReason\n};"
+            },
+            "id": "determine-outcome",
+            "name": "Determine Outcome",
+            "type": "n8n-nodes-base.code",
+            "position": [
+                420,
+                200
+            ],
+            "typeVersion": 2
+        },
+        {
+            "parameters": {
+                "authentication": "nocoDbApiToken",
+                "operation": "update",
+                "projectId": "p5xxqp29w9h8sb6",
+                "table": "mgot1kl4sglenym",
+                "dataToUpdate": {
+                    "values": [
+                        {
+                            "column": "status",
+                            "value": "={{ $json.status }}"
+                        },
+                        {
+                            "column": "fecha_planificada",
+                            "value": "={{ $json.fecha_planificada }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "update-nocodb",
+            "name": "Update Lead Status",
+            "type": "n8n-nodes-base.nocoDb",
+            "position": [
+                640,
+                200
+            ],
+            "typeVersion": 3,
+            "credentials": {
+                "nocoDbApiToken": {
+                    "id": "tV5VwP4BVmME7Vgo",
+                    "name": "NocoDB Token account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Webhook: Call Status": {
+            "main": [
+                [
+                    {
+                        "node": "Respond OK",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Respond OK": {
+            "main": [
+                [
+                    {
+                        "node": "Filter: Call Ended?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Filter: Call Ended?": {
+            "main": [
+                [
+                    {
+                        "node": "Determine Outcome",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Determine Outcome": {
+            "main": [
+                [
+                    {
+                        "node": "Update Lead Status",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

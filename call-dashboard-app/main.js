@@ -175,15 +175,19 @@ async function enrichCallsFromVapi(calls) {
     if (callsToEnrich.length === 0) return false;
 
     let updated = false;
-    const enrichPromises = callsToEnrich.map(async (call) => {
+    for (const call of callsToEnrich) {
         try {
-            const res = await fetch(`https://api.vapi.ai/call/${call.vapi_call_id}`, {
+            // Use local proxy to avoid CORS
+            const res = await fetch(`/vapi-api/call/${call.vapi_call_id}`, {
                 headers: { 'Authorization': `Bearer ${VAPI_API_KEY}` }
             });
-            if (!res.ok) return;
+            if (!res.ok) {
+                if (res.status === 429) break; // Stop if rate limited
+                continue;
+            }
             const vapiData = await res.json();
 
-            if (vapiData.status !== 'ended') return; // Call still in progress
+            if (vapiData.status !== 'ended') continue; // Call still in progress
 
             // Calculate duration from messages or timestamps
             let duration = null;
@@ -239,12 +243,13 @@ async function enrichCallsFromVapi(calls) {
             }).catch(err => console.warn('Failed to update call log:', err));
 
             updated = true;
+
+            // Wait 200ms between calls to avoid 429
+            await new Promise(r => setTimeout(r, 200));
         } catch (err) {
             console.warn('Error enriching call', call.vapi_call_id, err);
         }
-    });
-
-    await Promise.all(enrichPromises);
+    }
     return updated;
 }
 
@@ -487,8 +492,400 @@ function closeModal() {
     document.getElementById('modal-audio').pause();
 }
 
+// --- Planning / Scheduled Calls Section ---
+async function fetchScheduledLeads() {
+    try {
+        const LEADS_TABLE = 'mgot1kl4sglenym'; // From bulk_call_manager.json
+        // Fetch leads that have a planned date
+        const res = await fetch(`${API_BASE}/${LEADS_TABLE}/records?limit=50&sort=fecha_planificada`, {
+            headers: { 'xc-token': XC_TOKEN }
+        });
+        const data = await res.json();
+        const leads = (data.list || []).filter(lead => lead.fecha_planificada);
+
+        const plannedGrid = document.getElementById('planned-grid');
+        const plannedSection = document.getElementById('planned-section');
+
+        if (leads.length === 0) {
+            plannedSection.style.display = 'none';
+            return;
+        }
+
+        plannedSection.style.display = 'block';
+        plannedGrid.innerHTML = '';
+
+        const now = new Date();
+
+        leads.forEach(lead => {
+            const plannedDate = new Date(lead.fecha_planificada);
+            const isDue = plannedDate <= now;
+            const timeStr = plannedDate.toLocaleString('es-ES', {
+                day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+            });
+
+            const card = document.createElement('div');
+            card.className = `planned-card ${isDue ? 'due' : ''}`;
+            card.innerHTML = `
+                <div class="planned-card-header">
+                    <div class="planned-card-time">${isDue ? '⚡ PRIORITARIO' : '📅 ' + timeStr}</div>
+                </div>
+                <div class="planned-card-name">${lead.name || 'Empresa sin nombre'}</div>
+                <div class="planned-card-details">
+                    <div class="planned-card-item"><span>📞</span> ${lead.phone || '-'}</div>
+                    <div class="planned-card-item"><span>📧</span> ${lead.email || '-'}</div>
+                    <div class="planned-card-item"><span>📍</span> ${lead.address || '-'}</div>
+                </div>
+            `;
+            plannedGrid.appendChild(card);
+        });
+    } catch (err) {
+        console.error('Error fetching scheduled leads:', err);
+    }
+}
+
+// --- Tab Navigation ---
+function initTabs() {
+    const tabs = document.querySelectorAll('.nav-tab');
+    const views = document.querySelectorAll('.view-content');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const target = tab.getAttribute('data-tab');
+
+            // Update tabs
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            // Update views
+            views.forEach(v => {
+                v.classList.remove('active');
+                if (v.id === `view-${target}`) {
+                    v.classList.add('active');
+                }
+            });
+
+            // If switching to leads, load them
+            if (target === 'leads') {
+                loadLeadsManager();
+            }
+        });
+    });
+}
+
+// --- Lead Management Logic ---
+let allLeads = [];
+
+async function loadLeadsManager() {
+    const tbody = document.getElementById('leads-master-table');
+    tbody.innerHTML = '<tr><td colspan="7" class="loading">Cargando lista de leads...</td></tr>';
+
+    try {
+        const LEADS_TABLE = 'mgot1kl4sglenym';
+        const res = await fetch(`${API_BASE}/${LEADS_TABLE}/records?limit=100`, {
+            headers: { 'xc-token': XC_TOKEN }
+        });
+        const data = await res.json();
+        allLeads = data.list || [];
+        renderLeadsTable(allLeads);
+    } catch (err) {
+        console.error('Error loading leads:', err);
+        tbody.innerHTML = '<tr><td colspan="7" class="error">Error al cargar leads</td></tr>';
+    }
+}
+
+// --- Automation Toggle Logic ---
+async function initAutomationToggle() {
+    const toggle = document.getElementById('automation-toggle');
+    const CONFIG_TABLE = 'm4044lwk0p6f721';
+
+    try {
+        const res = await fetch(`${API_BASE}/${CONFIG_TABLE}/records?where=(key,eq,automation_enabled)`, {
+            headers: { 'xc-token': XC_TOKEN }
+        });
+        const data = await res.json();
+        const config = data.list && data.list[0];
+        if (config) {
+            toggle.checked = config.value === 'true';
+            window.automationConfigId = config.id || config.Id;
+        } else {
+            console.warn('Automation config not found — toggle defaults to OFF');
+            toggle.checked = false;
+        }
+    } catch (err) {
+        console.error('Error fetching automation config:', err);
+        toggle.checked = false;
+    }
+
+    toggle.addEventListener('change', async () => {
+        try {
+            await fetch(`${API_BASE}/${CONFIG_TABLE}/records`, {
+                method: 'PATCH',
+                headers: {
+                    'xc-token': XC_TOKEN,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify([{
+                    id: window.automationConfigId,
+                    value: toggle.checked ? 'true' : 'false'
+                }])
+            });
+        } catch (err) {
+            console.error('Error updating automation config:', err);
+        }
+    });
+}
+
+// --- Bulk CSV Import ---
+function initBulkImport() {
+    const importBtn = document.getElementById('btn-import-csv');
+    const fileInput = document.getElementById('csv-import');
+
+    importBtn.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: async (results) => {
+                const leads = results.data.map(row => {
+                    // Use CSV ID if present, otherwise generate one
+                    const uid = row.unique_id || ('lead_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5));
+
+                    return {
+                        unique_id: uid,
+                        name: row.name || row.Empresa || row.empresa || '',
+                        phone: row.phone || row.Teléfono || row.telefono || '',
+                        email: row.email || row.Email || '',
+                        sector: row.sector || row.Sector || '',
+                        summary: row.summary || '',
+                        address: row.address || '',
+                        website: row.website || '',
+                        url: row.url || '',
+                        status: 'Nuevo'
+                    };
+                }).filter(l => l.phone && l.phone !== '0' && l.phone !== 'N/A');
+
+                if (leads.length === 0) return alert('No se encontraron leads válidos en el CSV (se requiere columna phone/telefono)');
+
+                if (confirm(`¿Importar ${leads.length} leads?`)) {
+                    importBtn.innerText = '⏳ Importando...';
+                    importBtn.disabled = true;
+
+                    try {
+                        const LEADS_TABLE = 'mgot1kl4sglenym';
+                        for (let i = 0; i < leads.length; i += 50) {
+                            const batch = leads.slice(i, i + 50);
+                            await fetch(`${API_BASE}/${LEADS_TABLE}/records`, {
+                                method: 'POST',
+                                headers: {
+                                    'xc-token': XC_TOKEN,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(batch)
+                            });
+                        }
+                        alert('¡Importación completada!');
+                        loadLeadsManager();
+                    } catch (err) {
+                        console.error('Error importing leads:', err);
+                        alert('Error durante la importación');
+                    } finally {
+                        importBtn.innerHTML = '📂 Importar CSV';
+                        importBtn.disabled = false;
+                        fileInput.value = '';
+                    }
+                }
+            }
+        });
+    });
+}
+
+function renderLeadsTable(leads) {
+    const tbody = document.getElementById('leads-master-table');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (leads.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 40px; color: var(--text-secondary);">No se encontraron leads</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = leads.map(lead => `
+        <tr data-id="${lead.Id}">
+            <td><strong>${lead.name || 'Sin nombre'}</strong></td>
+            <td>${lead.phone || '-'}</td>
+            <td><span class="status-badge ${getBadgeStatusClass(lead.status)}">${lead.status || 'Nuevo'}</span></td>
+            <td><small class="text-muted">${lead.sector || '-'}</small></td>
+            <td><div class="truncate-text" title="${lead.summary || ''}">${lead.summary || '-'}</div></td>
+            <td>${lead.fecha_planificada ? new Date(lead.fecha_planificada).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+            <td class="actions-cell">
+                <button class="btn-detail" onclick="triggerManualCall('${lead.phone}', '${lead.name}')" title="Llamar ahora">📞</button>
+                <button class="btn-detail" onclick="openLeadEditor(${lead.Id})" title="Editar">✏️</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function getBadgeStatusClass(status) {
+    const s = (status || '').toLowerCase();
+    if (s.includes('nuevo')) return 'badge-info';
+    if (s.includes('completado')) return 'badge-success';
+    if (s.includes('reintentar')) return 'badge-warning';
+    if (s.includes('fallido')) return 'badge-danger';
+    if (s.includes('interesado')) return 'badge-success';
+    return 'badge-secondary';
+}
+
+// Global search for leads
+document.getElementById('lead-search').addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase();
+    const filtered = allLeads.filter(l =>
+        (l.name || '').toLowerCase().includes(query) ||
+        (l.email || '').toLowerCase().includes(query) ||
+        (l.phone || '').toLowerCase().includes(query)
+    );
+    renderLeadsTable(filtered);
+});
+
+// --- Lead Editor Modal Control ---
+function openLeadEditor(leadId = null) {
+    const modal = document.getElementById('lead-modal');
+    const form = document.getElementById('lead-form');
+    const title = document.getElementById('lead-modal-title');
+
+    form.reset();
+    document.getElementById('edit-lead-id').value = leadId || '';
+
+    if (leadId) {
+        title.innerText = 'Editar Lead';
+        const lead = allLeads.find(l => l.Id === leadId);
+        if (lead) {
+            document.getElementById('edit-lead-name').value = lead.name || '';
+            document.getElementById('edit-lead-phone').value = lead.phone || '';
+            document.getElementById('edit-lead-email').value = lead.email || '';
+            document.getElementById('edit-lead-sector').value = lead.sector || '';
+            document.getElementById('edit-lead-status').value = lead.status || 'Nuevo';
+            document.getElementById('edit-lead-summary').value = lead.summary || '';
+            document.getElementById('edit-lead-address').value = lead.address || '';
+            if (lead.fecha_planificada) {
+                // Convert NocoDB format (YYYY-MM-DD HH:mm:ss) to datetime-local (YYYY-MM-DDTHH:mm)
+                const parts = lead.fecha_planificada.split(' ');
+                const date = parts[0];
+                const time = parts[1] ? parts[1].substring(0, 5) : '00:00';
+                document.getElementById('edit-lead-planned').value = `${date}T${time}`;
+            } else {
+                document.getElementById('edit-lead-planned').value = '';
+            }
+        }
+    } else {
+        title.innerText = 'Nuevo Lead';
+        document.getElementById('edit-lead-status').value = 'Nuevo';
+    }
+
+    modal.classList.add('active');
+}
+
+function closeLeadModal() {
+    document.getElementById('lead-modal').classList.remove('active');
+}
+
+// Attach event listeners for lead modal
+document.getElementById('close-lead-modal').addEventListener('click', closeLeadModal);
+document.getElementById('cancel-lead-save').addEventListener('click', closeLeadModal);
+document.getElementById('btn-add-lead').addEventListener('click', () => openLeadEditor());
+
+// Form submission for creating/updating leads
+document.getElementById('lead-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const saveBtn = e.target.querySelector('button[type="submit"]');
+    const leadId = document.getElementById('edit-lead-id').value;
+
+    const leadData = {
+        name: document.getElementById('edit-lead-name').value,
+        phone: document.getElementById('edit-lead-phone').value,
+        email: document.getElementById('edit-lead-email').value,
+        sector: document.getElementById('edit-lead-sector').value,
+        status: document.getElementById('edit-lead-status').value,
+        summary: document.getElementById('edit-lead-summary').value,
+        address: document.getElementById('edit-lead-address').value,
+        fecha_planificada: document.getElementById('edit-lead-planned').value ? document.getElementById('edit-lead-planned').value.replace('T', ' ') + ':00' : null
+    };
+
+    saveBtn.innerText = 'Guardando...';
+    saveBtn.disabled = true;
+
+    try {
+        const LEADS_TABLE = 'mgot1kl4sglenym';
+        let res;
+
+        if (leadId) {
+            // Update
+            leadData.unique_id = leadId;
+            res = await fetch(`${API_BASE}/${LEADS_TABLE}/records`, {
+                method: 'PATCH',
+                headers: {
+                    'xc-token': XC_TOKEN,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify([leadData])
+            });
+        } else {
+            // Create - Generate a unique_id if not present (usually NocoDB handles PK, but unique_id is our custom pk)
+            leadData.unique_id = 'lead_' + Date.now();
+            res = await fetch(`${API_BASE}/${LEADS_TABLE}/records`, {
+                method: 'POST',
+                headers: {
+                    'xc-token': XC_TOKEN,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify([leadData])
+            });
+        }
+
+        if (res.ok) {
+            closeLeadModal();
+            loadLeadsManager(); // Refresh table
+            fetchScheduledLeads(); // Refresh calendar if changed
+        } else {
+            const err = await res.json();
+            alert('Error al guardar: ' + (err.message || 'Error desconocido'));
+        }
+    } catch (err) {
+        console.error('Error saving lead:', err);
+        alert('Error de conexión al guardar el lead');
+    } finally {
+        saveBtn.innerText = 'Guardar Cambios';
+        saveBtn.disabled = false;
+    }
+});
+
+// Expose functions to global scope for button onclicks
+window.openLeadEditor = openLeadEditor;
+window.triggerManualCall = async function (phone, name) {
+    if (!phone) return alert('No hay teléfono disponible');
+    // Reuse existing logic from manual call modal
+    document.getElementById('manual-phone').value = phone;
+    document.getElementById('manual-company').value = name;
+    document.getElementById('manual-lead-name').value = name;
+    document.getElementById('manual-call-modal').classList.add('active');
+};
+
 async function loadData() {
     try {
+        // Initialize UI components once
+        if (!window.tabsInitialized) {
+            initTabs();
+            initBulkImport();
+            initAutomationToggle();
+            window.tabsInitialized = true;
+        }
+
+        // Fetch planning data in background
+        fetchScheduledLeads();
+
         // Pre-fetch confirmed data in parallel with call logs
         const [calls] = await Promise.all([
             fetchData(CALL_LOGS_TABLE),
@@ -768,6 +1165,9 @@ async function triggerManualCall() {
     const name = document.getElementById('manual-lead-name').value;
     const company = document.getElementById('manual-company').value;
     const phone = document.getElementById('manual-phone').value;
+    const assistantId = document.getElementById('manual-assistant').value;
+    const isScheduled = document.getElementById('manual-schedule-toggle').checked;
+    const scheduledTime = document.getElementById('manual-schedule-time').value;
     const feedback = document.getElementById('call-feedback');
     const btn = document.getElementById('trigger-call-btn');
 
@@ -777,9 +1177,70 @@ async function triggerManualCall() {
         return;
     }
 
-    const formattedPhone = normalizePhone(phone);
+    if (isScheduled && !scheduledTime) {
+        feedback.textContent = '❌ Por favor, elige una hora para programar';
+        feedback.className = 'feedback-error';
+        return;
+    }
 
+    const formattedPhone = normalizePhone(phone);
     btn.disabled = true;
+
+    if (isScheduled) {
+        // --- SCHEDULE FOR LATER ---
+        btn.textContent = '⌛ Programando Llamada...';
+        feedback.textContent = 'Guardando programación en NocoDB...';
+        feedback.className = 'feedback-loading';
+
+        try {
+            const LEADS_TABLE = 'mgot1kl4sglenym';
+            const leadPayload = {
+                unique_id: 'lead_' + Date.now(),
+                name: name,
+                phone: formattedPhone,
+                email: '',
+                sector: '',
+                summary: company || '',
+                address: '',
+                fecha_planificada: scheduledTime.replace('T', ' ') + ':00'
+            };
+
+            console.log('Scheduling lead payload:', JSON.stringify(leadPayload));
+
+            const res = await fetch(`${API_BASE}/${LEADS_TABLE}/records`, {
+                method: 'POST',
+                headers: {
+                    'xc-token': XC_TOKEN,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(leadPayload)
+            });
+
+            if (res.ok) {
+                feedback.textContent = '📅 ¡Llamada programada con éxito!';
+                feedback.className = 'feedback-success';
+                setTimeout(() => {
+                    closeManualModal();
+                    loadData();
+                    fetchScheduledLeads();
+                }, 2000);
+            } else {
+                const errBody = await res.json();
+                console.error('NocoDB Schedule Error Response:', res.status, errBody);
+                throw new Error(errBody.msg || errBody.message || `Error ${res.status} al guardar`);
+            }
+        } catch (err) {
+            console.error('Schedule Error:', err);
+            feedback.textContent = `❌ Error: ${err.message}`;
+            feedback.className = 'feedback-error';
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '📅 Programar Llamada';
+        }
+        return;
+    }
+
+    // --- IMMEDIATE CALL ---
     btn.textContent = '⌛ Iniciando Llamada...';
     feedback.textContent = 'Conectando con Vapi AI...';
     feedback.className = 'feedback-loading';
@@ -794,7 +1255,7 @@ async function triggerManualCall() {
             },
             body: JSON.stringify({
                 customer: { number: formattedPhone },
-                assistantId: VAPI_ASSISTANT_ID,
+                assistantId: assistantId,
                 phoneNumberId: VAPI_PHONE_NUMBER_ID,
                 assistantOverrides: {
                     variableValues: {
@@ -807,7 +1268,6 @@ async function triggerManualCall() {
         });
 
         const vapiData = await vapiRes.json();
-
         if (!vapiRes.ok) throw new Error(vapiData.message || 'Error en Vapi AI');
 
         feedback.textContent = '✅ Llamada iniciada. Registrando en log...';
@@ -854,7 +1314,17 @@ function openManualModal() {
     document.getElementById('manual-lead-name').value = '';
     document.getElementById('manual-phone').value = '';
     document.getElementById('manual-company').value = '';
+    document.getElementById('manual-schedule-toggle').checked = false;
+    document.getElementById('manual-schedule-fields').style.display = 'none';
+    document.getElementById('trigger-call-btn').textContent = '🚀 Lanzar Llamada';
     document.getElementById('call-feedback').textContent = '';
+
+    // Default time + 5 min
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 5);
+    const tzOffset = now.getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(now - tzOffset)).toISOString().slice(0, 16);
+    document.getElementById('manual-schedule-time').value = localISOTime;
 }
 
 function closeManualModal() {
@@ -864,6 +1334,22 @@ function closeManualModal() {
 document.getElementById('manual-call-fab').addEventListener('click', openManualModal);
 document.getElementById('close-manual-modal').addEventListener('click', closeManualModal);
 document.getElementById('trigger-call-btn').addEventListener('click', triggerManualCall);
+
+// Toggle listeners
+document.getElementById('manual-schedule-toggle').addEventListener('change', (e) => {
+    const fields = document.getElementById('manual-schedule-fields');
+    const btn = document.getElementById('trigger-call-btn');
+    if (e.target.checked) {
+        fields.style.display = 'block';
+        btn.textContent = '📅 Programar Llamada';
+        btn.style.background = 'var(--accent)';
+    } else {
+        fields.style.display = 'none';
+        btn.textContent = '🚀 Lanzar Llamada';
+        btn.style.background = 'var(--success)';
+    }
+});
+
 document.getElementById('manual-call-modal').addEventListener('click', (e) => {
     if (e.target === document.getElementById('manual-call-modal')) {
         closeManualModal();
