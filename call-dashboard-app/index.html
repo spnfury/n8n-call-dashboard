@@ -54,6 +54,7 @@
             <div class="nav-tab active" data-tab="dashboard">📊 Dashboard</div>
             <div class="nav-tab" data-tab="leads">👥 Gestión de Leads</div>
             <div class="nav-tab" data-tab="scheduler">📅 Programar Llamadas</div>
+            <div class="nav-tab" data-tab="test">🧪 Test</div>
         </nav>
 
         <!-- Tab 1: Dashboard View -->
@@ -346,6 +347,59 @@
                         style="max-height: 200px; overflow-y: auto; margin-top: 12px; font-family: monospace; font-size: 12px; color: var(--text-secondary);">
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Tab 4: Test Calls View -->
+        <div id="view-test" class="view-content">
+            <div class="test-header">
+                <div class="test-header-info">
+                    <h2 style="margin: 0; font-size: 20px;">🧪 Llamadas de Test / Manuales</h2>
+                    <p style="color: var(--text-secondary); font-size: 13px; margin-top: 4px;">Estas llamadas fueron
+                        realizadas manualmente y no forman parte de las campañas programadas.</p>
+                </div>
+                <div class="test-stats" id="test-stats">
+                    <div class="test-stat-pill">
+                        <span class="test-stat-value" id="test-total">0</span>
+                        <span class="test-stat-label">Total</span>
+                    </div>
+                    <div class="test-stat-pill success">
+                        <span class="test-stat-value" id="test-success">0</span>
+                        <span class="test-stat-label">Exitosas</span>
+                    </div>
+                    <div class="test-stat-pill danger">
+                        <span class="test-stat-value" id="test-failed">0</span>
+                        <span class="test-stat-label">Fallidas</span>
+                    </div>
+                    <div class="test-stat-pill warning">
+                        <span class="test-stat-value" id="test-voicemail">0</span>
+                        <span class="test-stat-label">Contestador</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Vapi Call ID</th>
+                            <th>Empresa</th>
+                            <th>Teléfono</th>
+                            <th>Fecha</th>
+                            <th>Resultado</th>
+                            <th>Evaluación</th>
+                            <th>Duración</th>
+                            <th>Score</th>
+                            <th>Confirmado</th>
+                            <th>Detalle</th>
+                        </tr>
+                    </thead>
+                    <tbody id="test-call-table">
+                        <tr>
+                            <td colspan="10" class="loading">Cargando llamadas de test...</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
