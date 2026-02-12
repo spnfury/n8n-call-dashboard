@@ -1,0 +1,44 @@
+{
+    "_INSTRUCTIONS": "CHANGES TO APPLY IN n8n:",
+    "_CHANGE_1": "Update 'Get Leads' node - increase limit to 50 and add where filter",
+    "Get Leads - UPDATED": {
+        "parameters": {
+            "authentication": "nocoDbApiToken",
+            "operation": "getAll",
+            "projectId": "p5xxqp29w9h8sb6",
+            "table": "mgot1kl4sglenym",
+            "limit": 50,
+            "where": "(phone,neq,0)~and(phone,neq,)~and(status,eq,Programado)",
+            "options": {}
+        },
+        "id": "73fbb17e-1674-4356-b3ec-d83e57fb409f",
+        "name": "Get Leads",
+        "type": "n8n-nodes-base.nocoDb",
+        "typeVersion": 3,
+        "position": [
+            -1260,
+            1280
+        ],
+        "credentials": {
+            "nocoDbApiToken": {
+                "id": "tV5VwP4BVmME7Vgo",
+                "name": "NocoDB Token account"
+            }
+        }
+    },
+    "_CHANGE_2": "Increase Wait from 15s to 30s to avoid Vapi rate limits with 35 calls",
+    "Wait - UPDATED": {
+        "parameters": {
+            "amount": 30
+        },
+        "id": "16c1594a-cdbc-46aa-affe-05d9baf62788",
+        "name": "Wait 30s",
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [
+            720,
+            1280
+        ],
+        "webhookId": "e006aade-1c7b-4691-8c49-71878091bc8d"
+    }
+}

@@ -171,7 +171,7 @@ async function fetchConfirmedData() {
 async function enrichCallsFromVapi(calls) {
     const callsToEnrich = calls.filter(c =>
         c.vapi_call_id && c.vapi_call_id.startsWith('019') && !c.duration_seconds
-    ).slice(0, 15); // Limit to 15 most recent
+    ).slice(0, 5); // Limit to 5 most recent to avoid rate limits
 
     if (callsToEnrich.length === 0) return false;
 
@@ -245,8 +245,8 @@ async function enrichCallsFromVapi(calls) {
 
             updated = true;
 
-            // Wait 200ms between calls to avoid 429
-            await new Promise(r => setTimeout(r, 200));
+            // Wait 500ms between calls to avoid 429
+            await new Promise(r => setTimeout(r, 500));
         } catch (err) {
             console.warn('Error enriching call', call.vapi_call_id, err);
         }
@@ -467,7 +467,8 @@ async function openDetail(index) {
         } else {
             // Fallback: fetch from API if not in map
             try {
-                const res = await fetch(`${API_BASE}/${CONFIRMED_TABLE}/records?where=(vapi_call_id,eq,${call.vapi_call_id})`, {
+                const query = `(vapi_call_id,eq,${encodeURIComponent(call.vapi_call_id)})`;
+                const res = await fetch(`${API_BASE}/${CONFIRMED_TABLE}/records?where=${query}`, {
                     headers: { 'xc-token': XC_TOKEN }
                 });
                 const data = await res.json();
@@ -504,8 +505,8 @@ function closeModal() {
 async function fetchScheduledLeads() {
     try {
         const LEADS_TABLE = 'mgot1kl4sglenym'; // From bulk_call_manager.json
-        // Fetch leads that have a planned date
-        const res = await fetch(`${API_BASE}/${LEADS_TABLE}/records?limit=50&sort=fecha_planificada`, {
+        // Fetch leads that have a planned date (removed API sort due to potential 422)
+        const res = await fetch(`${API_BASE}/${LEADS_TABLE}/records?limit=100`, {
             headers: { 'xc-token': XC_TOKEN }
         });
         const data = await res.json();
@@ -523,19 +524,25 @@ async function fetchScheduledLeads() {
         plannedGrid.innerHTML = '';
 
         const now = new Date();
+        const sortedLeads = leads.sort((a, b) => utcStringToLocalDate(a.fecha_planificada) - utcStringToLocalDate(b.fecha_planificada));
 
-        leads.forEach(lead => {
-            const plannedDate = new Date(lead.fecha_planificada);
+        // Find the next call (first one with plannedDate > now)
+        const nextCall = sortedLeads.find(l => utcStringToLocalDate(l.fecha_planificada) > now);
+
+        sortedLeads.forEach(lead => {
+            const plannedDate = utcStringToLocalDate(lead.fecha_planificada);
             const isDue = plannedDate <= now;
             const timeStr = plannedDate.toLocaleString('es-ES', {
                 day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
             });
+            const isNext = nextCall && (lead.Id === nextCall.Id || lead.id === nextCall.id);
 
             const card = document.createElement('div');
-            card.className = `planned-card ${isDue ? 'due' : ''}`;
+            card.className = `planned-card ${isDue ? 'due' : ''} ${isNext ? 'is-next' : ''}`;
             card.style.cursor = 'pointer';
             card.title = 'Click para editar este lead';
             card.innerHTML = `
+                ${isNext ? '<div class="next-call-badge">Próxima Llamada</div>' : ''}
                 <div class="planned-card-header">
                     <div class="planned-card-time">${isDue ? '⚡ PRIORITARIO' : '📅 ' + timeStr}</div>
                 </div>
@@ -544,6 +551,9 @@ async function fetchScheduledLeads() {
                     <div class="planned-card-item"><span>📞</span> ${lead.phone || '-'}</div>
                     <div class="planned-card-item"><span>📧</span> ${lead.email || '-'}</div>
                     <div class="planned-card-item"><span>📍</span> ${lead.address || '-'}</div>
+                </div>
+                <div class="planned-card-timer" data-scheduled="${lead.fecha_planificada}">
+                    <span>--:--:--</span>
                 </div>
             `;
 
@@ -568,10 +578,7 @@ async function fetchScheduledLeads() {
                 document.getElementById('edit-lead-address').value = lead.address || '';
 
                 if (lead.fecha_planificada) {
-                    const parts = lead.fecha_planificada.split(' ');
-                    const date = parts[0];
-                    const time = parts[1] ? parts[1].substring(0, 5) : '00:00';
-                    document.getElementById('edit-lead-planned').value = `${date}T${time}`;
+                    document.getElementById('edit-lead-planned').value = utcToLocalDatetime(lead.fecha_planificada);
                 } else {
                     document.getElementById('edit-lead-planned').value = '';
                 }
@@ -611,9 +618,268 @@ function initTabs() {
             if (target === 'leads') {
                 loadLeadsManager();
             }
+            // If switching to scheduler, initialize defaults
+            if (target === 'scheduler') {
+                initSchedulerDefaults();
+            }
         });
     });
 }
+
+// ── Bulk Scheduler Logic ──
+const LEADS_TABLE = 'mgot1kl4sglenym';
+let schedulerLeads = []; // leads fetched for preview
+
+function initSchedulerDefaults() {
+    const startInput = document.getElementById('sched-start');
+    if (!startInput.value) {
+        // Default: next round 5-min mark, +5 minutes from now
+        const now = new Date();
+        now.setMinutes(now.getMinutes() + 5);
+        now.setMinutes(Math.ceil(now.getMinutes() / 5) * 5, 0, 0);
+        const y = now.getFullYear();
+        const mo = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        const h = String(now.getHours()).padStart(2, '0');
+        const mi = String(now.getMinutes()).padStart(2, '0');
+        startInput.value = `${y}-${mo}-${d}T${h}:${mi}`;
+    }
+}
+
+async function fetchEligibleLeads(count, source) {
+    // Fetch all leads, then filter client-side for eligible ones
+    let allRecords = [];
+    let offset = 0;
+    const batchSize = 200;
+
+    // Determine sort order for the API
+    const sortField = 'CreatedAt';
+    const sortDir = source === 'oldest' ? 'asc' : 'desc';
+
+    while (true) {
+        const url = `${API_BASE}/${LEADS_TABLE}/records?limit=${batchSize}&offset=${offset}&sort=-${sortField}`;
+        const res = await fetch(url, {
+            headers: { 'xc-token': XC_TOKEN }
+        });
+        const data = await res.json();
+        const records = data.list || [];
+        allRecords = allRecords.concat(records);
+
+        if (records.length < batchSize || data.pageInfo?.isLastPage !== false) break;
+        offset += batchSize;
+        // Safety limit
+        if (allRecords.length >= 2000) break;
+    }
+
+    // Sort
+    if (source === 'oldest') {
+        allRecords.sort((a, b) => new Date(a.CreatedAt) - new Date(b.CreatedAt));
+    } else {
+        allRecords.sort((a, b) => new Date(b.CreatedAt) - new Date(a.CreatedAt));
+    }
+
+    // Filter: eligible leads
+    const eligible = allRecords.filter(lead => {
+        const phone = String(lead.phone || '').trim();
+        // Must have a valid phone
+        if (!phone || phone === '0' || phone === 'null' || phone.length < 6) return false;
+        // Must not already be scheduled or in process
+        const status = (lead.status || '').toLowerCase();
+        if (status === 'programado' || status === 'en proceso' || status === 'llamando...') return false;
+        // Must not have a pending fecha_planificada
+        if (lead.fecha_planificada) return false;
+        // If "no-status" filter, only include leads without status or Completado with errors
+        if (source === 'no-status' && status && status !== '' && status !== 'completado' && status !== 'error') return false;
+        return true;
+    });
+
+    return eligible.slice(0, count);
+}
+
+function renderSchedulePreview(leads, startTime, spacingMinutes) {
+    const summaryEl = document.getElementById('sched-summary');
+    const statsEl = document.getElementById('sched-summary-stats');
+    const timelineEl = document.getElementById('sched-timeline');
+    const executeBtn = document.getElementById('sched-execute-btn');
+
+    if (leads.length === 0) {
+        summaryEl.style.display = 'block';
+        statsEl.innerHTML = '';
+        timelineEl.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">⚠️ No se encontraron leads elegibles con los criterios seleccionados</div>';
+        executeBtn.disabled = true;
+        return;
+    }
+
+    const totalDuration = (leads.length - 1) * spacingMinutes;
+    const endTime = new Date(startTime.getTime() + totalDuration * 60000);
+
+    const hours = Math.floor(totalDuration / 60);
+    const mins = totalDuration % 60;
+    const durationStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+
+    statsEl.innerHTML = `
+        <div class="sched-stat accent">📊 ${leads.length} leads</div>
+        <div class="sched-stat warning">⏱️ ${durationStr} total</div>
+        <div class="sched-stat success">🏁 Fin: ${endTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</div>
+    `;
+
+    let html = '';
+    leads.forEach((lead, i) => {
+        const callTime = new Date(startTime.getTime() + i * spacingMinutes * 60000);
+        const timeStr = callTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        const dateStr = callTime.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+
+        html += `
+            <div class="timeline-item" id="sched-item-${i}">
+                <div class="timeline-index">${i + 1}</div>
+                <div class="timeline-info">
+                    <div class="timeline-name">${lead.name || 'Sin nombre'}</div>
+                    <div class="timeline-phone">📞 ${lead.phone}</div>
+                </div>
+                <div class="timeline-time">
+                    ${timeStr}
+                    <small>${dateStr}</small>
+                </div>
+            </div>
+        `;
+    });
+
+    timelineEl.innerHTML = html;
+    summaryEl.style.display = 'block';
+    executeBtn.disabled = false;
+}
+
+async function executeScheduling(leads, startTime, spacingMinutes, assistantId) {
+    const progressEl = document.getElementById('sched-progress');
+    const progressBar = document.getElementById('sched-progress-bar');
+    const progressText = document.getElementById('sched-progress-text');
+    const progressLog = document.getElementById('sched-progress-log');
+    const executeBtn = document.getElementById('sched-execute-btn');
+    const previewBtn = document.getElementById('sched-preview-btn');
+
+    progressEl.style.display = 'block';
+    executeBtn.disabled = true;
+    previewBtn.disabled = true;
+    progressLog.innerHTML = '';
+
+    let success = 0;
+    let errors = 0;
+
+    for (let i = 0; i < leads.length; i++) {
+        const lead = leads[i];
+        const leadId = lead.Id || lead.id;
+        const callTime = new Date(startTime.getTime() + i * spacingMinutes * 60000);
+        const utcTime = localDatetimeToUTC(callTime.getFullYear() + '-' +
+            String(callTime.getMonth() + 1).padStart(2, '0') + '-' +
+            String(callTime.getDate()).padStart(2, '0') + 'T' +
+            String(callTime.getHours()).padStart(2, '0') + ':' +
+            String(callTime.getMinutes()).padStart(2, '0'));
+
+        console.log(`[Scheduler] Scheduling lead ${i + 1}/${leads.length}: Id=${leadId}, time=${utcTime}`);
+
+        if (!leadId) {
+            errors++;
+            progressLog.innerHTML += `<div style="color: var(--danger);">✗ ${lead.name || lead.phone}: Sin ID válido para actualizar</div>`;
+            continue;
+        }
+
+        try {
+            const patchData = {
+                Id: leadId,
+                status: 'Programado',
+                fecha_planificada: utcTime
+            };
+            if (assistantId) patchData.assistant_id = assistantId;
+
+            const res = await fetch(`${API_BASE}/${LEADS_TABLE}/records`, {
+                method: 'PATCH',
+                headers: { 'xc-token': XC_TOKEN, 'Content-Type': 'application/json' },
+                body: JSON.stringify([patchData])
+            });
+
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            success++;
+            const timelineItem = document.getElementById(`sched-item-${i}`);
+            if (timelineItem) {
+                timelineItem.classList.add('done');
+                timelineItem.querySelector('.timeline-index').textContent = '✓';
+            }
+            progressLog.innerHTML += `<div style="color: var(--success);">✓ ${lead.name || lead.phone} → ${callTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</div>`;
+        } catch (err) {
+            errors++;
+            const timelineItem = document.getElementById(`sched-item-${i}`);
+            if (timelineItem) timelineItem.classList.add('error-item');
+            progressLog.innerHTML += `<div style="color: var(--danger);">✗ ${lead.name || lead.phone}: ${err.message}</div>`;
+        }
+
+        // Update progress
+        const pct = Math.round(((i + 1) / leads.length) * 100);
+        progressBar.style.width = `${pct}%`;
+        progressText.textContent = `${i + 1} / ${leads.length} — ${success} ✓ ${errors > 0 ? errors + ' ✗' : ''}`;
+
+        // Scroll log to bottom
+        progressLog.scrollTop = progressLog.scrollHeight;
+    }
+
+    // Final status
+    progressText.innerHTML = `<span style="color: var(--success); font-weight: 600;">✅ Completado: ${success} programados</span>${errors > 0 ? ` <span style="color: var(--danger);">(${errors} errores)</span>` : ''}`;
+    executeBtn.disabled = false;
+    previewBtn.disabled = false;
+    executeBtn.textContent = '✅ Hecho — Programar más';
+}
+
+// Event Listeners for Scheduler
+document.getElementById('sched-preview-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('sched-preview-btn');
+    const count = parseInt(document.getElementById('sched-count').value) || 50;
+    const source = document.getElementById('sched-source').value;
+    const startStr = document.getElementById('sched-start').value;
+    const spacing = parseInt(document.getElementById('sched-spacing').value) || 2;
+
+    if (!startStr) {
+        alert('Por favor, selecciona una fecha y hora de inicio');
+        return;
+    }
+
+    btn.textContent = '⏳ Buscando leads...';
+    btn.disabled = true;
+
+    try {
+        console.log('[Scheduler] Fetching eligible leads:', { count, source });
+        schedulerLeads = await fetchEligibleLeads(count, source);
+        console.log('[Scheduler] Found eligible leads:', schedulerLeads.length, schedulerLeads.map(l => ({ Id: l.Id, id: l.id, name: l.name, status: l.status })));
+        const startTime = new Date(startStr);
+        renderSchedulePreview(schedulerLeads, startTime, spacing);
+    } catch (err) {
+        console.error('[Scheduler] Error fetching leads:', err);
+        alert('Error al buscar leads: ' + err.message);
+    } finally {
+        btn.textContent = '🔍 Ver Preview';
+        btn.disabled = false;
+    }
+});
+
+document.getElementById('sched-execute-btn').addEventListener('click', async () => {
+    console.log('[Scheduler] Execute clicked, leads:', schedulerLeads.length);
+    if (schedulerLeads.length === 0) {
+        alert('No hay leads para programar. Haz click en "Ver Preview" primero.');
+        return;
+    }
+
+    const startStr = document.getElementById('sched-start').value;
+    const spacing = parseInt(document.getElementById('sched-spacing').value) || 2;
+    const startTime = new Date(startStr);
+    const assistantId = document.getElementById('sched-assistant').value;
+
+    console.log('[Scheduler] Config:', { startStr, spacing, startTime, assistantId, leadsCount: schedulerLeads.length });
+
+    const confirmed = confirm(`¿Programar ${schedulerLeads.length} llamadas empezando a las ${startTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}?`);
+    if (!confirmed) return;
+
+    document.getElementById('sched-execute-btn').textContent = '⏳ Programando...';
+    await executeScheduling(schedulerLeads, startTime, spacing, assistantId);
+});
 
 // --- Lead Management Logic ---
 let allLeads = [];
@@ -624,16 +890,87 @@ async function loadLeadsManager() {
 
     try {
         const LEADS_TABLE = 'mgot1kl4sglenym';
-        const res = await fetch(`${API_BASE}/${LEADS_TABLE}/records?limit=100`, {
-            headers: { 'xc-token': XC_TOKEN }
-        });
-        const data = await res.json();
-        allLeads = data.list || [];
+        // Paginate to fetch ALL leads
+        let allRecords = [];
+        let offset = 0;
+        const batchSize = 200;
+
+        while (true) {
+            const res = await fetch(`${API_BASE}/${LEADS_TABLE}/records?limit=${batchSize}&offset=${offset}`, {
+                headers: { 'xc-token': XC_TOKEN }
+            });
+            const data = await res.json();
+            const records = data.list || [];
+            allRecords = allRecords.concat(records);
+            if (records.length < batchSize || data.pageInfo?.isLastPage !== false) break;
+            offset += batchSize;
+            if (allRecords.length >= 5000) break; // Safety limit
+        }
+
+        allLeads = allRecords;
         renderLeadsTable(allLeads);
+        updateLeadsKPIs(allLeads);
     } catch (err) {
         console.error('Error loading leads:', err);
         tbody.innerHTML = '<tr><td colspan="7" class="error">Error al cargar leads</td></tr>';
     }
+}
+
+function updateLeadsKPIs(leads) {
+    const total = leads.length;
+    const nuevos = leads.filter(l => {
+        const s = (l.status || '').toLowerCase();
+        return !s || s === 'nuevo';
+    }).length;
+    const programados = leads.filter(l => (l.status || '').toLowerCase() === 'programado').length;
+    const completados = leads.filter(l => (l.status || '').toLowerCase() === 'completado').length;
+    const interesados = leads.filter(l => (l.status || '').toLowerCase() === 'interesado').length;
+    const fallidos = leads.filter(l => {
+        const s = (l.status || '').toLowerCase();
+        return s === 'fallido' || s === 'reintentar';
+    }).length;
+
+    // Conversion rate = (interesados + completados) / total
+    const conversionRate = total > 0 ? Math.round(((interesados + completados) / total) * 100) : 0;
+
+    // Animate KPI values
+    animateKPIValue('kpi-total-leads', total);
+    animateKPIValue('kpi-nuevos', nuevos);
+    animateKPIValue('kpi-programados', programados);
+    animateKPIValue('kpi-completados', completados);
+    animateKPIValue('kpi-interesados', interesados);
+    animateKPIValue('kpi-fallidos', fallidos);
+
+    const convEl = document.getElementById('kpi-conversion');
+    if (convEl) convEl.textContent = conversionRate + '%';
+
+    // Update progress bars (percentage of total)
+    setKPIBar('kpi-bar-nuevos', total > 0 ? (nuevos / total) * 100 : 0);
+    setKPIBar('kpi-bar-programados', total > 0 ? (programados / total) * 100 : 0);
+    setKPIBar('kpi-bar-completados', total > 0 ? (completados / total) * 100 : 0);
+    setKPIBar('kpi-bar-interesados', total > 0 ? (interesados / total) * 100 : 0);
+    setKPIBar('kpi-bar-fallidos', total > 0 ? (fallidos / total) * 100 : 0);
+}
+
+function animateKPIValue(id, targetValue) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const duration = 600;
+    const start = performance.now();
+    const startVal = parseInt(el.textContent) || 0;
+    function step(now) {
+        const progress = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        el.textContent = Math.round(startVal + (targetValue - startVal) * eased);
+        if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+}
+
+function setKPIBar(id, pct) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    setTimeout(() => { el.style.width = Math.max(pct, 2) + '%'; }, 100);
 }
 
 // --- Automation Toggle Logic ---
@@ -642,15 +979,15 @@ async function initAutomationToggle() {
     const CONFIG_TABLE = 'm4044lwk0p6f721';
 
     try {
-        const query = encodeURIComponent('(key,eq,automation_enabled)');
+        const query = '(Key,eq,automation_enabled)';
         const res = await fetch(`${API_BASE}/${CONFIG_TABLE}/records?where=${query}`, {
             headers: { 'xc-token': XC_TOKEN }
         });
         const data = await res.json();
         const config = data.list && data.list[0];
         if (config) {
-            toggle.checked = config.value === 'true';
-            window.automationConfigId = config.id || config.Id;
+            toggle.checked = config.Value === 'true';
+            window.automationConfigId = config.Id || config.id;
         } else {
             console.warn('Automation config not found — toggle defaults to OFF');
             toggle.checked = false;
@@ -669,8 +1006,8 @@ async function initAutomationToggle() {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify([{
-                    id: window.automationConfigId,
-                    value: toggle.checked ? 'true' : 'false'
+                    Id: window.automationConfigId,
+                    Value: toggle.checked ? 'true' : 'false'
                 }])
             });
         } catch (err) {
@@ -757,20 +1094,28 @@ function renderLeadsTable(leads) {
         return;
     }
 
-    tbody.innerHTML = leads.map(lead => `
-        <tr data-id="${lead.Id}">
-            <td><strong>${lead.name || 'Sin nombre'}</strong></td>
-            <td>${lead.phone || '-'}</td>
-            <td><span class="status-badge ${getBadgeStatusClass(lead.status)}">${lead.status || 'Nuevo'}</span></td>
-            <td><small class="text-muted">${lead.sector || '-'}</small></td>
-            <td><div class="truncate-text" title="${lead.summary || ''}">${lead.summary || '-'}</div></td>
-            <td>${lead.fecha_planificada ? new Date(lead.fecha_planificada).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}</td>
-            <td class="actions-cell">
-                <button class="btn-detail" onclick="triggerManualCall('${lead.phone}', '${lead.name}')" title="Llamar ahora">📞</button>
-                <button class="btn-detail" onclick="openLeadEditor(${lead.Id})" title="Editar">✏️</button>
-            </td>
-        </tr>
-    `).join('');
+    tbody.innerHTML = leads.map(lead => {
+        const leadId = lead.unique_id || lead.Id || lead.id;
+        // Escape single quotes for HTML onclick attributes
+        const escapedName = (lead.name || 'Sin nombre').replace(/'/g, "\\'");
+        const escapedPhone = (lead.phone || '').replace(/'/g, "\\'");
+        const escapedId = (leadId || '').toString().replace(/'/g, "\\'");
+
+        return `
+            <tr data-id="${escapedId}">
+                <td><strong>${lead.name || 'Sin nombre'}</strong></td>
+                <td><small class="text-muted">${lead.sector || '-'}</small></td>
+                <td>${lead.phone || '-'}</td>
+                <td>${lead.email || '-'}</td>
+                <td><span class="status-badge ${getBadgeStatusClass(lead.status)}">${lead.status || 'Nuevo'}</span></td>
+                <td>${lead.fecha_planificada ? utcStringToLocalDate(lead.fecha_planificada).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                <td class="actions-cell">
+                    <button class="btn-detail" onclick="triggerManualCall('${escapedPhone}', '${escapedName}')" title="Llamar ahora">📞</button>
+                    <button class="btn-detail" onclick="openLeadEditor('${escapedId}')" title="Editar">✏️</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
 
 function getBadgeStatusClass(status) {
@@ -805,7 +1150,7 @@ function openLeadEditor(leadId = null) {
 
     if (leadId) {
         title.innerText = 'Editar Lead';
-        const lead = allLeads.find(l => l.Id === leadId);
+        const lead = allLeads.find(l => (l.unique_id || l.Id || l.id).toString() === leadId.toString());
         if (lead) {
             document.getElementById('edit-lead-name').value = lead.name || '';
             document.getElementById('edit-lead-phone').value = lead.phone || '';
@@ -815,11 +1160,8 @@ function openLeadEditor(leadId = null) {
             document.getElementById('edit-lead-summary').value = lead.summary || '';
             document.getElementById('edit-lead-address').value = lead.address || '';
             if (lead.fecha_planificada) {
-                // Convert NocoDB format (YYYY-MM-DD HH:mm:ss) to datetime-local (YYYY-MM-DDTHH:mm)
-                const parts = lead.fecha_planificada.split(' ');
-                const date = parts[0];
-                const time = parts[1] ? parts[1].substring(0, 5) : '00:00';
-                document.getElementById('edit-lead-planned').value = `${date}T${time}`;
+                // Convert UTC NocoDB value to local datetime-local format
+                document.getElementById('edit-lead-planned').value = utcToLocalDatetime(lead.fecha_planificada);
             } else {
                 document.getElementById('edit-lead-planned').value = '';
             }
@@ -855,7 +1197,7 @@ document.getElementById('lead-form').addEventListener('submit', async (e) => {
         status: document.getElementById('edit-lead-status').value,
         summary: document.getElementById('edit-lead-summary').value,
         address: document.getElementById('edit-lead-address').value,
-        fecha_planificada: document.getElementById('edit-lead-planned').value ? document.getElementById('edit-lead-planned').value.replace('T', ' ') + ':00' : null
+        fecha_planificada: document.getElementById('edit-lead-planned').value ? localDatetimeToUTC(document.getElementById('edit-lead-planned').value) : null
     };
 
     saveBtn.innerText = 'Guardando...';
@@ -917,7 +1259,7 @@ window.triggerManualCall = async function (phone, name) {
     document.getElementById('manual-call-modal').classList.add('active');
 };
 
-async function loadData() {
+async function loadData(skipEnrichment = false) {
     try {
         // Initialize UI components once
         if (!window.tabsInitialized) {
@@ -954,13 +1296,13 @@ async function loadData() {
         });
 
         // Enrich calls with missing data from Vapi (runs in background after render)
-        if (!isEnriching) {
+        if (!isEnriching && !skipEnrichment) {
             setTimeout(async () => {
                 isEnriching = true;
                 try {
                     const wasUpdated = await enrichCallsFromVapi(calls);
                     if (wasUpdated) {
-                        loadData(); // Re-render with enriched data
+                        loadData(true); // Re-render with enriched data, but skip further enrichment cycles
                     }
                 } finally {
                     isEnriching = false;
@@ -1194,6 +1536,45 @@ function checkAuth() {
 
 checkAuth();
 
+// --- Timezone Helper ---
+// Convert a datetime-local input value (local time) to UTC string for NocoDB
+// Input: '2026-02-12T13:00' (local CET) → Output: '2026-02-12 12:00:00' (UTC)
+function localDatetimeToUTC(datetimeLocalValue) {
+    if (!datetimeLocalValue) return null;
+    const localDate = new Date(datetimeLocalValue); // parses as local time
+    const utcYear = localDate.getUTCFullYear();
+    const utcMonth = String(localDate.getUTCMonth() + 1).padStart(2, '0');
+    const utcDay = String(localDate.getUTCDate()).padStart(2, '0');
+    const utcHours = String(localDate.getUTCHours()).padStart(2, '0');
+    const utcMinutes = String(localDate.getUTCMinutes()).padStart(2, '0');
+    return `${utcYear}-${utcMonth}-${utcDay} ${utcHours}:${utcMinutes}:00`;
+}
+
+// Convert a UTC date string from NocoDB to a datetime-local input value (local time)
+// Input: '2026-02-12 12:00:00' (UTC) → Output: '2026-02-12T13:00' (local CET)
+function utcToLocalDatetime(utcStr) {
+    if (!utcStr) return '';
+    // Parse as UTC by appending 'Z' if no timezone info
+    const normalized = utcStr.replace(' ', 'T');
+    const asUTC = normalized.endsWith('Z') ? normalized : normalized + 'Z';
+    const d = new Date(asUTC);
+    if (isNaN(d.getTime())) return '';
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+// Convert a UTC date string to a local Date object for display/comparison
+function utcStringToLocalDate(utcStr) {
+    if (!utcStr) return new Date(NaN);
+    const normalized = utcStr.replace(' ', 'T');
+    const asUTC = normalized.endsWith('Z') ? normalized : normalized + 'Z';
+    return new Date(asUTC);
+}
+
 // --- Manual Vapi Call Integration ---
 const VAPI_API_KEY = '852080ba-ce7c-4778-b218-bf718613a2b6';
 const VAPI_ASSISTANT_ID = '49e56db1-1f20-4cf1-b031-9cea9fba73cb';
@@ -1246,7 +1627,7 @@ async function triggerManualCall() {
                 sector: '',
                 summary: company || '',
                 address: '',
-                fecha_planificada: scheduledTime.replace('T', ' ') + ':00'
+                fecha_planificada: localDatetimeToUTC(scheduledTime)
             };
 
             console.log('Scheduling lead payload:', JSON.stringify(leadPayload));
@@ -1290,8 +1671,8 @@ async function triggerManualCall() {
     feedback.className = 'feedback-loading';
 
     try {
-        // 1. Call Vapi AI
-        const vapiRes = await fetch('https://api.vapi.ai/call', {
+        // 1. Call Vapi AI via local proxy to avoid CORS
+        const vapiRes = await fetch('/vapi-api/call', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${VAPI_API_KEY}`,
@@ -1335,9 +1716,54 @@ async function triggerManualCall() {
         if (logRes.ok) {
             feedback.textContent = '🚀 ¡Llamada lanzada con éxito!';
             feedback.className = 'feedback-success';
-            setTimeout(() => {
+            setTimeout(async () => {
                 closeManualModal();
                 loadData();
+
+                // 3. Clear scheduled status in Leads table so it disappears from Planning section
+                try {
+                    const LEADS_TABLE = 'mgot1kl4sglenym';
+                    // Search by raw phone first (as stored in DB), then normalized
+                    const rawPhone = document.getElementById('manual-phone').value.trim();
+                    const normalizedPhone = normalizePhone(formattedPhone);
+
+                    console.log(`[Persistence] Searching for lead: raw=${rawPhone}, normalized=${normalizedPhone}`);
+
+                    // Try raw phone first (many leads stored without +34)
+                    let searchRes = await fetch(`${API_BASE}/${LEADS_TABLE}/records?where=(phone,eq,${encodeURIComponent(rawPhone)})`, {
+                        headers: { 'xc-token': XC_TOKEN }
+                    });
+                    let searchData = await searchRes.json();
+                    let leadToClear = searchData.list && searchData.list[0];
+
+                    // If not found, try normalized phone
+                    if (!leadToClear && normalizedPhone !== rawPhone) {
+                        searchRes = await fetch(`${API_BASE}/${LEADS_TABLE}/records?where=(phone,eq,${encodeURIComponent(normalizedPhone)})`, {
+                            headers: { 'xc-token': XC_TOKEN }
+                        });
+                        searchData = await searchRes.json();
+                        leadToClear = searchData.list && searchData.list[0];
+                    }
+
+                    if (leadToClear && leadToClear.fecha_planificada) {
+                        const leadId = leadToClear.Id || leadToClear.id;
+                        console.log(`[Persistence] Found lead ${leadId}. Clearing fecha_planificada...`);
+                        await fetch(`${API_BASE}/${LEADS_TABLE}/records`, {
+                            method: 'PATCH',
+                            headers: { 'xc-token': XC_TOKEN, 'Content-Type': 'application/json' },
+                            body: JSON.stringify([{
+                                Id: leadId,
+                                fecha_planificada: null
+                            }])
+                        });
+                        console.log('[Persistence] Successfully cleared lead status.');
+                        setTimeout(fetchScheduledLeads, 500);
+                    } else {
+                        console.warn('[Persistence] No scheduled lead found for phone:', rawPhone, normalizedPhone);
+                    }
+                } catch (e) {
+                    console.error('[Persistence] Error clearing lead status:', e);
+                }
             }, 2000);
         } else {
             throw new Error('Error al guardar log en NocoDB');
@@ -1488,8 +1914,9 @@ document.getElementById('apply-extraction-btn').addEventListener('click', async 
         const phoneCalled = activeDetailCall.phone_called;
         const normalizedSearch = normalizePhone(phoneCalled);
 
-        // 1. Find the lead by normalized phone
-        const searchRes = await fetch(`${API_BASE}/${LEADS_TABLE}/records?where=(phone,eq,${normalizedSearch})`, {
+        // 1. Find the lead by normalized phone (encoded for special chars like +)
+        const query = `(phone,eq,${encodeURIComponent(normalizedSearch)})`;
+        const searchRes = await fetch(`${API_BASE}/${LEADS_TABLE}/records?where=${query}`, {
             headers: { 'xc-token': XC_TOKEN }
         });
         const searchData = await searchRes.json();
@@ -1540,12 +1967,61 @@ document.getElementById('apply-extraction-btn').addEventListener('click', async 
     }
 });
 
-// --- Live Clock Logic ---
+// --- Live Clock & Timer Logic ---
+function updatePlannedTimers() {
+    const timers = document.querySelectorAll('.planned-card-timer');
+    if (timers.length === 0) return;
+
+    const now = new Date();
+
+    timers.forEach(timer => {
+        const scheduledStr = timer.getAttribute('data-scheduled');
+        if (!scheduledStr) return;
+
+        const scheduledAt = utcStringToLocalDate(scheduledStr);
+        const diff = scheduledAt - now;
+        const span = timer.querySelector('span');
+
+        if (diff <= 0) {
+            // Show overdue status instead of "Llamando..." — the call may or may not have been triggered
+            const overdueMinutes = Math.abs(Math.floor(diff / 60000));
+            if (overdueMinutes < 2) {
+                span.textContent = '⏳ Lanzando...';
+            } else {
+                span.textContent = `⏰ Vencida hace ${overdueMinutes}min`;
+            }
+            span.className = 'timer-urgent';
+            return;
+        }
+
+        const totalSeconds = Math.floor(diff / 1000);
+        const h = Math.floor(totalSeconds / 3600);
+        const m = Math.floor((totalSeconds % 3600) / 60);
+        const s = totalSeconds % 60;
+
+        const timeStr = `${h > 0 ? h + 'h ' : ''}${m.toString().padStart(2, '0')}m ${s.toString().padStart(2, '0')}s`;
+        span.textContent = timeStr;
+
+        // Visual Urgency
+        if (totalSeconds < 300) { // < 5 mins
+            span.className = 'timer-urgent';
+        } else if (totalSeconds < 3600) { // < 1 hour
+            span.className = 'timer-warning';
+        } else {
+            span.className = '';
+        }
+    });
+}
+
 function updateLiveClock() {
     const clockEl = document.getElementById('live-clock');
     if (!clockEl) return;
 
     const now = new Date();
+
+    // Also update planned timers to stay in sync
+    updatePlannedTimers();
+
     const options = {
         timeZone: 'Europe/Madrid',
         hour: '2-digit',

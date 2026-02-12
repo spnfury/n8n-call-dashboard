@@ -39,40 +39,6 @@
                     style="font-size: 12px; color: var(--text-secondary); margin-left: 8px; font-weight: 400;">v0.0.1</small>
             </h1>
             <div class="header-actions">
-                <div class="filter-group">
-                    <div class="filter-container">
-                        <input type="checkbox" id="filter-confirmed">
-                        <label for="filter-confirmed">Confirmados</label>
-                    </div>
-                    <div class="filter-container">
-                        <span class="icon" style="font-size: 14px;">🚦</span>
-                        <select id="filter-status" class="filter-select">
-                            <option value="all">Todos los resultados</option>
-                            <option value="success">Aceptadas (Éxito)</option>
-                            <option value="fail">Fallidas (Error)</option>
-                        </select>
-                    </div>
-                    <div class="filter-container">
-                        <span class="icon" style="font-size: 14px;">🏢</span>
-                        <input type="text" id="filter-company" class="filter-input-text"
-                            placeholder="Buscar empresa...">
-                    </div>
-                    <div class="filter-container">
-                        <span class="icon" style="font-size: 14px;">🏆</span>
-                        <select id="filter-score" class="filter-select">
-                            <option value="all">Todos los scores</option>
-                            <option value="80-100">🟢 Excelente (80-100)</option>
-                            <option value="60-79">🔵 Buena (60-79)</option>
-                            <option value="40-59">🟡 Regular (40-59)</option>
-                            <option value="20-39">🟠 Deficiente (20-39)</option>
-                            <option value="0-19">🔴 Muy mala (0-19)</option>
-                        </select>
-                    </div>
-                    <div class="date-filter-container">
-                        <span class="icon">📅</span>
-                        <input type="text" id="date-range" placeholder="Filtrar por fechas...">
-                    </div>
-                </div>
                 <div class="automation-control">
                     <span style="font-size: 13px; font-weight: 600;">🤖 Automatización</span>
                     <label class="switch">
@@ -87,10 +53,49 @@
         <nav class="nav-tabs">
             <div class="nav-tab active" data-tab="dashboard">📊 Dashboard</div>
             <div class="nav-tab" data-tab="leads">👥 Gestión de Leads</div>
+            <div class="nav-tab" data-tab="scheduler">📅 Programar Llamadas</div>
         </nav>
 
         <!-- Tab 1: Dashboard View -->
         <div id="view-dashboard" class="view-content active">
+
+            <!-- Integrated Filter Bar -->
+            <div class="dashboard-filter-bar">
+                <div class="filter-bar-search">
+                    <span class="filter-bar-icon">🔍</span>
+                    <input type="text" id="filter-company" placeholder="Buscar por empresa...">
+                </div>
+                <div class="filter-bar-controls">
+                    <div class="filter-pill">
+                        <span class="filter-pill-icon">🚦</span>
+                        <select id="filter-status" class="filter-pill-select">
+                            <option value="all">Todos</option>
+                            <option value="success">Éxito</option>
+                            <option value="fail">Fallidas</option>
+                        </select>
+                    </div>
+                    <div class="filter-pill">
+                        <span class="filter-pill-icon">🏆</span>
+                        <select id="filter-score" class="filter-pill-select">
+                            <option value="all">Score</option>
+                            <option value="80-100">🟢 80-100</option>
+                            <option value="60-79">🔵 60-79</option>
+                            <option value="40-59">🟡 40-59</option>
+                            <option value="20-39">🟠 20-39</option>
+                            <option value="0-19">🔴 0-19</option>
+                        </select>
+                    </div>
+                    <div class="filter-pill date-pill">
+                        <span class="filter-pill-icon">📅</span>
+                        <input type="text" id="date-range" placeholder="Fechas...">
+                    </div>
+                    <label class="filter-pill filter-pill-toggle" for="filter-confirmed">
+                        <input type="checkbox" id="filter-confirmed">
+                        <span class="filter-pill-check">✅ Confirmados</span>
+                    </label>
+                </div>
+            </div>
+
             <div class="analytics-section">
                 <div class="section-title">📊 Análisis de Rendimiento</div>
                 <div class="chart-container glass-effect">
@@ -173,6 +178,74 @@
                 </div>
             </div>
 
+            <!-- KPI Header -->
+            <div class="leads-kpi-section">
+                <div class="leads-kpi-card leads-kpi-total">
+                    <div class="leads-kpi-icon">👥</div>
+                    <div class="leads-kpi-info">
+                        <div class="leads-kpi-value" id="kpi-total-leads">-</div>
+                        <div class="leads-kpi-label">Total Leads</div>
+                    </div>
+                </div>
+                <div class="leads-kpi-card leads-kpi-nuevos">
+                    <div class="leads-kpi-icon">🆕</div>
+                    <div class="leads-kpi-info">
+                        <div class="leads-kpi-value" id="kpi-nuevos">-</div>
+                        <div class="leads-kpi-label">Nuevos</div>
+                    </div>
+                    <div class="leads-kpi-bar">
+                        <div class="leads-kpi-bar-fill nuevos" id="kpi-bar-nuevos"></div>
+                    </div>
+                </div>
+                <div class="leads-kpi-card leads-kpi-programados">
+                    <div class="leads-kpi-icon">📅</div>
+                    <div class="leads-kpi-info">
+                        <div class="leads-kpi-value" id="kpi-programados">-</div>
+                        <div class="leads-kpi-label">Programados</div>
+                    </div>
+                    <div class="leads-kpi-bar">
+                        <div class="leads-kpi-bar-fill programados" id="kpi-bar-programados"></div>
+                    </div>
+                </div>
+                <div class="leads-kpi-card leads-kpi-completados">
+                    <div class="leads-kpi-icon">✅</div>
+                    <div class="leads-kpi-info">
+                        <div class="leads-kpi-value" id="kpi-completados">-</div>
+                        <div class="leads-kpi-label">Completados</div>
+                    </div>
+                    <div class="leads-kpi-bar">
+                        <div class="leads-kpi-bar-fill completados" id="kpi-bar-completados"></div>
+                    </div>
+                </div>
+                <div class="leads-kpi-card leads-kpi-interesados">
+                    <div class="leads-kpi-icon">🔥</div>
+                    <div class="leads-kpi-info">
+                        <div class="leads-kpi-value" id="kpi-interesados">-</div>
+                        <div class="leads-kpi-label">Interesados</div>
+                    </div>
+                    <div class="leads-kpi-bar">
+                        <div class="leads-kpi-bar-fill interesados" id="kpi-bar-interesados"></div>
+                    </div>
+                </div>
+                <div class="leads-kpi-card leads-kpi-fallidos">
+                    <div class="leads-kpi-icon">❌</div>
+                    <div class="leads-kpi-info">
+                        <div class="leads-kpi-value" id="kpi-fallidos">-</div>
+                        <div class="leads-kpi-label">Fallidos</div>
+                    </div>
+                    <div class="leads-kpi-bar">
+                        <div class="leads-kpi-bar-fill fallidos" id="kpi-bar-fallidos"></div>
+                    </div>
+                </div>
+                <div class="leads-kpi-card leads-kpi-conversion">
+                    <div class="leads-kpi-icon">📈</div>
+                    <div class="leads-kpi-info">
+                        <div class="leads-kpi-value" id="kpi-conversion">-</div>
+                        <div class="leads-kpi-label">Tasa Conversión</div>
+                    </div>
+                </div>
+            </div>
+
             <div class="table-container">
                 <table>
                     <thead>
@@ -192,6 +265,87 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- Tab 3: Bulk Scheduler View -->
+        <div id="view-scheduler" class="view-content">
+            <div class="scheduler-container">
+                <div class="scheduler-config glass-effect">
+                    <div class="section-title" style="margin-bottom: 20px;">⚙️ Configuración de Programación</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label for="sched-count">📊 Cantidad de Leads</label>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <input type="number" id="sched-count" value="50" min="1" max="1000"
+                                    style="flex:1; background: rgba(0,0,0,0.3); border: 1px solid var(--border); padding: 14px 18px; border-radius: 12px; color: white; font-size: 15px;">
+                                <select id="sched-source" class="filter-select"
+                                    style="flex:1; background: rgba(0,0,0,0.3); border: 1px solid var(--border); padding: 14px 18px; border-radius: 12px; color: white; font-size: 15px;">
+                                    <option value="newest">Más recientes</option>
+                                    <option value="oldest">Más antiguos</option>
+                                    <option value="no-status">Sin estado</option>
+                                </select>
+                            </div>
+                            <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">Solo se
+                                programarán leads con teléfono válido y sin llamada pendiente</p>
+                        </div>
+                        <div class="form-group">
+                            <label for="sched-start">🕐 Fecha y Hora de Inicio</label>
+                            <input type="datetime-local" id="sched-start"
+                                style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border); padding: 14px 18px; border-radius: 12px; color: white; font-size: 15px;">
+                            <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">Primera llamada
+                                se ejecutará a esta hora</p>
+                        </div>
+                        <div class="form-group">
+                            <label for="sched-spacing">⏱️ Espacio entre llamadas</label>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <input type="number" id="sched-spacing" value="2" min="1" max="60"
+                                    style="flex:1; background: rgba(0,0,0,0.3); border: 1px solid var(--border); padding: 14px 18px; border-radius: 12px; color: white; font-size: 15px;">
+                                <span
+                                    style="color: var(--text-secondary); font-size: 14px; white-space: nowrap;">minutos</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="sched-assistant">🤖 Asistente IA</label>
+                            <select id="sched-assistant" class="filter-select"
+                                style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border); padding: 14px 18px; border-radius: 12px; color: white; font-size: 15px;">
+                                <option value="49e56db1-1f20-4cf1-b031-9cea9fba73cb">V1 — Violeta (original)</option>
+                                <option value="f34469b5-334e-4fbf-b5ad-b2b05e8d76ee">V2 — Marcos (amable)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; margin-top: 24px;">
+                        <button id="sched-preview-btn" class="refresh-btn" style="flex: 1;">🔍 Ver Preview</button>
+                        <button id="sched-execute-btn" class="refresh-btn"
+                            style="flex: 1; background: var(--success); border-color: var(--success);" disabled>🚀
+                            Programar Llamadas</button>
+                    </div>
+                </div>
+
+                <!-- Schedule Summary -->
+                <div id="sched-summary" class="scheduler-summary glass-effect" style="display: none;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <div class="section-title" style="margin: 0;">📋 Resumen de Programación</div>
+                        <div id="sched-summary-stats" style="display: flex; gap: 16px;"></div>
+                    </div>
+                    <div id="sched-timeline" style="max-height: 400px; overflow-y: auto; padding-right: 8px;"></div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div id="sched-progress" class="scheduler-progress glass-effect" style="display: none;">
+                    <div class="section-title" style="margin-bottom: 12px;">⏳ Progreso</div>
+                    <div class="progress-bar-container">
+                        <div id="sched-progress-bar" class="progress-bar-fill"></div>
+                    </div>
+                    <div id="sched-progress-text"
+                        style="text-align: center; margin-top: 8px; font-size: 13px; color: var(--text-secondary);">0 /
+                        0</div>
+                    <div id="sched-progress-log"
+                        style="max-height: 200px; overflow-y: auto; margin-top: 12px; font-family: monospace; font-size: 12px; color: var(--text-secondary);">
+                    </div>
+                </div>
             </div>
         </div>
     </div>
