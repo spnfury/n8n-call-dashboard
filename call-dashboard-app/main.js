@@ -30,6 +30,7 @@ function formatDate(dateStr, short = false) {
 function getBadgeClass(evaluation) {
     if (!evaluation) return 'pending';
     const e = evaluation.toLowerCase();
+    if (e.includes('contestador') || e.includes('voicemail') || e.includes('buzón')) return 'voicemail';
     if (e.includes('success') || e.includes('completed') || e.includes('confirmada') || e.includes('ok')) return 'success';
     if (e.includes('fail') || e.includes('error') || e.includes('no contesta') || e.includes('rechazada')) return 'fail';
     if (e.includes('sin datos') || e.includes('incompleta')) return 'warning';
@@ -204,8 +205,8 @@ async function enrichCallsFromVapi(calls) {
             let evaluation = 'Sin datos';
             if (isConf) {
                 evaluation = 'Confirmada ✓';
-            } else if (vapiData.endedReason === 'voicemail') {
-                evaluation = 'Buzón';
+            } else if (vapiData.endedReason === 'voicemail' || vapiData.endedReason === 'machine_detected' || (vapiData.analysis?.successEvaluation || '').toLowerCase().includes('contestador')) {
+                evaluation = 'Contestador';
             } else if (duration && duration < 10) {
                 evaluation = 'No contesta';
             } else if (vapiData.endedReason === 'customer-ended-call' && duration > 30) {
@@ -214,7 +215,9 @@ async function enrichCallsFromVapi(calls) {
                 evaluation = 'Error';
             }
 
-            const endedReason = vapiData.endedReason || call.ended_reason;
+            // Preserve 'Manual Trigger' for test calls so they stay in the Test section
+            const isTestCall = (call.ended_reason || '').includes('Manual Trigger');
+            const endedReason = isTestCall ? 'Manual Trigger' : (vapiData.endedReason || call.ended_reason);
 
             // Update local data
             call.duration_seconds = duration;
@@ -652,6 +655,9 @@ async function fetchEligibleLeads(count, source) {
     let offset = 0;
     const batchSize = 200;
 
+    // Check if we should skip already-called leads
+    const skipCalled = document.getElementById('sched-skip-called')?.checked ?? true;
+
     // Determine sort order for the API
     const sortField = 'CreatedAt';
     const sortDir = source === 'oldest' ? 'asc' : 'desc';
@@ -678,6 +684,9 @@ async function fetchEligibleLeads(count, source) {
         allRecords.sort((a, b) => new Date(b.CreatedAt) - new Date(a.CreatedAt));
     }
 
+    // Statuses that indicate the lead has already been called
+    const calledStatuses = ['completado', 'contestador', 'voicemail', 'no contesta', 'fallido', 'interesado', 'reintentar'];
+
     // Filter: eligible leads
     const eligible = allRecords.filter(lead => {
         const phone = String(lead.phone || '').trim();
@@ -688,11 +697,12 @@ async function fetchEligibleLeads(count, source) {
         if (status === 'programado' || status === 'en proceso' || status === 'llamando...') return false;
         // Must not have a pending fecha_planificada
         if (lead.fecha_planificada) return false;
-        // If "no-status" filter, only include leads without status or Completado with errors
-        if (source === 'no-status' && status && status !== '' && status !== 'completado' && status !== 'error') return false;
+        // If "skip called" is enabled, exclude leads with any call-related status
+        if (skipCalled && status && calledStatuses.some(s => status.includes(s))) return false;
         return true;
     });
 
+    console.log(`[Scheduler] skipCalled=${skipCalled}, total=${allRecords.length}, eligible=${eligible.length}`);
     return eligible.slice(0, count);
 }
 
@@ -1125,6 +1135,7 @@ function getBadgeStatusClass(status) {
     if (s.includes('reintentar')) return 'badge-warning';
     if (s.includes('fallido')) return 'badge-danger';
     if (s.includes('interesado')) return 'badge-success';
+    if (s.includes('contestador') || s.includes('voicemail')) return 'badge-voicemail';
     return 'badge-secondary';
 }
 
@@ -1288,6 +1299,12 @@ async function loadData(skipEnrichment = false) {
         allCalls = calls;
         currentCalls = calls;
 
+        // Separate test/manual calls from campaign calls
+        // Test calls are identified by ended_reason='Manual Trigger' OR lead_name='Test Manual'
+        const isTestCall = (c) => (c.ended_reason || '').includes('Manual Trigger') || (c.lead_name || '').toLowerCase() === 'test manual';
+        const testCalls = calls.filter(c => isTestCall(c));
+        const campaignCalls = calls.filter(c => !isTestCall(c));
+
         // Calculate scores for all calls (before filters)
         calls.forEach(c => {
             const scoreResult = calculateCallScore(c);
@@ -1316,7 +1333,7 @@ async function loadData(skipEnrichment = false) {
         const scoreFilter = document.getElementById('filter-score').value;
         const dateRange = document.getElementById('date-range').value;
 
-        let filteredCalls = calls;
+        let filteredCalls = campaignCalls;
 
         // Apply Company Filter
         if (companyFilter) {
@@ -1356,15 +1373,15 @@ async function loadData(skipEnrichment = false) {
         }
 
 
-        const totalCalls = calls.length;
-        const confirmedCalls = calls.filter(c => isConfirmed(c)).length;
+        const totalCalls = campaignCalls.length;
+        const confirmedCalls = campaignCalls.filter(c => isConfirmed(c)).length;
         const confirmationRate = totalCalls > 0 ? Math.round((confirmedCalls / totalCalls) * 100) : 0;
 
-        const successCalls = calls.filter(c => getBadgeClass(c.evaluation) === 'success').length;
+        const successCalls = campaignCalls.filter(c => getBadgeClass(c.evaluation) === 'success').length;
         const successRate = totalCalls > 0 ? Math.round((successCalls / totalCalls) * 100) : 0;
-        const totalDuration = calls.reduce((sum, c) => sum + (parseInt(c.duration_seconds) || 0), 0);
+        const totalDuration = campaignCalls.reduce((sum, c) => sum + (parseInt(c.duration_seconds) || 0), 0);
         const avgDuration = totalCalls > 0 ? Math.round(totalDuration / totalCalls) : 0;
-        const avgScore = totalCalls > 0 ? Math.round(calls.reduce((sum, c) => sum + (c._score || 0), 0) / totalCalls) : 0;
+        const avgScore = totalCalls > 0 ? Math.round(campaignCalls.reduce((sum, c) => sum + (c._score || 0), 0) / totalCalls) : 0;
 
         document.getElementById('total-calls').textContent = totalCalls;
         document.getElementById('success-rate').textContent = successRate + '%';
@@ -1436,11 +1453,87 @@ async function loadData(skipEnrichment = false) {
         // Update Chart
         renderChart(filteredCalls);
         currentCallsPage = filteredCalls;
+
+        // Render test calls section
+        renderTestCalls(testCalls);
     } catch (err) {
         console.error('Error:', err);
         document.getElementById('call-table').innerHTML = '<tr><td colspan="12" class="empty-state">Error al cargar datos</td></tr>';
     }
 }
+
+// --- Test / Manual Calls Rendering ---
+function renderTestCalls(testCalls) {
+    const tbody = document.getElementById('test-call-table');
+    if (!tbody) return;
+
+    // Update test KPIs
+    const total = testCalls.length;
+    const success = testCalls.filter(c => getBadgeClass(c.evaluation) === 'success').length;
+    const failed = testCalls.filter(c => getBadgeClass(c.evaluation) === 'fail').length;
+    const voicemail = testCalls.filter(c => getBadgeClass(c.evaluation) === 'voicemail').length;
+
+    document.getElementById('test-total').textContent = total;
+    document.getElementById('test-success').textContent = success;
+    document.getElementById('test-failed').textContent = failed;
+    document.getElementById('test-voicemail').textContent = voicemail;
+
+    if (total === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No hay llamadas de test registradas. Las llamadas manuales aparecerán aquí.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = '';
+    testCalls.forEach((call, idx) => {
+        const tr = document.createElement('tr');
+        const vapiId = call.vapi_call_id || call.lead_id || call.id || call.Id || '-';
+        const shortId = vapiId.length > 20 ? vapiId.substring(0, 8) + '...' : vapiId;
+
+        const confirmed = isConfirmed(call);
+        if (confirmed) tr.classList.add('confirmed-row');
+
+        const confData = confirmedDataMap[call.vapi_call_id];
+        let confirmedCell = '❌';
+        if (confirmed && confData) {
+            confirmedCell = `<span class="confirmed-badge">✅ Confirmado</span>`;
+        } else if (confirmed) {
+            confirmedCell = '<span class="confirmed-badge">✅</span>';
+        }
+
+        const scoreVal = call._score || 0;
+        const scoreLbl = getScoreLabel(scoreVal);
+        const scoreClr = getScoreColor(scoreVal);
+
+        // Find the real index in allCalls for openDetail
+        const globalIndex = allCalls.indexOf(call);
+
+        tr.innerHTML = `
+            <td data-label="Call ID"><code style="font-family: monospace; color: #a855f7; font-size: 11px;" title="${vapiId}">${shortId}</code></td>
+            <td data-label="Empresa"><strong>${call.lead_name || '-'}</strong></td>
+            <td data-label="Teléfono" class="phone">${call.phone_called || '-'}</td>
+            <td data-label="Fecha">${formatDate(call.call_time || call.CreatedAt)}</td>
+            <td data-label="Resultado">${call.ended_reason || '-'}</td>
+            <td data-label="Evaluación"><span class="badge ${getBadgeClass(call.evaluation)}">${call.evaluation || 'Pendiente'}</span></td>
+            <td data-label="Duración">${formatDuration(call.duration_seconds)}</td>
+            <td data-label="Score"><span class="score-badge ${scoreLbl.cls}" style="--score-color: ${scoreClr}">${scoreLbl.emoji} ${scoreVal}</span></td>
+            <td data-label="Confirmado">${confirmedCell}</td>
+            <td>
+                <button class="action-btn test-detail-btn" data-global-index="${globalIndex}">👁 Ver Detalle</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // Attach click handler for test detail buttons
+    tbody.querySelectorAll('.test-detail-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const globalIndex = parseInt(btn.getAttribute('data-global-index'));
+            if (globalIndex >= 0) openDetail(globalIndex);
+        });
+    });
+}
+
+
 
 async function saveNotes() {
     const btn = document.getElementById('save-notes-btn');

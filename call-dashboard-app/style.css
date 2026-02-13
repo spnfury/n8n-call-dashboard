@@ -2023,3 +2023,99 @@ input:checked+.slider:before {
 .timeline-item.skipped {
     opacity: 0.5;
 }
+
+/* ── Test Section Styles ── */
+.test-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+    margin-bottom: 24px;
+    padding: 20px 24px;
+    background: rgba(168, 85, 247, 0.06);
+    border: 1px solid rgba(168, 85, 247, 0.15);
+    border-radius: 16px;
+    flex-wrap: wrap;
+}
+
+.test-header-info h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.test-stats {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.test-stat-pill {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 12px 20px;
+    min-width: 80px;
+    transition: all 0.3s ease;
+}
+
+.test-stat-pill:hover {
+    background: rgba(255, 255, 255, 0.07);
+    transform: translateY(-2px);
+}
+
+.test-stat-pill.success {
+    border-color: rgba(16, 185, 129, 0.2);
+    background: rgba(16, 185, 129, 0.06);
+}
+
+.test-stat-pill.danger {
+    border-color: rgba(239, 68, 68, 0.2);
+    background: rgba(239, 68, 68, 0.06);
+}
+
+.test-stat-pill.warning {
+    border-color: rgba(245, 158, 11, 0.2);
+    background: rgba(245, 158, 11, 0.06);
+}
+
+.test-stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.test-stat-pill.success .test-stat-value {
+    color: var(--success);
+}
+
+.test-stat-pill.danger .test-stat-value {
+    color: var(--danger);
+}
+
+.test-stat-pill.warning .test-stat-value {
+    color: var(--warning);
+}
+
+.test-stat-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+}
+
+/* Voicemail badge */
+.badge.voicemail {
+    background: rgba(168, 85, 247, 0.15);
+    color: #a855f7;
+}
+
+.badge-voicemail {
+    background: rgba(168, 85, 247, 0.15) !important;
+    color: #a855f7 !important;
+}
