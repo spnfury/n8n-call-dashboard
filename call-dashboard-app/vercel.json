@@ -9,10 +9,10 @@
             }
         }
     ],
-    "rewrites": [
+    "routes": [
         {
-            "source": "/vapi-api/(.*)",
-            "destination": "https://api.vapi.ai/$1"
+            "src": "/vapi-api/(.*)",
+            "dest": "https://api.vapi.ai/$1"
         }
     ]
 }
