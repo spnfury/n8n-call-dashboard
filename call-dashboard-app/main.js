@@ -180,7 +180,7 @@ async function enrichCallsFromVapi(calls) {
     for (const call of callsToEnrich) {
         try {
             // Use local proxy to avoid CORS
-            const res = await fetch(`/vapi-api/call/${call.vapi_call_id}`, {
+            const res = await fetch(`https://api.vapi.ai/call/${call.vapi_call_id}`, {
                 headers: { 'Authorization': `Bearer ${VAPI_API_KEY}` }
             });
             if (!res.ok) {
@@ -373,7 +373,20 @@ async function openDetail(index) {
     document.getElementById('modal-notes').value = call.Notes || '';
     document.getElementById('save-notes-btn').setAttribute('data-id', call.id || call.Id);
 
-    // Initial Hide Confirmed Section
+    // Update test toggle button state in modal
+    const testToggleBtn = document.getElementById('toggle-test-btn');
+    const isCurrentlyTest = call.is_test === true || call.is_test === 1 || (call.ended_reason || '').includes('Manual Trigger') || (call.lead_name || '').toLowerCase() === 'test manual';
+    if (testToggleBtn) {
+        testToggleBtn.className = isCurrentlyTest ? 'toggle-test-pill active' : 'toggle-test-pill';
+        testToggleBtn.querySelector('.toggle-test-label').textContent = isCurrentlyTest ? '✅ Marcada como Test' : 'Marcar como Test';
+    }
+    // Wire up the toggle handler for this specific call
+    window._toggleDetailTest = async () => {
+        const callId = call.id || call.Id;
+        const newTestState = !(call.is_test === true || call.is_test === 1);
+        await toggleTestStatus(callId, newTestState);
+        closeModal();
+    };
     const confirmedSec = document.getElementById('confirmed-section');
     if (confirmedSec) confirmedSec.style.display = 'none';
 
@@ -625,6 +638,12 @@ function initTabs() {
             if (target === 'scheduler') {
                 initSchedulerDefaults();
             }
+            // If switching to realtime, start polling
+            if (target === 'realtime') {
+                startRealtimePolling();
+            } else {
+                stopRealtimePolling();
+            }
         });
     });
 }
@@ -777,7 +796,7 @@ async function executeScheduling(leads, startTime, spacingMinutes, assistantId) 
 
     for (let i = 0; i < leads.length; i++) {
         const lead = leads[i];
-        const leadId = lead.Id || lead.id;
+        const leadId = lead.unique_id || lead.Id || lead.id;
         const callTime = new Date(startTime.getTime() + i * spacingMinutes * 60000);
         const utcTime = localDatetimeToUTC(callTime.getFullYear() + '-' +
             String(callTime.getMonth() + 1).padStart(2, '0') + '-' +
@@ -795,7 +814,7 @@ async function executeScheduling(leads, startTime, spacingMinutes, assistantId) 
 
         try {
             const patchData = {
-                Id: leadId,
+                unique_id: leadId,
                 status: 'Programado',
                 fecha_planificada: utcTime
             };
@@ -1300,8 +1319,8 @@ async function loadData(skipEnrichment = false) {
         currentCalls = calls;
 
         // Separate test/manual calls from campaign calls
-        // Test calls are identified by ended_reason='Manual Trigger' OR lead_name='Test Manual'
-        const isTestCall = (c) => (c.ended_reason || '').includes('Manual Trigger') || (c.lead_name || '').toLowerCase() === 'test manual';
+        // Test calls are identified by: is_test=true OR ended_reason='Manual Trigger' OR lead_name='Test Manual'
+        const isTestCall = (c) => c.is_test === true || c.is_test === 1 || (c.ended_reason || '').includes('Manual Trigger') || (c.lead_name || '').toLowerCase() === 'test manual';
         const testCalls = calls.filter(c => isTestCall(c));
         const campaignCalls = calls.filter(c => !isTestCall(c));
 
@@ -1433,7 +1452,7 @@ async function loadData(skipEnrichment = false) {
             const scoreClr = getScoreColor(scoreVal);
 
             tr.innerHTML = `
-                <td data-label="Call ID"><code style="font-family: monospace; color: var(--accent); font-size: 11px;" title="${vapiId}">${shortId}</code></td>
+                <td data-label="Call ID"><code style="font-family: monospace; color: var(--accent); font-size: 11px;" title="${vapiId}">${shortId}</code> <button class="copy-id-btn" data-copy-id="${vapiId}" title="Copiar ID completo" style="background:none;border:none;cursor:pointer;font-size:12px;padding:2px 4px;opacity:0.6;transition:opacity 0.2s;vertical-align:middle;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">📋</button></td>
                 <td data-label="Empresa"><strong>${call.lead_name || '-'}</strong></td>
                 <td data-label="Teléfono" class="phone">${call.phone_called || '-'}</td>
                 <td data-label="Fecha">${formatDate(call.call_time || call.CreatedAt)}</td>
@@ -1443,8 +1462,9 @@ async function loadData(skipEnrichment = false) {
                 <td data-label="Score"><span class="score-badge ${scoreLbl.cls}" style="--score-color: ${scoreClr}">${scoreLbl.emoji} ${scoreVal}</span></td>
                 <td data-label="Notas" class="table-notes">${call.Notes ? `<span class="note-indicator" data-index="${index}" title="${call.Notes}" style="cursor: pointer;">📝</span>` : '-'}</td>
                 <td data-label="Confirmado">${confirmedCell}</td>
-                <td>
+                <td class="actions-cell-calls">
                     <button class="action-btn" data-index="${index}">👁 Ver Detalle</button>
+                    <button class="action-btn mark-test-btn" data-call-id="${call.id || call.Id}" title="Marcar como Test">🧪</button>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -1508,7 +1528,7 @@ function renderTestCalls(testCalls) {
         const globalIndex = allCalls.indexOf(call);
 
         tr.innerHTML = `
-            <td data-label="Call ID"><code style="font-family: monospace; color: #a855f7; font-size: 11px;" title="${vapiId}">${shortId}</code></td>
+            <td data-label="Call ID"><code style="font-family: monospace; color: #a855f7; font-size: 11px;" title="${vapiId}">${shortId}</code> <button class="copy-id-btn" data-copy-id="${vapiId}" title="Copiar ID completo" style="background:none;border:none;cursor:pointer;font-size:12px;padding:2px 4px;opacity:0.6;transition:opacity 0.2s;vertical-align:middle;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">📋</button></td>
             <td data-label="Empresa"><strong>${call.lead_name || '-'}</strong></td>
             <td data-label="Teléfono" class="phone">${call.phone_called || '-'}</td>
             <td data-label="Fecha">${formatDate(call.call_time || call.CreatedAt)}</td>
@@ -1517,8 +1537,9 @@ function renderTestCalls(testCalls) {
             <td data-label="Duración">${formatDuration(call.duration_seconds)}</td>
             <td data-label="Score"><span class="score-badge ${scoreLbl.cls}" style="--score-color: ${scoreClr}">${scoreLbl.emoji} ${scoreVal}</span></td>
             <td data-label="Confirmado">${confirmedCell}</td>
-            <td>
+            <td class="actions-cell-calls">
                 <button class="action-btn test-detail-btn" data-global-index="${globalIndex}">👁 Ver Detalle</button>
+                <button class="action-btn unmark-test-btn" data-call-id="${call.id || call.Id}" title="Quitar de Test">↩️</button>
             </td>
         `;
         tbody.appendChild(tr);
@@ -1529,6 +1550,15 @@ function renderTestCalls(testCalls) {
         btn.addEventListener('click', () => {
             const globalIndex = parseInt(btn.getAttribute('data-global-index'));
             if (globalIndex >= 0) openDetail(globalIndex);
+        });
+    });
+
+    // Attach click handler for unmark-test buttons
+    tbody.querySelectorAll('.unmark-test-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const callId = btn.getAttribute('data-call-id');
+            await toggleTestStatus(callId, false);
         });
     });
 }
@@ -1568,6 +1598,34 @@ async function saveNotes() {
     }
 }
 
+// --- Toggle Test Status ---
+async function toggleTestStatus(callId, markAsTest) {
+    if (!callId) return;
+    const action = markAsTest ? 'marcar como test' : 'quitar de test';
+    if (!confirm(`¿Seguro que quieres ${action} esta llamada?`)) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/${CALL_LOGS_TABLE}/records`, {
+            method: 'PATCH',
+            headers: { 'xc-token': XC_TOKEN, 'Content-Type': 'application/json' },
+            body: JSON.stringify([{ id: parseInt(callId), is_test: markAsTest }])
+        });
+
+        if (res.ok) {
+            // Update local data immediately
+            const call = allCalls.find(c => (c.id || c.Id) == callId);
+            if (call) call.is_test = markAsTest;
+            loadData(true); // Re-render without re-enriching
+        } else {
+            throw new Error('Failed to update');
+        }
+    } catch (err) {
+        console.error('Error toggling test status:', err);
+        alert('Error al actualizar el estado de test');
+    }
+}
+window.toggleTestStatus = toggleTestStatus;
+
 // Event listeners
 document.getElementById('refresh-btn').addEventListener('click', loadData);
 document.getElementById('filter-confirmed').addEventListener('change', loadData);
@@ -1577,8 +1635,50 @@ document.getElementById('filter-score').addEventListener('change', loadData);
 document.getElementById('close-modal').addEventListener('click', closeModal);
 document.getElementById('save-notes-btn').addEventListener('click', saveNotes);
 
-document.getElementById('call-table').addEventListener('click', (e) => {
+// --- Copy Call ID to Clipboard (delegated handler for all tables) ---
+document.addEventListener('click', (e) => {
+    const copyBtn = e.target.closest('.copy-id-btn');
+    if (!copyBtn) return;
+    e.stopPropagation();
+    const callId = copyBtn.getAttribute('data-copy-id');
+    if (!callId || callId === '-') return;
+    navigator.clipboard.writeText(callId).then(() => {
+        const original = copyBtn.textContent;
+        copyBtn.textContent = '✅';
+        copyBtn.style.opacity = '1';
+        setTimeout(() => {
+            copyBtn.textContent = original;
+            copyBtn.style.opacity = '0.6';
+        }, 1500);
+    }).catch(() => {
+        // Fallback for older browsers
+        const ta = document.createElement('textarea');
+        ta.value = callId;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        const original = copyBtn.textContent;
+        copyBtn.textContent = '✅';
+        copyBtn.style.opacity = '1';
+        setTimeout(() => {
+            copyBtn.textContent = original;
+            copyBtn.style.opacity = '0.6';
+        }, 1500);
+    });
+});
+
+document.getElementById('call-table').addEventListener('click', async (e) => {
     const target = e.target;
+    if (target.classList.contains('copy-id-btn')) return; // Already handled by delegated handler
+    if (target.classList.contains('mark-test-btn')) {
+        e.stopPropagation();
+        const callId = target.getAttribute('data-call-id');
+        await toggleTestStatus(callId, true);
+        return;
+    }
     if (target.classList.contains('action-btn') || target.classList.contains('note-indicator')) {
         const index = parseInt(target.getAttribute('data-index'));
         openDetail(index);
@@ -1759,13 +1859,41 @@ async function triggerManualCall() {
     }
 
     // --- IMMEDIATE CALL ---
-    btn.textContent = '⌛ Iniciando Llamada...';
-    feedback.textContent = 'Conectando con Vapi AI...';
+    btn.textContent = '⌛ Verificando disponibilidad...';
+    feedback.textContent = 'Comprobando llamadas activas...';
     feedback.className = 'feedback-loading';
 
     try {
+        // ⚠️ CRITICAL: Check concurrency limit before launching
+        try {
+            const checkRes = await fetch('https://api.vapi.ai/call?limit=100', {
+                headers: { 'Authorization': `Bearer ${VAPI_API_KEY}` }
+            });
+            if (checkRes.ok) {
+                const allCalls = await checkRes.json();
+                const activeCalls = (Array.isArray(allCalls) ? allCalls : []).filter(c =>
+                    ['queued', 'ringing', 'in-progress'].includes(c.status)
+                );
+                const MAX_CONCURRENT = 10;
+                if (activeCalls.length >= MAX_CONCURRENT) {
+                    feedback.textContent = `🚫 Límite de concurrencia alcanzado: ${activeCalls.length}/${MAX_CONCURRENT} llamadas activas. Espera a que terminen algunas llamadas antes de lanzar una nueva.`;
+                    feedback.className = 'feedback-error';
+                    btn.disabled = false;
+                    btn.textContent = '🚀 Lanzar Llamada';
+                    return;
+                }
+                console.log(`[Concurrency] Active calls: ${activeCalls.length}/${MAX_CONCURRENT} — OK to proceed`);
+            }
+        } catch (checkErr) {
+            console.warn('[Concurrency] Could not check active calls:', checkErr.message);
+            // Continue anyway — better to try than to block completely
+        }
+
+        btn.textContent = '⌛ Iniciando Llamada...';
+        feedback.textContent = 'Conectando con Vapi AI...';
+
         // 1. Call Vapi AI via local proxy to avoid CORS
-        const vapiRes = await fetch('/vapi-api/call', {
+        const vapiRes = await fetch('https://api.vapi.ai/call', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${VAPI_API_KEY}`,
@@ -1839,13 +1967,13 @@ async function triggerManualCall() {
                     }
 
                     if (leadToClear && leadToClear.fecha_planificada) {
-                        const leadId = leadToClear.Id || leadToClear.id;
+                        const leadId = leadToClear.unique_id || leadToClear.Id || leadToClear.id;
                         console.log(`[Persistence] Found lead ${leadId}. Clearing fecha_planificada...`);
                         await fetch(`${API_BASE}/${LEADS_TABLE}/records`, {
                             method: 'PATCH',
                             headers: { 'xc-token': XC_TOKEN, 'Content-Type': 'application/json' },
                             body: JSON.stringify([{
-                                Id: leadId,
+                                unique_id: leadId,
                                 fecha_planificada: null
                             }])
                         });
@@ -2135,3 +2263,377 @@ function updateLiveClock() {
 setInterval(updateLiveClock, 1000);
 document.addEventListener('DOMContentLoaded', updateLiveClock);
 updateLiveClock();
+
+// ═══════════════════════════════════════════════════
+// ── REALTIME MONITORING SYSTEM ──
+// ═══════════════════════════════════════════════════
+
+let realtimePollingInterval = null;
+let realtimeActiveCalls = []; // Currently tracked active calls
+let realtimeCallTimers = {}; // callId -> start timestamp for duration tracking
+let realtimeIsPolling = false;
+let realtimeLastScan = null;
+
+// Background polling — always runs to update the tab badge
+let realtimeBgInterval = null;
+
+function startRealtimeBgPolling() {
+    if (realtimeBgInterval) return;
+    // Do an initial scan
+    fetchRealtimeCalls(true);
+    // Then every 10 seconds
+    realtimeBgInterval = setInterval(() => {
+        // Only update badge if NOT on the realtime tab (if on realtime, the main polling handles it)
+        const isOnRealtimeTab = document.getElementById('view-realtime')?.classList.contains('active');
+        if (!isOnRealtimeTab) {
+            fetchRealtimeCalls(true); // lightweight, badge-only
+        }
+    }, 10000);
+}
+
+function startRealtimePolling() {
+    if (realtimePollingInterval) return;
+    console.log('[Realtime] Starting polling...');
+    realtimeIsPolling = true;
+    fetchRealtimeCalls();
+    realtimePollingInterval = setInterval(fetchRealtimeCalls, 5000);
+}
+
+function stopRealtimePolling() {
+    if (realtimePollingInterval) {
+        clearInterval(realtimePollingInterval);
+        realtimePollingInterval = null;
+    }
+    realtimeIsPolling = false;
+    console.log('[Realtime] Polling stopped.');
+}
+
+async function fetchRealtimeCalls(badgeOnly = false) {
+    try {
+        const statusText = document.getElementById('realtime-status-text');
+        if (!badgeOnly && statusText) statusText.textContent = 'Escaneando...';
+
+        // Fetch recent calls from Vapi (last 1 hour, all statuses)
+        const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
+        const res = await fetch(`https://api.vapi.ai/call?createdAtGte=${encodeURIComponent(oneHourAgo)}&limit=50`, {
+            headers: { 'Authorization': `Bearer ${VAPI_API_KEY}` }
+        });
+
+        if (!res.ok) {
+            console.warn('[Realtime] API error:', res.status);
+            if (!badgeOnly && statusText) statusText.textContent = `Error API (${res.status})`;
+            return;
+        }
+
+        const calls = await res.json();
+
+        // Categorize calls
+        const activeCalls = calls.filter(c => c.status === 'in-progress');
+        const queuedCalls = calls.filter(c => c.status === 'queued');
+        const ringingCalls = calls.filter(c => c.status === 'ringing');
+        const allLiveCalls = [...activeCalls, ...queuedCalls, ...ringingCalls];
+
+        // Count total today
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const todayCalls = calls.filter(c => new Date(c.createdAt) >= todayStart);
+
+        // Update badge on tab (always)
+        const badge = document.getElementById('realtime-badge');
+        if (badge) {
+            if (allLiveCalls.length > 0) {
+                badge.textContent = allLiveCalls.length;
+                badge.style.display = 'inline-flex';
+                // Add pulsing class to tab
+                document.getElementById('nav-tab-realtime')?.classList.add('has-live');
+            } else {
+                badge.style.display = 'none';
+                document.getElementById('nav-tab-realtime')?.classList.remove('has-live');
+            }
+        }
+
+        if (badgeOnly) return; // Only update badge, don't render
+
+        // Update stats
+        document.getElementById('rt-active-count').textContent = activeCalls.length;
+        document.getElementById('rt-queued-count').textContent = queuedCalls.length;
+        document.getElementById('rt-ringing-count').textContent = ringingCalls.length;
+        document.getElementById('rt-total-today').textContent = todayCalls.length;
+
+        // Update status indicator
+        if (allLiveCalls.length > 0) {
+            statusText.textContent = `${allLiveCalls.length} llamada${allLiveCalls.length > 1 ? 's' : ''} en curso`;
+            document.getElementById('realtime-status')?.classList.add('active');
+        } else {
+            statusText.textContent = 'Sin llamadas activas';
+            document.getElementById('realtime-status')?.classList.remove('active');
+        }
+
+        realtimeLastScan = new Date();
+        realtimeActiveCalls = allLiveCalls;
+
+        // Render active calls
+        renderRealtimeCalls(allLiveCalls, todayCalls);
+
+    } catch (err) {
+        console.error('[Realtime] Error:', err);
+        const statusText = document.getElementById('realtime-status-text');
+        if (!badgeOnly && statusText) statusText.textContent = 'Error de conexión';
+    }
+}
+
+function renderRealtimeCalls(liveCalls, todayCalls) {
+    const grid = document.getElementById('realtime-calls-grid');
+    if (!grid) return;
+
+    if (liveCalls.length === 0) {
+        // Show empty state with recent ended calls
+        const recentEnded = todayCalls
+            .filter(c => c.status === 'ended')
+            .sort((a, b) => new Date(b.endedAt || b.updatedAt) - new Date(a.endedAt || a.updatedAt))
+            .slice(0, 6);
+
+        let recentHtml = '';
+        if (recentEnded.length > 0) {
+            recentHtml = `
+                <div class="realtime-recent-section">
+                    <div class="section-title" style="margin-bottom: 16px; font-size: 14px; opacity: 0.7;">📋 Últimas llamadas completadas hoy</div>
+                    <div class="realtime-recent-grid">
+                        ${recentEnded.map(c => {
+                const duration = c.startedAt && c.endedAt
+                    ? Math.round((new Date(c.endedAt) - new Date(c.startedAt)) / 1000)
+                    : 0;
+                const name = c.customer?.number || 'Desconocido';
+                return `
+                                <div class="realtime-recent-card">
+                                    <div class="realtime-recent-phone">📞 ${name}</div>
+                                    <div class="realtime-recent-meta">
+                                        <span>${formatDuration(duration)}</span>
+                                        <span class="realtime-recent-status ${c.endedReason === 'customer-ended-call' ? 'success' : ''}">${getEndReasonLabel(c.endedReason)}</span>
+                                    </div>
+                                    <div class="realtime-recent-time">${new Date(c.createdAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</div>
+                                </div>
+                            `;
+            }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        grid.innerHTML = `
+            <div class="realtime-empty-state">
+                <div class="realtime-empty-icon">📡</div>
+                <h3>No hay llamadas activas en este momento</h3>
+                <p>El sistema escanea automáticamente cada 5 segundos.</p>
+                <div class="realtime-empty-timer">Último scan: <span id="rt-last-scan">ahora</span></div>
+            </div>
+            ${recentHtml}
+        `;
+        return;
+    }
+
+    // Render active call cards with live transcript
+    let html = '';
+    liveCalls.forEach((call, i) => {
+        const callId = call.id;
+        const phone = call.customer?.number || 'Desconocido';
+        const status = call.status;
+        const startTime = call.startedAt ? new Date(call.startedAt) : new Date(call.createdAt);
+        const statusLabel = getCallStatusLabel(status);
+        const statusClass = getCallStatusClass(status);
+
+        // Track timers
+        if (!realtimeCallTimers[callId]) {
+            realtimeCallTimers[callId] = startTime.getTime();
+        }
+
+        html += `
+            <div class="realtime-call-card ${statusClass}" id="rt-call-${callId}">
+                <div class="realtime-call-header">
+                    <div class="realtime-call-info">
+                        <div class="realtime-call-phone">
+                            <span class="live-pulse-dot small ${statusClass}"></span>
+                            📞 ${phone}
+                        </div>
+                        <div class="realtime-call-status">
+                            <span class="realtime-status-badge ${statusClass}">${statusLabel}</span>
+                        </div>
+                    </div>
+                    <div class="realtime-call-timer" data-start="${startTime.toISOString()}">
+                        <span class="timer-icon">⏱️</span>
+                        <span class="timer-value">00:00</span>
+                    </div>
+                </div>
+                <div class="realtime-call-transcript" id="rt-transcript-${callId}">
+                    <div class="transcript-loading">
+                        <span class="loading-pulse">⌛ Obteniendo transcripción en vivo...</span>
+                    </div>
+                </div>
+                <div class="realtime-call-actions">
+                    <button class="rt-action-btn" onclick="fetchCallTranscript('${callId}')" title="Actualizar transcripción">
+                        🔄 Actualizar
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+
+    grid.innerHTML = html;
+
+    // Fetch transcripts for all active calls
+    liveCalls.forEach(call => {
+        fetchCallTranscript(call.id);
+    });
+
+    // Update timers
+    updateRealtimeTimers();
+}
+
+async function fetchCallTranscript(callId) {
+    try {
+        const res = await fetch(`https://api.vapi.ai/call/${callId}`, {
+            headers: { 'Authorization': `Bearer ${VAPI_API_KEY}` }
+        });
+
+        if (!res.ok) {
+            console.warn('[Realtime] Error fetching transcript for', callId, res.status);
+            return;
+        }
+
+        const callData = await res.json();
+        const transcriptEl = document.getElementById(`rt-transcript-${callId}`);
+        if (!transcriptEl) return;
+
+        // Get messages from the artifact
+        const messages = callData.artifact?.messages || callData.messages || [];
+        const transcript = callData.artifact?.transcript || callData.transcript || '';
+
+        if (messages.length > 0) {
+            // Render message-by-message transcript (chat style)
+            let msgHtml = '<div class="rt-messages">';
+            messages.forEach(msg => {
+                if (msg.role === 'system' || msg.role === 'tool') return; // Skip system/tool messages
+                const role = msg.role;
+                const isBot = role === 'bot' || role === 'assistant';
+                const speaker = isBot ? '🤖 Violeta' : '👤 Cliente';
+                const roleClass = isBot ? 'bot' : 'user';
+                const content = msg.message || msg.content || '';
+                if (!content.trim()) return;
+
+                const timestamp = msg.secondsFromStart != null
+                    ? formatDuration(Math.round(msg.secondsFromStart))
+                    : '';
+
+                msgHtml += `
+                    <div class="rt-message ${roleClass}">
+                        <div class="rt-message-header">
+                            <span class="rt-message-speaker">${speaker}</span>
+                            ${timestamp ? `<span class="rt-message-time">${timestamp}</span>` : ''}
+                        </div>
+                        <div class="rt-message-content">${escapeHtml(content)}</div>
+                    </div>
+                `;
+            });
+            msgHtml += '</div>';
+
+            // Add typing indicator if call is still in progress
+            if (callData.status === 'in-progress') {
+                msgHtml += `
+                    <div class="rt-typing-indicator">
+                        <span class="rt-typing-dot"></span>
+                        <span class="rt-typing-dot"></span>
+                        <span class="rt-typing-dot"></span>
+                    </div>
+                `;
+            }
+
+            transcriptEl.innerHTML = msgHtml;
+            // Scroll to bottom
+            transcriptEl.scrollTop = transcriptEl.scrollHeight;
+
+        } else if (transcript) {
+            // Fallback: show raw transcript
+            transcriptEl.innerHTML = `<div class="rt-raw-transcript">${escapeHtml(transcript)}</div>`;
+        } else {
+            const statusMsg = callData.status === 'queued' ? 'En cola, esperando conexión...'
+                : callData.status === 'ringing' ? 'Llamando... esperando respuesta'
+                    : 'Esperando inicio de conversación...';
+            transcriptEl.innerHTML = `<div class="transcript-loading"><span class="loading-pulse">${statusMsg}</span></div>`;
+        }
+
+    } catch (err) {
+        console.warn('[Realtime] Error fetching call data:', callId, err);
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function getCallStatusLabel(status) {
+    switch (status) {
+        case 'in-progress': return '🟢 En Curso';
+        case 'queued': return '🟡 En Cola';
+        case 'ringing': return '🔵 Sonando';
+        case 'forwarding': return '📞 Transfiriendo';
+        default: return status;
+    }
+}
+
+function getCallStatusClass(status) {
+    switch (status) {
+        case 'in-progress': return 'status-active';
+        case 'queued': return 'status-queued';
+        case 'ringing': return 'status-ringing';
+        default: return '';
+    }
+}
+
+function getEndReasonLabel(reason) {
+    if (!reason) return 'Desconocido';
+    switch (reason) {
+        case 'customer-ended-call': return '✅ Cliente colgó';
+        case 'assistant-ended-call': return '🤖 Asistente colgó';
+        case 'voicemail': return '📫 Contestador';
+        case 'machine_detected': return '🤖 Máquina detectada';
+        case 'silence-timed-out': return '🔇 Silencio';
+        case 'customer-did-not-answer': return '📵 No contestó';
+        default: return reason.replace(/-/g, ' ');
+    }
+}
+
+function updateRealtimeTimers() {
+    const timers = document.querySelectorAll('.realtime-call-timer');
+    timers.forEach(timer => {
+        const startStr = timer.getAttribute('data-start');
+        if (!startStr) return;
+        const startMs = new Date(startStr).getTime();
+        const elapsed = Math.floor((Date.now() - startMs) / 1000);
+        const mins = Math.floor(elapsed / 60);
+        const secs = elapsed % 60;
+        const valueEl = timer.querySelector('.timer-value');
+        if (valueEl) {
+            valueEl.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+    });
+}
+
+// Update realtime timers every second
+setInterval(updateRealtimeTimers, 1000);
+
+// Make fetchCallTranscript available globally for onclick
+window.fetchCallTranscript = fetchCallTranscript;
+
+// Wire up the refresh button
+document.getElementById('realtime-refresh-btn')?.addEventListener('click', () => {
+    fetchRealtimeCalls();
+});
+
+// Start background polling from page load (lightweight, for badge updates)
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(startRealtimeBgPolling, 3000); // Start 3s after page load
+});
+// Also start it immediately in case DOMContentLoaded already fired
+setTimeout(startRealtimeBgPolling, 3000);

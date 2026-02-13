@@ -54,6 +54,8 @@
             <div class="nav-tab active" data-tab="dashboard">📊 Dashboard</div>
             <div class="nav-tab" data-tab="leads">👥 Gestión de Leads</div>
             <div class="nav-tab" data-tab="scheduler">📅 Programar Llamadas</div>
+            <div class="nav-tab" data-tab="realtime" id="nav-tab-realtime">🔴 En Vivo <span id="realtime-badge"
+                    class="realtime-badge" style="display:none;">0</span></div>
             <div class="nav-tab" data-tab="test">🧪 Test</div>
         </nav>
 
@@ -360,7 +362,57 @@
             </div>
         </div>
 
-        <!-- Tab 4: Test Calls View -->
+        <!-- Tab 5: Realtime Monitor View -->
+        <div id="view-realtime" class="view-content">
+            <div class="realtime-header">
+                <div class="realtime-header-info">
+                    <h2 style="margin: 0; font-size: 20px; display: flex; align-items: center; gap: 10px;">
+                        <span class="live-pulse-dot"></span> Monitor en Tiempo Real
+                    </h2>
+                    <p style="color: var(--text-secondary); font-size: 13px; margin-top: 4px;">Visualiza las llamadas
+                        activas y su transcripción en vivo.</p>
+                </div>
+                <div class="realtime-controls">
+                    <div class="realtime-status-pill" id="realtime-status">
+                        <span class="live-pulse-dot small"></span>
+                        <span id="realtime-status-text">Escaneando...</span>
+                    </div>
+                    <button class="refresh-btn" id="realtime-refresh-btn" style="padding: 8px 16px;">🔄 Forzar
+                        Scan</button>
+                </div>
+            </div>
+
+            <!-- Active Calls Counter -->
+            <div class="realtime-stats" id="realtime-stats">
+                <div class="realtime-stat-card">
+                    <div class="realtime-stat-value" id="rt-active-count">0</div>
+                    <div class="realtime-stat-label">Llamadas Activas</div>
+                </div>
+                <div class="realtime-stat-card">
+                    <div class="realtime-stat-value" id="rt-queued-count">0</div>
+                    <div class="realtime-stat-label">En Cola</div>
+                </div>
+                <div class="realtime-stat-card">
+                    <div class="realtime-stat-value" id="rt-ringing-count">0</div>
+                    <div class="realtime-stat-label">Sonando</div>
+                </div>
+                <div class="realtime-stat-card">
+                    <div class="realtime-stat-value" id="rt-total-today">0</div>
+                    <div class="realtime-stat-label">Total Hoy</div>
+                </div>
+            </div>
+
+            <!-- Active Calls Grid -->
+            <div id="realtime-calls-grid" class="realtime-calls-grid">
+                <div class="realtime-empty-state">
+                    <div class="realtime-empty-icon">📡</div>
+                    <h3>Escaneando llamadas activas...</h3>
+                    <p>El sistema busca llamadas en curso automáticamente cada 5 segundos.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 6: Test Calls View -->
         <div id="view-test" class="view-content">
             <div class="test-header">
                 <div class="test-header-info">
@@ -421,6 +473,12 @@
             <div class="modal-header">
                 <h2 id="modal-title">Detalle de la Llamada</h2>
                 <p id="modal-subtitle" style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;"></p>
+                <div id="modal-test-toggle" style="margin-top: 12px;">
+                    <button id="toggle-test-btn" class="toggle-test-pill" onclick="window._toggleDetailTest()">
+                        <span class="toggle-test-icon">🧪</span>
+                        <span class="toggle-test-label">Marcar como Test</span>
+                    </button>
+                </div>
             </div>
 
             <div id="score-section" style="display: none; margin-bottom: 24px;"></div>

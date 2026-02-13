@@ -3,7 +3,9 @@
  * Bulk Call Script — Llama a todos los leads con teléfono válido
  * que NO tienen fecha_planificada y NO están completados.
  * 
- * Concurrencia máxima: 8 llamadas simultáneas (máximo Vapi = 10)
+ * ⚠️ HARD LIMIT: Maximum 10 concurrent calls at ANY time (Vapi limit).
+ *    Before each call, we verify active calls via the Vapi API.
+ *    If at the limit, we wait until a slot opens up.
  * 
  * Usage: node bulk_call_all.mjs [--dry-run] [--assistant marcos|violeta]
  */
@@ -21,9 +23,10 @@ const ASSISTANTS = {
     marcos: 'f34469b5-334e-4fbf-b5ad-b2b05e8d76ee'
 };
 
-const BATCH_SIZE = 8;
-const DELAY_BETWEEN_BATCHES_MS = 5000; // 5 second pause between batches
-const DELAY_BETWEEN_CALLS_MS = 1000; // 1 second between individual calls in batch
+const MAX_CONCURRENT_CALLS = 10;
+const DELAY_BETWEEN_CALLS_MS = 3000; // 3 seconds between individual calls
+const CONCURRENCY_CHECK_INTERVAL_MS = 15000; // 15 seconds wait when at max concurrency
+const MAX_CONCURRENCY_RETRIES = 40; // 40 * 15s = 10 minutes max wait
 
 // Parse args
 const args = process.argv.slice(2);
@@ -36,6 +39,64 @@ function normalizePhone(phone) {
     let p = phone.toString().replace(/\D/g, '');
     if (!p) return '';
     return p.startsWith('34') ? '+' + p : '+34' + p;
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Query Vapi API for the number of currently active calls.
+ * Active = queued, ringing, or in-progress.
+ */
+async function getActiveCallCount() {
+    try {
+        const res = await fetch('https://api.vapi.ai/call?limit=100', {
+            headers: { 'Authorization': `Bearer ${VAPI_API_KEY}` }
+        });
+        if (!res.ok) {
+            console.warn(`   ⚠️ Error checking active calls: HTTP ${res.status}`);
+            return -1;
+        }
+        const calls = await res.json();
+        const activeCalls = (Array.isArray(calls) ? calls : []).filter(c =>
+            ['queued', 'ringing', 'in-progress'].includes(c.status)
+        );
+        return activeCalls.length;
+    } catch (err) {
+        console.warn(`   ⚠️ Error checking active calls: ${err.message}`);
+        return -1;
+    }
+}
+
+/**
+ * Wait until there's a free slot (active calls < MAX_CONCURRENT_CALLS).
+ * Returns true if a slot is available, false if we timed out.
+ */
+async function waitForAvailableSlot() {
+    for (let attempt = 0; attempt < MAX_CONCURRENCY_RETRIES; attempt++) {
+        const activeCount = await getActiveCallCount();
+
+        if (activeCount === -1) {
+            console.log(`   ⚠️ Could not verify concurrency. Waiting ${CONCURRENCY_CHECK_INTERVAL_MS / 1000}s to retry...`);
+            await sleep(CONCURRENCY_CHECK_INTERVAL_MS);
+            continue;
+        }
+
+        if (activeCount < MAX_CONCURRENT_CALLS) {
+            if (attempt > 0) {
+                console.log(`   ✅ Slot available! Active calls: ${activeCount}/${MAX_CONCURRENT_CALLS}`);
+            }
+            return true;
+        }
+
+        const now = new Date().toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        console.log(`   🚫 [${now}] Concurrency limit: ${activeCount}/${MAX_CONCURRENT_CALLS} active. Waiting ${CONCURRENCY_CHECK_INTERVAL_MS / 1000}s... (${attempt + 1}/${MAX_CONCURRENCY_RETRIES})`);
+        await sleep(CONCURRENCY_CHECK_INTERVAL_MS);
+    }
+
+    console.error(`   ❌ Timed out waiting for a free slot after ${MAX_CONCURRENCY_RETRIES} attempts.`);
+    return false;
 }
 
 async function fetchAllLeads() {
@@ -133,36 +194,22 @@ async function callLead(lead) {
     }
 }
 
-async function processBatch(batch, batchNum, totalBatches) {
-    console.log(`\n🔄 Lote ${batchNum}/${totalBatches} — ${batch.length} llamadas`);
-    console.log('─'.repeat(50));
-
-    // Launch all calls in the batch concurrently
-    const promises = batch.map((lead, i) => {
-        return new Promise(async (resolve) => {
-            // Small stagger within batch to avoid hammering the API
-            await new Promise(r => setTimeout(r, i * DELAY_BETWEEN_CALLS_MS));
-            const result = await callLead(lead);
-            resolve(result);
-        });
-    });
-
-    const results = await Promise.all(promises);
-
-    const successes = results.filter(r => r.success).length;
-    const failures = results.filter(r => !r.success).length;
-
-    console.log(`\n  📊 Lote ${batchNum}: ${successes} éxitos, ${failures} fallos`);
-
-    return results;
-}
-
 async function main() {
     console.log('═'.repeat(60));
     console.log('🚀 BULK CALL SCRIPT — Llamando a todos los leads');
     console.log(`   Asistente: ${assistantName.toUpperCase()} (${ASSISTANT_ID.substring(0, 8)}...)`);
+    console.log(`   🔒 Max concurrent calls: ${MAX_CONCURRENT_CALLS}`);
     if (DRY_RUN) console.log('   ⚠️  MODO DRY RUN — No se harán llamadas reales');
     console.log('═'.repeat(60));
+
+    // Check current concurrency
+    const initialActive = await getActiveCallCount();
+    if (initialActive >= 0) {
+        console.log(`📊 Current active calls: ${initialActive}/${MAX_CONCURRENT_CALLS}`);
+        if (initialActive >= MAX_CONCURRENT_CALLS) {
+            console.log(`⚠️  Already at max concurrency! Will wait for slots to open...\n`);
+        }
+    }
 
     // 1. Fetch all leads
     const allLeads = await fetchAllLeads();
@@ -186,28 +233,41 @@ async function main() {
         return;
     }
 
-    // 3. Split into batches of BATCH_SIZE
-    const batches = [];
-    for (let i = 0; i < eligible.length; i += BATCH_SIZE) {
-        batches.push(eligible.slice(i, i + BATCH_SIZE));
-    }
+    console.log(`📦 Processing ${eligible.length} calls sequentially with concurrency check\n`);
 
-    console.log(`📦 Dividido en ${batches.length} lotes de máximo ${BATCH_SIZE} llamadas`);
-
-    // 4. Process each batch sequentially
+    // 3. Process each call sequentially, checking concurrency before each one
     const allResults = [];
-    for (let i = 0; i < batches.length; i++) {
-        const results = await processBatch(batches[i], i + 1, batches.length);
-        allResults.push(...results);
+    let skipped = 0;
 
-        // Wait between batches (except after the last one)
-        if (i < batches.length - 1) {
-            console.log(`\n⏳ Esperando ${DELAY_BETWEEN_BATCHES_MS / 1000}s antes del siguiente lote...`);
-            await new Promise(r => setTimeout(r, DELAY_BETWEEN_BATCHES_MS));
+    for (let i = 0; i < eligible.length; i++) {
+        const lead = eligible[i];
+        const name = lead.name || 'Empresa';
+        const now = new Date().toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        console.log(`\n[${i + 1}/${eligible.length}] ${now} — ${name}`);
+        console.log('─'.repeat(50));
+
+        // ⚠️ CRITICAL: Check concurrency before EVERY call
+        if (!DRY_RUN) {
+            const slotAvailable = await waitForAvailableSlot();
+            if (!slotAvailable) {
+                console.log(`  ⏭️  Skipping ${name} — could not get a free slot.`);
+                allResults.push({ success: false, error: 'Concurrency timeout', lead });
+                skipped++;
+                continue;
+            }
+        }
+
+        const result = await callLead(lead);
+        allResults.push(result);
+
+        // Small delay between calls to avoid hammering the API
+        if (i < eligible.length - 1) {
+            await sleep(DELAY_BETWEEN_CALLS_MS);
         }
     }
 
-    // 5. Summary
+    // 4. Summary
     const totalSuccess = allResults.filter(r => r.success).length;
     const totalFail = allResults.filter(r => !r.success).length;
 
@@ -217,6 +277,7 @@ async function main() {
     console.log(`   Total llamadas: ${allResults.length}`);
     console.log(`   ✅ Éxitos: ${totalSuccess}`);
     console.log(`   ❌ Fallos: ${totalFail}`);
+    console.log(`   ⏭️  Skipped (concurrency): ${skipped}`);
 
     if (totalFail > 0) {
         console.log('\n   Leads con error:');
@@ -232,3 +293,4 @@ main().catch(err => {
     console.error('💥 Error fatal:', err);
     process.exit(1);
 });
+

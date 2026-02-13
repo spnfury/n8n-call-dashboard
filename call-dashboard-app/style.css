@@ -2119,3 +2119,658 @@ input:checked+.slider:before {
     background: rgba(168, 85, 247, 0.15) !important;
     color: #a855f7 !important;
 }
+
+/* --- Mark as Test Toggle --- */
+.toggle-test-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    background: rgba(168, 85, 247, 0.08);
+    color: #a855f7;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.toggle-test-pill:hover {
+    background: rgba(168, 85, 247, 0.15);
+    border-color: rgba(168, 85, 247, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(168, 85, 247, 0.2);
+}
+
+.toggle-test-pill.active {
+    background: rgba(16, 185, 129, 0.12);
+    border-color: rgba(16, 185, 129, 0.4);
+    color: var(--success);
+}
+
+.toggle-test-pill.active:hover {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: rgba(16, 185, 129, 0.6);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.toggle-test-icon {
+    font-size: 15px;
+}
+
+/* Mark/Unmark test buttons in tables */
+.actions-cell-calls {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.mark-test-btn {
+    background: rgba(168, 85, 247, 0.08) !important;
+    border-color: rgba(168, 85, 247, 0.2) !important;
+    color: #a855f7 !important;
+    font-size: 14px !important;
+    padding: 4px 8px !important;
+    min-width: 32px;
+    transition: all 0.2s ease !important;
+}
+
+.mark-test-btn:hover {
+    background: rgba(168, 85, 247, 0.2) !important;
+    border-color: rgba(168, 85, 247, 0.5) !important;
+    transform: scale(1.1);
+}
+
+.unmark-test-btn {
+    background: rgba(16, 185, 129, 0.08) !important;
+    border-color: rgba(16, 185, 129, 0.2) !important;
+    color: var(--success) !important;
+    font-size: 14px !important;
+    padding: 4px 8px !important;
+    min-width: 32px;
+    transition: all 0.2s ease !important;
+}
+
+.unmark-test-btn:hover {
+    background: rgba(16, 185, 129, 0.2) !important;
+    border-color: rgba(16, 185, 129, 0.5) !important;
+    transform: scale(1.1);
+}
+
+/* ═══════════════════════════════════════════════════════ */
+/* ── REALTIME MONITORING STYLES ──                       */
+/* ═══════════════════════════════════════════════════════ */
+
+/* Live Pulse Dot */
+@keyframes live-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+}
+
+@keyframes live-pulse-green {
+    0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+}
+
+.live-pulse-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    background: #ef4444;
+    border-radius: 50%;
+    animation: live-pulse 2s infinite;
+    flex-shrink: 0;
+}
+
+.live-pulse-dot.small {
+    width: 8px;
+    height: 8px;
+}
+
+.live-pulse-dot.status-active {
+    background: var(--success);
+    animation: live-pulse-green 1.5s infinite;
+}
+
+.live-pulse-dot.status-queued {
+    background: var(--warning);
+    animation: live-pulse 2.5s infinite;
+}
+
+.live-pulse-dot.status-ringing {
+    background: #3b82f6;
+    animation: live-pulse 1s infinite;
+}
+
+/* Realtime Badge on Tab */
+.realtime-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    background: #ef4444;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 0 6px;
+    margin-left: 6px;
+    animation: live-pulse 2s infinite;
+}
+
+.nav-tab.has-live {
+    color: #ef4444 !important;
+    text-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+}
+
+/* Realtime Header */
+.realtime-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.realtime-header-info h2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.realtime-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.realtime-status-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+}
+
+.realtime-status-pill.active {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.3);
+    color: var(--success);
+}
+
+/* Realtime Stats */
+.realtime-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.realtime-stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.realtime-stat-card:first-child {
+    border-color: rgba(16, 185, 129, 0.3);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), transparent);
+}
+
+.realtime-stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.realtime-stat-card:first-child .realtime-stat-value {
+    color: var(--success);
+}
+
+.realtime-stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Active Calls Grid */
+.realtime-calls-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Active Call Card */
+.realtime-call-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.realtime-call-card.status-active {
+    border-color: rgba(16, 185, 129, 0.3);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.1);
+}
+
+.realtime-call-card.status-queued {
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+.realtime-call-card.status-ringing {
+    border-color: rgba(59, 130, 246, 0.3);
+    animation: border-glow 2s infinite;
+}
+
+@keyframes border-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 5px rgba(59, 130, 246, 0.1);
+    }
+
+    50% {
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+    }
+}
+
+.realtime-call-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid var(--border);
+}
+
+.realtime-call-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.realtime-call-phone {
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.realtime-status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.realtime-status-badge.status-active {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--success);
+}
+
+.realtime-status-badge.status-queued {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--warning);
+}
+
+.realtime-status-badge.status-ringing {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+}
+
+.realtime-call-timer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.timer-icon {
+    font-size: 16px;
+}
+
+.timer-value {
+    min-width: 60px;
+    text-align: right;
+}
+
+/* Transcript Area */
+.realtime-call-transcript {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 16px 20px;
+    scroll-behavior: smooth;
+}
+
+.realtime-call-transcript::-webkit-scrollbar {
+    width: 6px;
+}
+
+.realtime-call-transcript::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.realtime-call-transcript::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+}
+
+/* Chat-style Messages */
+.rt-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.rt-message {
+    max-width: 85%;
+    padding: 12px 16px;
+    border-radius: 16px;
+    animation: message-appear 0.3s ease;
+}
+
+@keyframes message-appear {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.rt-message.bot {
+    align-self: flex-start;
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-bottom-left-radius: 4px;
+}
+
+.rt-message.user {
+    align-self: flex-end;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    border-bottom-right-radius: 4px;
+}
+
+.rt-message-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.rt-message-speaker {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.rt-message.bot .rt-message-speaker {
+    color: var(--accent);
+}
+
+.rt-message.user .rt-message-speaker {
+    color: var(--success);
+}
+
+.rt-message-time {
+    font-size: 10px;
+    color: var(--text-secondary);
+    font-family: monospace;
+}
+
+.rt-message-content {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-primary);
+}
+
+/* Typing Indicator */
+.rt-typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 16px;
+    margin-top: 8px;
+}
+
+.rt-typing-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-secondary);
+    animation: typing-bounce 1.4s infinite ease-in-out;
+}
+
+.rt-typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.rt-typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing-bounce {
+
+    0%,
+    80%,
+    100% {
+        transform: scale(0.6);
+        opacity: 0.4;
+    }
+
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Raw Transcript */
+.rt-raw-transcript {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+}
+
+/* Transcript Loading */
+.transcript-loading {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-secondary);
+}
+
+.loading-pulse {
+    animation: pulse 1.5s infinite;
+}
+
+/* Call Actions */
+.realtime-call-actions {
+    display: flex;
+    gap: 8px;
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.rt-action-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 6px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.rt-action-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* Empty State */
+.realtime-empty-state {
+    text-align: center;
+    padding: 60px 20px 40px;
+    color: var(--text-secondary);
+}
+
+.realtime-empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.realtime-empty-state h3 {
+    font-size: 18px;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.realtime-empty-state p {
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
+.realtime-empty-timer {
+    font-size: 12px;
+    color: var(--text-secondary);
+    opacity: 0.6;
+}
+
+/* Recent Calls Section */
+.realtime-recent-section {
+    margin-top: 16px;
+    padding: 20px;
+}
+
+.realtime-recent-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+}
+
+.realtime-recent-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    transition: all 0.2s ease;
+}
+
+.realtime-recent-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.realtime-recent-phone {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.realtime-recent-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.realtime-recent-status {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.realtime-recent-status.success {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+}
+
+.realtime-recent-time {
+    font-size: 11px;
+    color: var(--text-secondary);
+    opacity: 0.6;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .realtime-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .realtime-call-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .realtime-call-timer {
+        align-self: flex-end;
+    }
+
+    .rt-message {
+        max-width: 95%;
+    }
+
+    .realtime-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .realtime-recent-grid {
+        grid-template-columns: 1fr;
+    }
+}
