@@ -2120,6 +2120,67 @@ input:checked+.slider:before {
     color: #a855f7 !important;
 }
 
+/* --- Retry Subcall Styles --- */
+.retry-parent-row {
+    border-bottom: none !important;
+}
+
+.retry-parent-row td {
+    border-bottom: 1px dashed rgba(34, 197, 94, 0.2) !important;
+}
+
+.retry-subcall-row {
+    background: rgba(34, 197, 94, 0.04) !important;
+    border-left: 3px solid rgba(34, 197, 94, 0.4);
+}
+
+.retry-subcall-row:hover {
+    background: rgba(34, 197, 94, 0.08) !important;
+}
+
+.retry-subcall-row td {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+    font-size: 12px;
+}
+
+.retry-connector {
+    color: #22c55e;
+    font-size: 16px;
+    font-weight: 700;
+    margin-right: 2px;
+    text-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+}
+
+.retry-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: rgba(34, 197, 94, 0.12);
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    color: #22c55e;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.retry-count-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+    font-size: 10px;
+    font-weight: 600;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
 /* --- Mark as Test Toggle --- */
 .toggle-test-pill {
     display: inline-flex;
@@ -2282,6 +2343,25 @@ input:checked+.slider:before {
 .nav-tab.has-live {
     color: #ef4444 !important;
     text-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+}
+
+.realtime-tab-count {
+    font-weight: 800;
+    color: #ef4444;
+    animation: live-pulse-text 2s infinite;
+    font-size: inherit;
+}
+
+@keyframes live-pulse-text {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
 }
 
 /* Realtime Header */

@@ -1421,13 +1421,48 @@ async function loadData(skipEnrichment = false) {
         }
 
         tbody.innerHTML = '';
+
+        // Build a map of parent vapi_call_id → retry calls for grouping
+        const retryMap = new Map(); // parentVapiId → [retryCall indexes]
+        const retryChildIndexes = new Set(); // indexes that are retries (to skip in main loop)
+
         filteredCalls.forEach((call, index) => {
+            const reason = call.ended_reason || '';
+            const retryMatch = reason.match(/^Retry:?\s*([a-f0-9-]{8,})/i);
+            if (retryMatch) {
+                const parentIdPrefix = retryMatch[1].replace(/\.+$/, '');
+                // Find the parent call in filteredCalls
+                const parentIdx = filteredCalls.findIndex(c => {
+                    const cId = c.vapi_call_id || c.lead_id || '';
+                    return cId.startsWith(parentIdPrefix);
+                });
+                if (parentIdx >= 0) {
+                    if (!retryMap.has(parentIdx)) retryMap.set(parentIdx, []);
+                    retryMap.get(parentIdx).push(index);
+                    retryChildIndexes.add(index);
+                    // Store the parent vapi_call_id on the retry call for reference
+                    call._retryParentIdx = parentIdx;
+                }
+            }
+        });
+
+        // Helper to render a single call row
+        function renderCallRow(call, index, isRetry = false, parentCall = null) {
             const tr = document.createElement('tr');
             const vapiId = call.vapi_call_id || call.lead_id || call.id || call.Id || '-';
             const shortId = vapiId.length > 20 ? vapiId.substring(0, 8) + '...' : vapiId;
 
             const confirmed = isConfirmed(call);
             if (confirmed) tr.classList.add('confirmed-row');
+
+            // Add retry styling class
+            if (isRetry) {
+                tr.classList.add('retry-subcall-row');
+            }
+            // Add parent class if it has retries
+            if (retryMap.has(index)) {
+                tr.classList.add('retry-parent-row');
+            }
 
             // Get confirmed data from pre-fetched map
             const confData = confirmedDataMap[call.vapi_call_id];
@@ -1451,12 +1486,29 @@ async function loadData(skipEnrichment = false) {
             const scoreLbl = getScoreLabel(scoreVal);
             const scoreClr = getScoreColor(scoreVal);
 
+            // For retry calls, show a special "Resultado" with link badge
+            let resultadoCell = call.ended_reason || '-';
+            let empresaCell = `<strong>${call.lead_name || '-'}</strong>`;
+            let idCell = `<code style="font-family: monospace; color: var(--accent); font-size: 11px;" title="${vapiId}">${shortId}</code> <button class="copy-id-btn" data-copy-id="${vapiId}" title="Copiar ID completo" style="background:none;border:none;cursor:pointer;font-size:12px;padding:2px 4px;opacity:0.6;transition:opacity 0.2s;vertical-align:middle;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">📋</button>`;
+
+            if (isRetry) {
+                idCell = `<span class="retry-connector">↳</span> <code style="font-family: monospace; color: #22c55e; font-size: 11px;" title="${vapiId}">${shortId}</code> <button class="copy-id-btn" data-copy-id="${vapiId}" title="Copiar ID completo" style="background:none;border:none;cursor:pointer;font-size:12px;padding:2px 4px;opacity:0.6;transition:opacity 0.2s;vertical-align:middle;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">📋</button>`;
+                empresaCell = `<span class="retry-badge">🔄 Rellamada</span>`;
+                resultadoCell = call.ended_reason ? call.ended_reason.replace(/^Retry:?\s*[a-f0-9-]+\.{0,3}\s*/i, '').trim() || call.ended_reason : '-';
+            }
+
+            // For parent calls that have retries, add a subtle indicator
+            if (retryMap.has(index)) {
+                const retryCount = retryMap.get(index).length;
+                empresaCell += ` <span class="retry-count-badge" title="${retryCount} rellamada(s)">🔄 ${retryCount}</span>`;
+            }
+
             tr.innerHTML = `
-                <td data-label="Call ID"><code style="font-family: monospace; color: var(--accent); font-size: 11px;" title="${vapiId}">${shortId}</code> <button class="copy-id-btn" data-copy-id="${vapiId}" title="Copiar ID completo" style="background:none;border:none;cursor:pointer;font-size:12px;padding:2px 4px;opacity:0.6;transition:opacity 0.2s;vertical-align:middle;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">📋</button></td>
-                <td data-label="Empresa"><strong>${call.lead_name || '-'}</strong></td>
+                <td data-label="Call ID">${idCell}</td>
+                <td data-label="Empresa">${empresaCell}</td>
                 <td data-label="Teléfono" class="phone">${call.phone_called || '-'}</td>
                 <td data-label="Fecha">${formatDate(call.call_time || call.CreatedAt)}</td>
-                <td data-label="Resultado">${call.ended_reason || '-'}</td>
+                <td data-label="Resultado">${resultadoCell}</td>
                 <td data-label="Evaluación"><span class="badge ${getBadgeClass(call.evaluation)}">${call.evaluation || 'Pendiente'}</span></td>
                 <td data-label="Duración">${formatDuration(call.duration_seconds)}</td>
                 <td data-label="Score"><span class="score-badge ${scoreLbl.cls}" style="--score-color: ${scoreClr}">${scoreLbl.emoji} ${scoreVal}</span></td>
@@ -1467,7 +1519,26 @@ async function loadData(skipEnrichment = false) {
                     <button class="action-btn mark-test-btn" data-call-id="${call.id || call.Id}" title="Marcar como Test">🧪</button>
                 </td>
             `;
+            return tr;
+        }
+
+        // Render calls with retry grouping
+        filteredCalls.forEach((call, index) => {
+            // Skip retry calls — they will be rendered after their parent
+            if (retryChildIndexes.has(index)) return;
+
+            // Render the main call
+            const tr = renderCallRow(call, index);
             tbody.appendChild(tr);
+
+            // Render any retry subcalls right after the parent
+            if (retryMap.has(index)) {
+                const retries = retryMap.get(index);
+                retries.forEach(retryIdx => {
+                    const retryTr = renderCallRow(filteredCalls[retryIdx], retryIdx, true, call);
+                    tbody.appendChild(retryTr);
+                });
+            }
         });
 
         // Update Chart
@@ -2047,6 +2118,197 @@ document.getElementById('manual-call-modal').addEventListener('click', (e) => {
     }
 });
 
+// --- Retry Call with Context ---
+window._retryCall = async function () {
+    if (!activeDetailCall) return;
+
+    const vapiId = activeDetailCall.vapi_call_id || activeDetailCall.lead_id || '';
+    const phone = activeDetailCall.phone_called;
+    const retryBtn = document.getElementById('retry-call-btn');
+    const retryFeedback = document.getElementById('retry-feedback');
+
+    if (!vapiId.startsWith('019') || !phone) {
+        retryFeedback.style.display = 'block';
+        retryFeedback.textContent = '❌ No se puede rellamar: falta el ID de Vapi o el teléfono';
+        retryFeedback.style.color = 'var(--danger)';
+        return;
+    }
+
+    if (!confirm(`¿Lanzar rellamada con contexto a ${phone}?`)) return;
+
+    retryBtn.disabled = true;
+    retryFeedback.style.display = 'block';
+    retryFeedback.textContent = '⏳ Obteniendo contexto de la llamada anterior...';
+    retryFeedback.style.color = 'var(--accent)';
+
+    try {
+        // 1. Get previous call details from Vapi
+        const vapiRes = await fetch(`https://api.vapi.ai/call/${vapiId}`, {
+            headers: { 'Authorization': `Bearer ${VAPI_API_KEY}` }
+        });
+        if (!vapiRes.ok) throw new Error('No se pudo obtener la llamada anterior');
+        const previousCall = await vapiRes.json();
+
+        // 2. Extract context
+        const transcript = previousCall.artifact?.transcript || previousCall.transcript || '';
+        const analysis = previousCall.analysis?.summary || '';
+        const duration = previousCall.endedAt && previousCall.startedAt
+            ? Math.round((new Date(previousCall.endedAt) - new Date(previousCall.startedAt)) / 1000) : 0;
+        const endedReason = previousCall.endedReason || 'unknown';
+
+        // Parse user messages for interest signals
+        const lines = transcript.split('\n').filter(l => l.trim());
+        const userMsgs = lines.filter(l => l.startsWith('User:') || l.startsWith('user:'))
+            .map(l => l.replace(/^(User|user):\s*/, ''));
+        const interestSignals = ['interesa', 'sí', 'cuéntame', 'dime', 'vale', 'ok', 'de acuerdo', 'claro'];
+        const customerInterested = userMsgs.some(msg =>
+            interestSignals.some(signal => msg.toLowerCase().includes(signal))
+        );
+
+        // Extract customer name
+        let customerName = '';
+        for (const msg of userMsgs) {
+            const m = msg.match(/(?:soy|me llamo)\s+([A-ZÁÉÍÓÚÑa-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑa-záéíóúñ]+){0,2})/i);
+            if (m) { customerName = m[1].trim(); break; }
+        }
+
+        // Determine last topic
+        let lastTopic = 'el programa de partners';
+        const aiMsgs = lines.filter(l => l.startsWith('AI:') || l.startsWith('bot:'))
+            .map(l => l.replace(/^(AI|bot):\s*/, ''));
+        if (aiMsgs.some(m => m.toLowerCase().includes('servicio de seguridad'))) lastTopic = 'si ofrecéis servicios de seguridad';
+        if (aiMsgs.some(m => m.toLowerCase().includes('cibersafe') || m.toLowerCase().includes('cibersteps'))) lastTopic = 'CiberSafe y CiberSteps';
+        if (aiMsgs.some(m => m.toLowerCase().includes('email') || m.toLowerCase().includes('correo'))) lastTopic = 'el envío de información por email';
+
+        // 3. Build retry first message
+        const nameGreeting = customerName ? `${customerName}, ` : '';
+        let retryFirstMessage;
+        if (customerInterested) {
+            retryFirstMessage = `Hola ${nameGreeting}soy Violeta de General Protec Ciberseguridad. Te llamé hace un momento y parece que se cortó la comunicación. Me habías dicho que te interesaba, ¿verdad? Retomo donde lo dejamos rapidísimo.`;
+        } else if (duration < 15) {
+            retryFirstMessage = `Hola, soy Violeta de General Protec Ciberseguridad. Intenté llamarte hace un momento pero parece que se cortó antes de poder explicarme bien. ¿Tienes un minuto? Es brevísimo.`;
+        } else {
+            retryFirstMessage = `Hola ${nameGreeting}soy Violeta de General Protec Ciberseguridad. Disculpa, parece que se cortó nuestra llamada. Te estaba comentando sobre ${lastTopic}. ¿Seguimos?`;
+        }
+
+        // 4. Build system prompt addition
+        const endReason = endedReason === 'customer-ended-call' ? 'la llamada se cortó'
+            : endedReason.includes('error') ? 'hubo un problema técnico' : 'la llamada terminó';
+
+        const retryPromptAddition = `\n\n## CONTEXTO DE RELLAMADA (IMPORTANTE)
+Esta es una RELLAMADA. Ya hablaste con este contacto hace unos minutos y la llamada se cortó.
+
+### Lo que pasó en la llamada anterior:
+${analysis || 'Se cortó la comunicación durante la conversación.'}
+
+### Estado de la conversación anterior:
+- Duración: ${duration} segundos
+- El cliente mostró interés: ${customerInterested ? 'SÍ' : 'No determinado'}
+- Último tema tratado: ${lastTopic}
+- Motivo del corte: ${endReason}
+${customerName ? `- Nombre del interlocutor: ${customerName}` : ''}
+
+### Transcripción de la llamada anterior:
+${transcript || 'No disponible'}
+
+### INSTRUCCIONES PARA ESTA RELLAMADA:
+1. NO repitas toda la presentación desde cero.
+2. Haz referencia a que se cortó la llamada anterior.
+3. Retoma donde lo dejaste. Si dijo "interesa", pasa directo a dar valor y recoger datos.
+4. Si el cliente ya se identificó, usa su nombre.
+5. Sé más conciso y directo que en una primera llamada.`;
+
+        // 5. Check concurrency
+        retryFeedback.textContent = '⏳ Verificando disponibilidad...';
+        const checkRes = await fetch('https://api.vapi.ai/call?limit=100', {
+            headers: { 'Authorization': `Bearer ${VAPI_API_KEY}` }
+        });
+        if (checkRes.ok) {
+            const allVapiCalls = await checkRes.json();
+            const activeCalls = (Array.isArray(allVapiCalls) ? allVapiCalls : [])
+                .filter(c => ['queued', 'ringing', 'in-progress'].includes(c.status));
+            if (activeCalls.length >= 10) {
+                retryFeedback.textContent = `🚫 Límite de concurrencia alcanzado: ${activeCalls.length}/10`;
+                retryFeedback.style.color = 'var(--danger)';
+                retryBtn.disabled = false;
+                return;
+            }
+        }
+
+        // 6. Get current assistant config for the model override
+        retryFeedback.textContent = '⏳ Preparando rellamada...';
+        const assistantRes = await fetch(`https://api.vapi.ai/assistant/${VAPI_ASSISTANT_ID}`, {
+            headers: { 'Authorization': `Bearer ${VAPI_API_KEY}` }
+        });
+        const assistant = await assistantRes.json();
+        const currentPrompt = assistant.model?.messages?.[0]?.content || '';
+
+        // 7. Launch the retry call
+        retryFeedback.textContent = '🚀 Lanzando rellamada...';
+        const formattedPhone = normalizePhone(phone);
+
+        const callRes = await fetch('https://api.vapi.ai/call', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${VAPI_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                customer: { number: formattedPhone },
+                assistantId: VAPI_ASSISTANT_ID,
+                phoneNumberId: VAPI_PHONE_NUMBER_ID,
+                assistantOverrides: {
+                    firstMessage: retryFirstMessage,
+                    model: {
+                        ...assistant.model,
+                        messages: [{
+                            role: 'system',
+                            content: currentPrompt + retryPromptAddition
+                        }]
+                    },
+                    variableValues: {
+                        nombre: customerName || activeDetailCall.lead_name || 'Cliente',
+                        empresa: activeDetailCall.lead_name || '',
+                        tel_contacto: formattedPhone
+                    }
+                }
+            })
+        });
+
+        const callData = await callRes.json();
+        if (!callRes.ok) throw new Error(callData.message || 'Error de Vapi');
+
+        // 8. Log to NocoDB
+        await fetch(`${API_BASE}/${CALL_LOGS_TABLE}/records`, {
+            method: 'POST',
+            headers: { 'xc-token': XC_TOKEN, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                vapi_call_id: callData.id,
+                lead_name: activeDetailCall.lead_name || 'Rellamada',
+                phone_called: formattedPhone,
+                call_time: new Date().toISOString(),
+                ended_reason: `Retry: ${vapiId.substring(0, 12)}...`,
+                Notes: `Rellamada con contexto. Anterior: ${vapiId}. Interés: ${customerInterested ? 'Sí' : 'No'}. ${customerName ? 'Contacto: ' + customerName : ''}`
+            })
+        });
+
+        retryFeedback.textContent = `✅ ¡Rellamada lanzada! ID: ${callData.id.substring(0, 12)}...`;
+        retryFeedback.style.color = 'var(--success)';
+
+        setTimeout(() => {
+            closeModal();
+            loadData();
+        }, 3000);
+
+    } catch (err) {
+        console.error('Retry call error:', err);
+        retryFeedback.textContent = `❌ Error: ${err.message}`;
+        retryFeedback.style.color = 'var(--danger)';
+    } finally {
+        retryBtn.disabled = false;
+    }
+};
+
 // --- Transcript Extraction Logic ---
 
 function extractInfoFromTranscript(text) {
@@ -2313,9 +2575,8 @@ async function fetchRealtimeCalls(badgeOnly = false) {
         const statusText = document.getElementById('realtime-status-text');
         if (!badgeOnly && statusText) statusText.textContent = 'Escaneando...';
 
-        // Fetch recent calls from Vapi (last 1 hour, all statuses)
-        const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
-        const res = await fetch(`https://api.vapi.ai/call?createdAtGte=${encodeURIComponent(oneHourAgo)}&limit=50`, {
+        // Fetch recent calls from Vapi
+        const res = await fetch(`https://api.vapi.ai/call?limit=100`, {
             headers: { 'Authorization': `Bearer ${VAPI_API_KEY}` }
         });
 
@@ -2325,7 +2586,9 @@ async function fetchRealtimeCalls(badgeOnly = false) {
             return;
         }
 
-        const calls = await res.json();
+        const rawCalls = await res.json();
+        // Vapi may return an array or an object wrapping the array
+        const calls = Array.isArray(rawCalls) ? rawCalls : (rawCalls?.results || rawCalls?.data || rawCalls?.list || []);
 
         // Categorize calls
         const activeCalls = calls.filter(c => c.status === 'in-progress');
@@ -2338,17 +2601,16 @@ async function fetchRealtimeCalls(badgeOnly = false) {
         todayStart.setHours(0, 0, 0, 0);
         const todayCalls = calls.filter(c => new Date(c.createdAt) >= todayStart);
 
-        // Update badge on tab (always)
+        // Update tab text and badge (always)
+        const tabEl = document.getElementById('nav-tab-realtime');
         const badge = document.getElementById('realtime-badge');
-        if (badge) {
+        if (tabEl) {
             if (allLiveCalls.length > 0) {
-                badge.textContent = allLiveCalls.length;
-                badge.style.display = 'inline-flex';
-                // Add pulsing class to tab
-                document.getElementById('nav-tab-realtime')?.classList.add('has-live');
+                tabEl.innerHTML = `🔴 En Vivo <span class="realtime-tab-count">(${allLiveCalls.length})</span> <span id="realtime-badge" class="realtime-badge" style="display:inline-flex;">${allLiveCalls.length}</span>`;
+                tabEl.classList.add('has-live');
             } else {
-                badge.style.display = 'none';
-                document.getElementById('nav-tab-realtime')?.classList.remove('has-live');
+                tabEl.innerHTML = `🔴 En Vivo <span id="realtime-badge" class="realtime-badge" style="display:none;">0</span>`;
+                tabEl.classList.remove('has-live');
             }
         }
 

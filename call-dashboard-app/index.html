@@ -473,12 +473,19 @@
             <div class="modal-header">
                 <h2 id="modal-title">Detalle de la Llamada</h2>
                 <p id="modal-subtitle" style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;"></p>
-                <div id="modal-test-toggle" style="margin-top: 12px;">
+                <div id="modal-test-toggle"
+                    style="margin-top: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                     <button id="toggle-test-btn" class="toggle-test-pill" onclick="window._toggleDetailTest()">
                         <span class="toggle-test-icon">🧪</span>
                         <span class="toggle-test-label">Marcar como Test</span>
                     </button>
+                    <button id="retry-call-btn" class="toggle-test-pill" onclick="window._retryCall()"
+                        style="background: rgba(34, 197, 94, 0.15); border-color: rgba(34, 197, 94, 0.3);">
+                        <span class="toggle-test-icon">🔄</span>
+                        <span class="toggle-test-label">Rellamar con contexto</span>
+                    </button>
                 </div>
+                <div id="retry-feedback" style="margin-top: 8px; font-size: 12px; display: none;"></div>
             </div>
 
             <div id="score-section" style="display: none; margin-bottom: 24px;"></div>
