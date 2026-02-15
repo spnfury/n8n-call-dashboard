@@ -155,62 +155,95 @@ async function main() {
         process.stdout.write(`[${i + 1}/${eligible.length}] ${now} ${name.substring(0, 35).padEnd(35)} ${phone} → `);
 
         try {
-            // Call Vapi
-            const vapiRes = await fetch('https://api.vapi.ai/call', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${VAPI_API_KEY}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    customer: { number: phone },
-                    assistantId: ASSISTANT_ID,
-                    phoneNumberId: PHONE_NUMBER_ID,
-                    assistantOverrides: {
-                        variableValues: {
-                            nombre: name,
-                            empresa: name,
-                            ciudad: address,
-                            tel_contacto: phone,
-                            correo_cliente: email
+            // SIP retry with exponential backoff
+            const MAX_CALL_RETRIES = 3;
+            const RETRY_BACKOFF_BASE_MS = 15000;
+            let callSuccess = false;
+
+            for (let attempt = 1; attempt <= MAX_CALL_RETRIES; attempt++) {
+                try {
+                    // Call Vapi
+                    const vapiRes = await fetch('https://api.vapi.ai/call', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${VAPI_API_KEY}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            customer: { number: phone },
+                            assistantId: ASSISTANT_ID,
+                            phoneNumberId: PHONE_NUMBER_ID,
+                            assistantOverrides: {
+                                variableValues: {
+                                    nombre: name,
+                                    empresa: name,
+                                    ciudad: address,
+                                    tel_contacto: phone,
+                                    correo_cliente: email
+                                }
+                            }
+                        })
+                    });
+
+                    const vapiData = await vapiRes.json();
+
+                    if (!vapiRes.ok) {
+                        const errMsg = vapiData.message || vapiData.error || `HTTP ${vapiRes.status}`;
+                        const isSipError = errMsg.toLowerCase().includes('sip') ||
+                            errMsg.includes('503') ||
+                            errMsg.toLowerCase().includes('rate') ||
+                            errMsg.toLowerCase().includes('capacity') ||
+                            errMsg.toLowerCase().includes('busy') ||
+                            vapiRes.status === 429 || vapiRes.status === 503;
+
+                        if (isSipError && attempt < MAX_CALL_RETRIES) {
+                            const waitMs = RETRY_BACKOFF_BASE_MS * Math.pow(2, attempt - 1);
+                            console.log(`⚠️ SIP error (attempt ${attempt}/${MAX_CALL_RETRIES}), retrying in ${waitMs / 1000}s...`);
+                            await sleep(waitMs / 1000);
+                            continue;
                         }
+                        throw new Error(errMsg);
                     }
-                })
-            });
 
-            const vapiData = await vapiRes.json();
+                    console.log(`✅ Call ID: ${vapiData.id?.substring(0, 12)}...${attempt > 1 ? ` (retry ${attempt})` : ''}`);
 
-            if (!vapiRes.ok) {
-                throw new Error(vapiData.message || vapiData.error || `HTTP ${vapiRes.status}`);
+                    // Log to NocoDB
+                    await fetch(`${NOCODB_BASE}/${CALL_LOGS_TABLE}/records`, {
+                        method: 'POST',
+                        headers: { 'xc-token': XC_TOKEN, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            vapi_call_id: vapiData.id,
+                            lead_name: name,
+                            phone_called: phone,
+                            call_time: new Date().toISOString(),
+                            ended_reason: 'Call Initiated'
+                        })
+                    });
+
+                    // Update lead status
+                    await fetch(`${NOCODB_BASE}/${LEADS_TABLE}/records`, {
+                        method: 'PATCH',
+                        headers: { 'xc-token': XC_TOKEN, 'Content-Type': 'application/json' },
+                        body: JSON.stringify([{
+                            unique_id: lead.unique_id,
+                            status: 'Completado',
+                            fecha_planificada: null
+                        }])
+                    });
+
+                    callSuccess = true;
+                    success++;
+                    break; // Success, exit retry loop
+                } catch (retryErr) {
+                    if (attempt < MAX_CALL_RETRIES && (retryErr.message.toLowerCase().includes('sip') || retryErr.message.includes('503'))) {
+                        const waitMs = RETRY_BACKOFF_BASE_MS * Math.pow(2, attempt - 1);
+                        console.log(`⚠️ Retry ${attempt}/${MAX_CALL_RETRIES} in ${waitMs / 1000}s...`);
+                        await sleep(waitMs / 1000);
+                        continue;
+                    }
+                    throw retryErr; // Rethrow if not retryable or last attempt
+                }
             }
-
-            console.log(`✅ Call ID: ${vapiData.id?.substring(0, 12)}...`);
-
-            // Log to NocoDB
-            await fetch(`${NOCODB_BASE}/${CALL_LOGS_TABLE}/records`, {
-                method: 'POST',
-                headers: { 'xc-token': XC_TOKEN, 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    vapi_call_id: vapiData.id,
-                    lead_name: name,
-                    phone_called: phone,
-                    call_time: new Date().toISOString(),
-                    ended_reason: 'Call Initiated'
-                })
-            });
-
-            // Update lead status
-            await fetch(`${NOCODB_BASE}/${LEADS_TABLE}/records`, {
-                method: 'PATCH',
-                headers: { 'xc-token': XC_TOKEN, 'Content-Type': 'application/json' },
-                body: JSON.stringify([{
-                    unique_id: lead.unique_id,
-                    status: 'Completado',
-                    fecha_planificada: null
-                }])
-            });
-
-            success++;
         } catch (err) {
             console.log(`❌ ${err.message}`);
             errors++;

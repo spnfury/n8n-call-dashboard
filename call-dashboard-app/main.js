@@ -521,12 +521,24 @@ function closeModal() {
 async function fetchScheduledLeads() {
     try {
         const LEADS_TABLE = 'mgot1kl4sglenym'; // From bulk_call_manager.json
-        // Fetch leads that have a planned date (removed API sort due to potential 422)
-        const res = await fetch(`${API_BASE}/${LEADS_TABLE}/records?limit=100`, {
-            headers: { 'xc-token': XC_TOKEN }
-        });
-        const data = await res.json();
-        const leads = (data.list || []).filter(lead => lead.fecha_planificada);
+        // Paginate to fetch ALL leads (supports 200+ scheduled leads)
+        let allRecords = [];
+        let offset = 0;
+        const batchSize = 200;
+
+        while (true) {
+            const res = await fetch(`${API_BASE}/${LEADS_TABLE}/records?limit=${batchSize}&offset=${offset}`, {
+                headers: { 'xc-token': XC_TOKEN }
+            });
+            const data = await res.json();
+            const records = data.list || [];
+            allRecords = allRecords.concat(records);
+            if (records.length < batchSize || data.pageInfo?.isLastPage !== false) break;
+            offset += batchSize;
+            if (allRecords.length >= 2000) break; // Safety limit
+        }
+
+        const leads = allRecords.filter(lead => lead.fecha_planificada);
 
         const plannedGrid = document.getElementById('planned-grid');
         const plannedSection = document.getElementById('planned-section');
@@ -1963,29 +1975,53 @@ async function triggerManualCall() {
         btn.textContent = '⌛ Iniciando Llamada...';
         feedback.textContent = 'Conectando con Vapi AI...';
 
-        // 1. Call Vapi AI via local proxy to avoid CORS
-        const vapiRes = await fetch('https://api.vapi.ai/call', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${VAPI_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                customer: { number: formattedPhone },
-                assistantId: assistantId,
-                phoneNumberId: VAPI_PHONE_NUMBER_ID,
-                assistantOverrides: {
-                    variableValues: {
-                        nombre: name,
-                        empresa: company,
-                        tel_contacto: formattedPhone
-                    }
-                }
-            })
-        });
+        // 1. Call Vapi AI with SIP retry logic
+        const MAX_CALL_RETRIES = 3;
+        const RETRY_BACKOFF_BASE = 5000; // 5s, 10s, 20s
+        let vapiData = null;
 
-        const vapiData = await vapiRes.json();
-        if (!vapiRes.ok) throw new Error(vapiData.message || 'Error en Vapi AI');
+        for (let attempt = 1; attempt <= MAX_CALL_RETRIES; attempt++) {
+            const vapiRes = await fetch('https://api.vapi.ai/call', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${VAPI_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    customer: { number: formattedPhone },
+                    assistantId: assistantId,
+                    phoneNumberId: VAPI_PHONE_NUMBER_ID,
+                    assistantOverrides: {
+                        variableValues: {
+                            nombre: name,
+                            empresa: company,
+                            tel_contacto: formattedPhone
+                        }
+                    }
+                })
+            });
+
+            vapiData = await vapiRes.json();
+
+            if (!vapiRes.ok) {
+                const errMsg = vapiData.message || 'Error en Vapi AI';
+                const isSipError = errMsg.toLowerCase().includes('sip') ||
+                    errMsg.includes('503') ||
+                    errMsg.toLowerCase().includes('rate') ||
+                    vapiRes.status === 429 || vapiRes.status === 503;
+
+                if (isSipError && attempt < MAX_CALL_RETRIES) {
+                    const waitMs = RETRY_BACKOFF_BASE * Math.pow(2, attempt - 1);
+                    feedback.textContent = `⚠️ Error SIP — Reintentando (${attempt}/${MAX_CALL_RETRIES}) en ${waitMs / 1000}s...`;
+                    feedback.className = 'feedback-loading';
+                    console.warn(`[SIP Retry] Attempt ${attempt}/${MAX_CALL_RETRIES}: ${errMsg}. Waiting ${waitMs}ms...`);
+                    await new Promise(r => setTimeout(r, waitMs));
+                    continue;
+                }
+                throw new Error(errMsg);
+            }
+            break; // Success
+        }
 
         feedback.textContent = '✅ Llamada iniciada. Registrando en log...';
 
