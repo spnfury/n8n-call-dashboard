@@ -30,10 +30,10 @@ function formatDate(dateStr, short = false) {
 function getBadgeClass(evaluation) {
     if (!evaluation) return 'pending';
     const e = evaluation.toLowerCase();
-    if (e.includes('contestador') || e.includes('voicemail') || e.includes('buzón')) return 'voicemail';
-    if (e.includes('success') || e.includes('completed') || e.includes('confirmada') || e.includes('ok')) return 'success';
-    if (e.includes('fail') || e.includes('error') || e.includes('no contesta') || e.includes('rechazada')) return 'fail';
-    if (e.includes('sin datos') || e.includes('incompleta')) return 'warning';
+    if (e.includes('contestador') || e.includes('voicemail') || e.includes('buzón') || e.includes('máquina')) return 'voicemail';
+    if (e.includes('success') || e.includes('completed') || e.includes('confirmada') || e.includes('ok') || e.includes('completada')) return 'success';
+    if (e.includes('fail') || e.includes('error') || e.includes('no contesta') || e.includes('rechazada') || e.includes('fallida') || e.includes('ocupado')) return 'fail';
+    if (e.includes('sin datos') || e.includes('incompleta') || e.includes('colgó rápido') || e.includes('sin respuesta')) return 'warning';
     return 'pending';
 }
 
@@ -170,16 +170,37 @@ async function fetchConfirmedData() {
 
 // Enrich calls with missing data from Vapi API
 async function enrichCallsFromVapi(calls) {
+    // Only enrich calls that still look un-processed (Call Initiated or no evaluation)
     const callsToEnrich = calls.filter(c =>
-        c.vapi_call_id && c.vapi_call_id.startsWith('019') && !c.duration_seconds
-    ).slice(0, 5); // Limit to 5 most recent to avoid rate limits
+        c.vapi_call_id && c.vapi_call_id.startsWith('019') &&
+        (!c.evaluation || c.evaluation === 'Pendiente' ||
+            c.ended_reason === 'Call Initiated' || c.ended_reason === 'call_initiated')
+    ).slice(0, 15); // Process up to 15 per cycle
 
     if (callsToEnrich.length === 0) return false;
+
+    // Map Vapi endedReason to user-friendly Spanish labels
+    function mapEndedReason(reason) {
+        if (!reason) return 'Desconocido';
+        const r = reason.toLowerCase();
+        if (r.includes('sip') && r.includes('failed')) return 'Sin conexión (SIP)';
+        if (r.includes('sip') && r.includes('busy')) return 'Línea ocupada';
+        if (r.includes('sip') && r.includes('503')) return 'Servicio no disponible';
+        if (r === 'customer-busy') return 'Línea ocupada';
+        if (r === 'customer-ended-call') return 'Cliente colgó';
+        if (r === 'assistant-ended-call') return 'Asistente finalizó';
+        if (r === 'silence-timed-out') return 'Sin respuesta (silencio)';
+        if (r === 'voicemail') return 'Contestador automático';
+        if (r === 'machine_detected') return 'Máquina detectada';
+        if (r === 'assistant-error') return 'Error del asistente';
+        if (r.includes('no-answer') || r.includes('noanswer')) return 'No contesta';
+        if (r.includes('error')) return 'Error: ' + reason.split('.').pop();
+        return reason; // fallback: show raw reason
+    }
 
     let updated = false;
     for (const call of callsToEnrich) {
         try {
-            // Use local proxy to avoid CORS
             const res = await fetch(`https://api.vapi.ai/call/${call.vapi_call_id}`, {
                 headers: { 'Authorization': `Bearer ${VAPI_API_KEY}` }
             });
@@ -192,7 +213,7 @@ async function enrichCallsFromVapi(calls) {
             if (vapiData.status !== 'ended') continue; // Call still in progress
 
             // Calculate duration from messages or timestamps
-            let duration = null;
+            let duration = 0;
             const msgs = vapiData.artifact?.messages || [];
             if (msgs.length > 0) {
                 duration = Math.round(msgs[msgs.length - 1].secondsFromStart || 0);
@@ -200,24 +221,39 @@ async function enrichCallsFromVapi(calls) {
                 duration = Math.round((new Date(vapiData.endedAt) - new Date(vapiData.startedAt)) / 1000);
             }
 
-            // Determine evaluation
+            // Determine evaluation based on endedReason and call data
             const isConf = confirmedDataMap[call.vapi_call_id];
+            const reason = vapiData.endedReason || '';
+            const reasonLower = reason.toLowerCase();
             let evaluation = 'Sin datos';
+
             if (isConf) {
                 evaluation = 'Confirmada ✓';
-            } else if (vapiData.endedReason === 'voicemail' || vapiData.endedReason === 'machine_detected' || (vapiData.analysis?.successEvaluation || '').toLowerCase().includes('contestador')) {
+            } else if (reasonLower.includes('sip') && (reasonLower.includes('failed') || reasonLower.includes('error'))) {
+                evaluation = 'Fallida';
+            } else if (reason === 'customer-busy') {
+                evaluation = 'Ocupado';
+            } else if (reason === 'voicemail' || reason === 'machine_detected' || (vapiData.analysis?.successEvaluation || '').toLowerCase().includes('contestador')) {
                 evaluation = 'Contestador';
-            } else if (duration && duration < 10) {
+            } else if (reason === 'silence-timed-out') {
+                evaluation = duration > 10 ? 'Sin respuesta' : 'No contesta';
+            } else if (duration > 0 && duration < 10) {
                 evaluation = 'No contesta';
-            } else if (vapiData.endedReason === 'customer-ended-call' && duration > 30) {
+            } else if (reason === 'customer-ended-call' && duration > 30) {
                 evaluation = 'Completada';
-            } else if (vapiData.endedReason === 'assistant-error') {
+            } else if (reason === 'assistant-ended-call' && duration > 30) {
+                evaluation = 'Completada';
+            } else if (reason === 'customer-ended-call' && duration <= 30) {
+                evaluation = 'Colgó rápido';
+            } else if (reason === 'assistant-error') {
                 evaluation = 'Error';
+            } else if (duration > 0) {
+                evaluation = 'Completada';
             }
 
-            // Preserve 'Manual Trigger' for test calls so they stay in the Test section
+            // Build human-readable ended_reason
             const isTestCall = (call.ended_reason || '').includes('Manual Trigger');
-            const endedReason = isTestCall ? 'Manual Trigger' : (vapiData.endedReason || call.ended_reason);
+            const endedReason = isTestCall ? 'Manual Trigger' : mapEndedReason(vapiData.endedReason);
 
             // Update local data
             call.duration_seconds = duration;
@@ -248,8 +284,8 @@ async function enrichCallsFromVapi(calls) {
 
             updated = true;
 
-            // Wait 500ms between calls to avoid 429
-            await new Promise(r => setTimeout(r, 500));
+            // Wait 400ms between calls to avoid 429
+            await new Promise(r => setTimeout(r, 400));
         } catch (err) {
             console.warn('Error enriching call', call.vapi_call_id, err);
         }
