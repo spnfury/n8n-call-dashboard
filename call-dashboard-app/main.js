@@ -554,46 +554,71 @@ async function fetchScheduledLeads() {
         const now = new Date();
         const sortedLeads = leads.sort((a, b) => utcStringToLocalDate(a.fecha_planificada) - utcStringToLocalDate(b.fecha_planificada));
 
-        // Find the next call (first one with plannedDate > now)
-        const nextCall = sortedLeads.find(l => utcStringToLocalDate(l.fecha_planificada) > now);
+        // Find next call and categorize
+        const dueLeads = sortedLeads.filter(l => utcStringToLocalDate(l.fecha_planificada) <= now);
+        const futureLeads = sortedLeads.filter(l => utcStringToLocalDate(l.fecha_planificada) > now);
+        const nextCall = futureLeads[0];
 
-        sortedLeads.forEach(lead => {
+        // Calculate time range
+        const firstTime = utcStringToLocalDate(sortedLeads[0].fecha_planificada);
+        const lastTime = utcStringToLocalDate(sortedLeads[sortedLeads.length - 1].fecha_planificada);
+        const timeOpts = { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' };
+        const firstStr = isNaN(firstTime) ? '?' : firstTime.toLocaleString('es-ES', timeOpts);
+        const lastStr = isNaN(lastTime) ? '?' : lastTime.toLocaleString('es-ES', timeOpts);
+
+        // Summary banner
+        const banner = document.createElement('div');
+        banner.className = 'planned-summary-banner';
+        banner.innerHTML = `
+            <div class="planned-summary-stats">
+                <div class="planned-summary-stat">
+                    <span class="planned-summary-value">${sortedLeads.length}</span>
+                    <span class="planned-summary-label">Programadas</span>
+                </div>
+                <div class="planned-summary-stat due">
+                    <span class="planned-summary-value">${dueLeads.length}</span>
+                    <span class="planned-summary-label">Vencidas</span>
+                </div>
+                <div class="planned-summary-stat future">
+                    <span class="planned-summary-value">${futureLeads.length}</span>
+                    <span class="planned-summary-label">Pendientes</span>
+                </div>
+            </div>
+            <div class="planned-summary-range">
+                <div>📅 ${firstStr} → ${lastStr}</div>
+                ${nextCall ? `<div class="planned-next-timer" data-scheduled="${nextCall.fecha_planificada}">⏱️ Próxima: <span>--:--:--</span></div>` : ''}
+            </div>
+        `;
+        plannedGrid.appendChild(banner);
+
+        // Compact list (show max 50 initially)
+        const MAX_VISIBLE = 50;
+        const listContainer = document.createElement('div');
+        listContainer.className = 'planned-compact-list';
+
+        const renderLeadRow = (lead, idx) => {
             const plannedDate = utcStringToLocalDate(lead.fecha_planificada);
             const isDue = plannedDate <= now;
-            const timeStr = plannedDate.toLocaleString('es-ES', {
-                day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
-            });
-            const isNext = nextCall && (lead.Id === nextCall.Id || lead.id === nextCall.id);
+            const isNext = nextCall && (lead.unique_id === nextCall.unique_id || lead.Id === nextCall.Id);
+            const timeStr = isNaN(plannedDate) ? '?' : plannedDate.toLocaleString('es-ES', { hour: '2-digit', minute: '2-digit' });
+            const dateStr = isNaN(plannedDate) ? '' : plannedDate.toLocaleString('es-ES', { day: '2-digit', month: '2-digit' });
 
-            const card = document.createElement('div');
-            card.className = `planned-card ${isDue ? 'due' : ''} ${isNext ? 'is-next' : ''}`;
-            card.style.cursor = 'pointer';
-            card.title = 'Click para editar este lead';
-            card.innerHTML = `
-                ${isNext ? '<div class="next-call-badge">Próxima Llamada</div>' : ''}
-                <div class="planned-card-header">
-                    <div class="planned-card-time">${isDue ? '⚡ PRIORITARIO' : '📅 ' + timeStr}</div>
-                </div>
-                <div class="planned-card-name">${lead.name || 'Empresa sin nombre'}</div>
-                <div class="planned-card-details">
-                    <div class="planned-card-item"><span>📞</span> ${lead.phone || '-'}</div>
-                    <div class="planned-card-item"><span>📧</span> ${lead.email || '-'}</div>
-                    <div class="planned-card-item"><span>📍</span> ${lead.address || '-'}</div>
-                </div>
-                <div class="planned-card-timer" data-scheduled="${lead.fecha_planificada}">
-                    <span>--:--:--</span>
-                </div>
+            const row = document.createElement('div');
+            row.className = `planned-row ${isDue ? 'due' : ''} ${isNext ? 'is-next' : ''}`;
+            row.innerHTML = `
+                <span class="planned-row-idx">${idx + 1}</span>
+                <span class="planned-row-time">${isDue ? '⚡' : '📅'} ${dateStr} ${timeStr}</span>
+                <span class="planned-row-name">${lead.name || 'Sin nombre'}</span>
+                <span class="planned-row-phone">${lead.phone || '-'}</span>
+                ${isNext ? '<span class="planned-row-badge">PRÓXIMA</span>' : ''}
+                <span class="planned-row-timer" data-scheduled="${lead.fecha_planificada}">--:--</span>
             `;
-
-            // Click to edit this lead
-            card.addEventListener('click', () => {
+            row.style.cursor = 'pointer';
+            row.addEventListener('click', () => {
                 const leadId = lead.Id || lead.id || lead.unique_id;
-                console.log('Card clicked, lead:', leadId, lead);
-
                 const modal = document.getElementById('lead-modal');
                 const form = document.getElementById('lead-form');
                 const title = document.getElementById('lead-modal-title');
-
                 form.reset();
                 title.innerText = 'Editar Lead';
                 document.getElementById('edit-lead-id').value = leadId || '';
@@ -604,18 +629,37 @@ async function fetchScheduledLeads() {
                 document.getElementById('edit-lead-status').value = lead.status || 'Nuevo';
                 document.getElementById('edit-lead-summary').value = lead.summary || '';
                 document.getElementById('edit-lead-address').value = lead.address || '';
-
                 if (lead.fecha_planificada) {
                     document.getElementById('edit-lead-planned').value = utcToLocalDatetime(lead.fecha_planificada);
                 } else {
                     document.getElementById('edit-lead-planned').value = '';
                 }
-
                 modal.classList.add('active');
             });
+            return row;
+        };
 
-            plannedGrid.appendChild(card);
+        // Render initial batch
+        const visibleLeads = sortedLeads.slice(0, MAX_VISIBLE);
+        visibleLeads.forEach((lead, i) => {
+            listContainer.appendChild(renderLeadRow(lead, i));
         });
+
+        plannedGrid.appendChild(listContainer);
+
+        // "Show more" button if > MAX_VISIBLE
+        if (sortedLeads.length > MAX_VISIBLE) {
+            const showMoreBtn = document.createElement('button');
+            showMoreBtn.className = 'planned-show-more';
+            showMoreBtn.textContent = `📋 Mostrar ${sortedLeads.length - MAX_VISIBLE} llamadas más...`;
+            showMoreBtn.addEventListener('click', () => {
+                sortedLeads.slice(MAX_VISIBLE).forEach((lead, i) => {
+                    listContainer.appendChild(renderLeadRow(lead, MAX_VISIBLE + i));
+                });
+                showMoreBtn.remove();
+            });
+            plannedGrid.appendChild(showMoreBtn);
+        }
     } catch (err) {
         console.error('Error fetching scheduled leads:', err);
     }
@@ -678,6 +722,151 @@ function initSchedulerDefaults() {
         const mi = String(now.getMinutes()).padStart(2, '0');
         startInput.value = `${y}-${mo}-${d}T${h}:${mi}`;
     }
+
+    // Initialize slider UI
+    initSchedulerSlider();
+    // Update duration estimate
+    updateDurationEstimate();
+    // Fetch KPI stats
+    fetchSchedulerKPIs();
+}
+
+function initSchedulerSlider() {
+    const slider = document.getElementById('sched-count');
+    const bubble = document.getElementById('sched-slider-bubble');
+    if (!slider || !bubble) return;
+
+    function updateSlider() {
+        const val = parseInt(slider.value);
+        const min = parseInt(slider.min);
+        const max = parseInt(slider.max);
+        const pct = (val - min) / (max - min);
+
+        // Update bubble text and position
+        bubble.textContent = val;
+        const sliderWidth = slider.offsetWidth;
+        const bubbleWidth = bubble.offsetWidth;
+        const thumbOffset = pct * (sliderWidth - 24) + 12; // 24px thumb width
+        bubble.style.left = thumbOffset + 'px';
+        bubble.style.transform = 'translateX(-50%)';
+
+        // Update slider fill
+        slider.style.background = `linear-gradient(90deg, var(--accent) ${pct * 100}%, rgba(255,255,255,0.08) ${pct * 100}%)`;
+
+        // Update duration estimate when slider moves
+        updateDurationEstimate();
+    }
+
+    slider.addEventListener('input', updateSlider);
+    // Initial
+    setTimeout(updateSlider, 50);
+}
+
+function updateDurationEstimate() {
+    const count = parseInt(document.getElementById('sched-count')?.value) || 50;
+    const spacing = parseInt(document.getElementById('sched-spacing')?.value) || 2;
+    const totalMin = (count - 1) * spacing;
+    const hours = Math.floor(totalMin / 60);
+    const mins = totalMin % 60;
+    const durationStr = hours > 0 ? `≈ ${hours}h ${mins}m total` : `≈ ${mins}m total`;
+
+    const el = document.getElementById('sched-duration-estimate');
+    if (el) el.textContent = durationStr;
+}
+
+async function fetchSchedulerKPIs() {
+    try {
+        let allRecords = [];
+        let offset = 0;
+        const batchSize = 200;
+
+        while (true) {
+            const res = await fetch(`${API_BASE}/${LEADS_TABLE}/records?limit=${batchSize}&offset=${offset}`, {
+                headers: { 'xc-token': XC_TOKEN }
+            });
+            const data = await res.json();
+            const records = data.list || [];
+            allRecords = allRecords.concat(records);
+            if (records.length < batchSize || data.pageInfo?.isLastPage !== false) break;
+            offset += batchSize;
+            if (allRecords.length >= 5000) break;
+        }
+
+        const total = allRecords.length;
+        const calledStatuses = ['completado', 'contestador', 'voicemail', 'no contesta', 'fallido', 'interesado', 'reintentar'];
+        const scheduled = allRecords.filter(l => (l.status || '').toLowerCase() === 'programado' || l.fecha_planificada).length;
+        const called = allRecords.filter(l => {
+            const s = (l.status || '').toLowerCase();
+            return calledStatuses.some(cs => s.includes(cs));
+        }).length;
+
+        // Eligible = has phone, not scheduled, not called (if skip enabled)
+        const eligible = allRecords.filter(l => {
+            const phone = String(l.phone || '').trim();
+            if (!phone || phone === '0' || phone === 'null' || phone.length < 6) return false;
+            const status = (l.status || '').toLowerCase();
+            if (status === 'programado' || status === 'en proceso' || status === 'llamando...') return false;
+            if (l.fecha_planificada) return false;
+            if (calledStatuses.some(s => status.includes(s))) return false;
+            return true;
+        }).length;
+
+        // Animate KPI values
+        animateKPIValue('sched-kpi-total', total);
+        animateKPIValue('sched-kpi-eligible', eligible);
+        animateKPIValue('sched-kpi-scheduled', scheduled);
+        animateKPIValue('sched-kpi-called', called);
+
+        // Update bars
+        setTimeout(() => {
+            const barEligible = document.getElementById('sched-kpi-bar-eligible');
+            const barScheduled = document.getElementById('sched-kpi-bar-scheduled');
+            const barCalled = document.getElementById('sched-kpi-bar-called');
+            if (barEligible) barEligible.style.width = total > 0 ? `${(eligible / total) * 100}%` : '0%';
+            if (barScheduled) barScheduled.style.width = total > 0 ? `${(scheduled / total) * 100}%` : '0%';
+            if (barCalled) barCalled.style.width = total > 0 ? `${(called / total) * 100}%` : '0%';
+        }, 100);
+
+        // Update slider max to eligible count (if > 0)
+        if (eligible > 0) {
+            const slider = document.getElementById('sched-count');
+            if (slider) {
+                slider.max = Math.min(eligible, 500);
+                if (parseInt(slider.value) > eligible) {
+                    slider.value = eligible;
+                }
+                // Re-trigger slider update
+                slider.dispatchEvent(new Event('input'));
+            }
+        }
+
+    } catch (err) {
+        console.error('[Scheduler] Error fetching KPIs:', err);
+    }
+}
+
+function animateKPIValue(elementId, targetValue) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+
+    const duration = 800;
+    const startTime = performance.now();
+    const startValue = 0;
+
+    function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // Ease out cubic
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const currentValue = Math.round(startValue + (targetValue - startValue) * eased);
+        el.textContent = currentValue.toLocaleString('es-ES');
+
+        if (progress < 1) {
+            requestAnimationFrame(update);
+        }
+    }
+
+    requestAnimationFrame(update);
 }
 
 async function fetchEligibleLeads(count, source) {
@@ -869,6 +1058,9 @@ async function executeScheduling(leads, startTime, spacingMinutes, assistantId) 
     previewBtn.disabled = false;
     executeBtn.textContent = '✅ Hecho — Programar más';
 }
+
+// Event listener for spacing input to update estimate
+document.getElementById('sched-spacing')?.addEventListener('input', updateDurationEstimate);
 
 // Event Listeners for Scheduler
 document.getElementById('sched-preview-btn').addEventListener('click', async () => {
@@ -1607,8 +1799,8 @@ function renderTestCalls(testCalls) {
         const scoreLbl = getScoreLabel(scoreVal);
         const scoreClr = getScoreColor(scoreVal);
 
-        // Find the real index in allCalls for openDetail
-        const globalIndex = allCalls.indexOf(call);
+        // Find the real index in currentCallsPage for openDetail
+        const globalIndex = currentCallsPage.indexOf(call);
 
         tr.innerHTML = `
             <td data-label="Call ID"><code style="font-family: monospace; color: #a855f7; font-size: 11px;" title="${vapiId}">${shortId}</code> <button class="copy-id-btn" data-copy-id="${vapiId}" title="Copiar ID completo" style="background:none;border:none;cursor:pointer;font-size:12px;padding:2px 4px;opacity:0.6;transition:opacity 0.2s;vertical-align:middle;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">📋</button></td>
@@ -1755,16 +1947,24 @@ document.addEventListener('click', (e) => {
 
 document.getElementById('call-table').addEventListener('click', async (e) => {
     const target = e.target;
-    if (target.classList.contains('copy-id-btn')) return; // Already handled by delegated handler
-    if (target.classList.contains('mark-test-btn')) {
+    if (target.closest('.copy-id-btn')) return; // Already handled by delegated handler
+    const markTestBtn = target.closest('.mark-test-btn');
+    if (markTestBtn) {
         e.stopPropagation();
-        const callId = target.getAttribute('data-call-id');
+        const callId = markTestBtn.getAttribute('data-call-id');
         await toggleTestStatus(callId, true);
         return;
     }
-    if (target.classList.contains('action-btn') || target.classList.contains('note-indicator')) {
-        const index = parseInt(target.getAttribute('data-index'));
-        openDetail(index);
+    const actionBtn = target.closest('.action-btn');
+    const noteIndicator = target.closest('.note-indicator');
+    const clickedElement = actionBtn || noteIndicator;
+    if (clickedElement) {
+        const index = parseInt(clickedElement.getAttribute('data-index'));
+        if (!isNaN(index) && index >= 0 && index < currentCallsPage.length) {
+            openDetail(index);
+        } else {
+            console.warn('[Detail] Invalid index:', index, 'currentCallsPage length:', currentCallsPage.length);
+        }
     }
 });
 
@@ -1830,9 +2030,10 @@ function localDatetimeToUTC(datetimeLocalValue) {
 // Input: '2026-02-12 12:00:00' (UTC) → Output: '2026-02-12T13:00' (local CET)
 function utcToLocalDatetime(utcStr) {
     if (!utcStr) return '';
-    // Parse as UTC by appending 'Z' if no timezone info
+    // Parse as UTC — handle formats: '...Z', '...+00:00', '...+01:00', or bare '...'
     const normalized = utcStr.replace(' ', 'T');
-    const asUTC = normalized.endsWith('Z') ? normalized : normalized + 'Z';
+    const hasTimezone = /[Zz]$/.test(normalized) || /[+-]\d{2}:\d{2}$/.test(normalized);
+    const asUTC = hasTimezone ? normalized : normalized + 'Z';
     const d = new Date(asUTC);
     if (isNaN(d.getTime())) return '';
     const year = d.getFullYear();
@@ -1847,7 +2048,8 @@ function utcToLocalDatetime(utcStr) {
 function utcStringToLocalDate(utcStr) {
     if (!utcStr) return new Date(NaN);
     const normalized = utcStr.replace(' ', 'T');
-    const asUTC = normalized.endsWith('Z') ? normalized : normalized + 'Z';
+    const hasTimezone = /[Zz]$/.test(normalized) || /[+-]\d{2}:\d{2}$/.test(normalized);
+    const asUTC = hasTimezone ? normalized : normalized + 'Z';
     return new Date(asUTC);
 }
 
@@ -2488,7 +2690,7 @@ document.getElementById('apply-extraction-btn').addEventListener('click', async 
 
 // --- Live Clock & Timer Logic ---
 function updatePlannedTimers() {
-    const timers = document.querySelectorAll('.planned-card-timer');
+    const timers = document.querySelectorAll('.planned-card-timer, .planned-row-timer, .planned-next-timer');
     if (timers.length === 0) return;
 
     const now = new Date();
@@ -2498,16 +2700,16 @@ function updatePlannedTimers() {
         if (!scheduledStr) return;
 
         const scheduledAt = utcStringToLocalDate(scheduledStr);
+        if (isNaN(scheduledAt.getTime())) return;
         const diff = scheduledAt - now;
-        const span = timer.querySelector('span');
+        const span = timer.querySelector('span') || timer;
 
         if (diff <= 0) {
-            // Show overdue status instead of "Llamando..." — the call may or may not have been triggered
             const overdueMinutes = Math.abs(Math.floor(diff / 60000));
             if (overdueMinutes < 2) {
                 span.textContent = '⏳ Lanzando...';
             } else {
-                span.textContent = `⏰ Vencida hace ${overdueMinutes}min`;
+                span.textContent = `⏰ -${overdueMinutes}min`;
             }
             span.className = 'timer-urgent';
             return;
@@ -2519,12 +2721,11 @@ function updatePlannedTimers() {
         const s = totalSeconds % 60;
 
         const timeStr = `${h > 0 ? h + 'h ' : ''}${m.toString().padStart(2, '0')}m ${s.toString().padStart(2, '0')}s`;
-        span.textContent = timeStr;
+        span.textContent = timer.classList.contains('planned-next-timer') ? `⏱️ Próxima: ${timeStr}` : timeStr;
 
-        // Visual Urgency
-        if (totalSeconds < 300) { // < 5 mins
+        if (totalSeconds < 300) {
             span.className = 'timer-urgent';
-        } else if (totalSeconds < 3600) { // < 1 hour
+        } else if (totalSeconds < 3600) {
             span.className = 'timer-warning';
         } else {
             span.className = '';
