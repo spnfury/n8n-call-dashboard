@@ -193,7 +193,8 @@ async function enrichCallsFromVapi(calls) {
         if (r === 'voicemail') return 'Contestador automático';
         if (r === 'machine_detected') return 'Máquina detectada';
         if (r === 'assistant-error') return 'Error del asistente';
-        if (r.includes('no-answer') || r.includes('noanswer')) return 'No contesta';
+        if (r.includes('no-answer') || r.includes('noanswer') || r === 'customer-did-not-answer') return 'No contesta';
+        if (r.includes('transport')) return 'Error de conexión';
         if (r.includes('error')) return 'Error: ' + reason.split('.').pop();
         return reason; // fallback: show raw reason
     }
@@ -233,6 +234,10 @@ async function enrichCallsFromVapi(calls) {
                 evaluation = 'Fallida';
             } else if (reason === 'customer-busy') {
                 evaluation = 'Ocupado';
+            } else if (reason === 'customer-did-not-answer') {
+                evaluation = 'No contesta';
+            } else if (reasonLower.includes('transport')) {
+                evaluation = 'Fallida';
             } else if (reason === 'voicemail' || reason === 'machine_detected' || (vapiData.analysis?.successEvaluation || '').toLowerCase().includes('contestador')) {
                 evaluation = 'Contestador';
             } else if (reason === 'silence-timed-out') {
