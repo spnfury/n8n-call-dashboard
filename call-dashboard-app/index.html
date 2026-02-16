@@ -115,27 +115,27 @@
 
             <div class="stats-grid" id="stats">
                 <div class="stat-card">
-                    <div class="stat-value" id="total-calls">-</div>
+                    <div class="stat-value" id="total-calls"><span class="skeleton-value"></span></div>
                     <div class="stat-label">Total Llamadas</div>
                 </div>
                 <div class="stat-card warning">
-                    <div class="stat-value" id="confirmed-count">0</div>
+                    <div class="stat-value" id="confirmed-count"><span class="skeleton-value"></span></div>
                     <div class="stat-label">Confirmados</div>
                 </div>
                 <div class="stat-card success">
-                    <div class="stat-value" id="confirmation-rate">0%</div>
+                    <div class="stat-value" id="confirmation-rate"><span class="skeleton-value"></span></div>
                     <div class="stat-label">% Confirmados</div>
                 </div>
                 <div class="stat-card success">
-                    <div class="stat-value" id="success-rate">-</div>
+                    <div class="stat-value" id="success-rate"><span class="skeleton-value"></span></div>
                     <div class="stat-label">Tasa de Éxito</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="avg-duration">-</div>
+                    <div class="stat-value" id="avg-duration"><span class="skeleton-value"></span></div>
                     <div class="stat-label">Duración Media</div>
                 </div>
                 <div class="stat-card score">
-                    <div class="stat-value" id="avg-score">-</div>
+                    <div class="stat-value" id="avg-score"><span class="skeleton-value"></span></div>
                     <div class="stat-label" id="avg-score-label">Score Medio</div>
                 </div>
             </div>
@@ -186,14 +186,14 @@
                 <div class="leads-kpi-card leads-kpi-total">
                     <div class="leads-kpi-icon">👥</div>
                     <div class="leads-kpi-info">
-                        <div class="leads-kpi-value" id="kpi-total-leads">-</div>
+                        <div class="leads-kpi-value" id="kpi-total-leads"><span class="skeleton-value sm"></span></div>
                         <div class="leads-kpi-label">Total Leads</div>
                     </div>
                 </div>
                 <div class="leads-kpi-card leads-kpi-nuevos">
                     <div class="leads-kpi-icon">🆕</div>
                     <div class="leads-kpi-info">
-                        <div class="leads-kpi-value" id="kpi-nuevos">-</div>
+                        <div class="leads-kpi-value" id="kpi-nuevos"><span class="skeleton-value sm"></span></div>
                         <div class="leads-kpi-label">Nuevos</div>
                     </div>
                     <div class="leads-kpi-bar">
@@ -203,7 +203,7 @@
                 <div class="leads-kpi-card leads-kpi-programados">
                     <div class="leads-kpi-icon">📅</div>
                     <div class="leads-kpi-info">
-                        <div class="leads-kpi-value" id="kpi-programados">-</div>
+                        <div class="leads-kpi-value" id="kpi-programados"><span class="skeleton-value sm"></span></div>
                         <div class="leads-kpi-label">Programados</div>
                     </div>
                     <div class="leads-kpi-bar">
@@ -213,7 +213,7 @@
                 <div class="leads-kpi-card leads-kpi-completados">
                     <div class="leads-kpi-icon">✅</div>
                     <div class="leads-kpi-info">
-                        <div class="leads-kpi-value" id="kpi-completados">-</div>
+                        <div class="leads-kpi-value" id="kpi-completados"><span class="skeleton-value sm"></span></div>
                         <div class="leads-kpi-label">Completados</div>
                     </div>
                     <div class="leads-kpi-bar">
@@ -223,7 +223,7 @@
                 <div class="leads-kpi-card leads-kpi-interesados">
                     <div class="leads-kpi-icon">🔥</div>
                     <div class="leads-kpi-info">
-                        <div class="leads-kpi-value" id="kpi-interesados">-</div>
+                        <div class="leads-kpi-value" id="kpi-interesados"><span class="skeleton-value sm"></span></div>
                         <div class="leads-kpi-label">Interesados</div>
                     </div>
                     <div class="leads-kpi-bar">
@@ -233,7 +233,7 @@
                 <div class="leads-kpi-card leads-kpi-fallidos">
                     <div class="leads-kpi-icon">❌</div>
                     <div class="leads-kpi-info">
-                        <div class="leads-kpi-value" id="kpi-fallidos">-</div>
+                        <div class="leads-kpi-value" id="kpi-fallidos"><span class="skeleton-value sm"></span></div>
                         <div class="leads-kpi-label">Fallidos</div>
                     </div>
                     <div class="leads-kpi-bar">
@@ -243,7 +243,7 @@
                 <div class="leads-kpi-card leads-kpi-conversion">
                     <div class="leads-kpi-icon">📈</div>
                     <div class="leads-kpi-info">
-                        <div class="leads-kpi-value" id="kpi-conversion">-</div>
+                        <div class="leads-kpi-value" id="kpi-conversion"><span class="skeleton-value sm"></span></div>
                         <div class="leads-kpi-label">Tasa Conversión</div>
                     </div>
                 </div>
@@ -280,14 +280,16 @@
                     <div class="sched-kpi-card sched-kpi-total">
                         <div class="sched-kpi-icon">📞</div>
                         <div class="sched-kpi-info">
-                            <div class="sched-kpi-value" id="sched-kpi-total">—</div>
+                            <div class="sched-kpi-value" id="sched-kpi-total"><span class="skeleton-value sm"></span>
+                            </div>
                             <div class="sched-kpi-label">Total Leads en BD</div>
                         </div>
                     </div>
                     <div class="sched-kpi-card sched-kpi-eligible">
                         <div class="sched-kpi-icon">✅</div>
                         <div class="sched-kpi-info">
-                            <div class="sched-kpi-value" id="sched-kpi-eligible">—</div>
+                            <div class="sched-kpi-value" id="sched-kpi-eligible"><span class="skeleton-value sm"></span>
+                            </div>
                             <div class="sched-kpi-label">Elegibles</div>
                         </div>
                         <div class="sched-kpi-bar">
@@ -297,7 +299,8 @@
                     <div class="sched-kpi-card sched-kpi-scheduled">
                         <div class="sched-kpi-icon">📅</div>
                         <div class="sched-kpi-info">
-                            <div class="sched-kpi-value" id="sched-kpi-scheduled">—</div>
+                            <div class="sched-kpi-value" id="sched-kpi-scheduled"><span
+                                    class="skeleton-value sm"></span></div>
                             <div class="sched-kpi-label">Ya Programados</div>
                         </div>
                         <div class="sched-kpi-bar">
@@ -307,7 +310,8 @@
                     <div class="sched-kpi-card sched-kpi-called">
                         <div class="sched-kpi-icon">✔️</div>
                         <div class="sched-kpi-info">
-                            <div class="sched-kpi-value" id="sched-kpi-called">—</div>
+                            <div class="sched-kpi-value" id="sched-kpi-called"><span class="skeleton-value sm"></span>
+                            </div>
                             <div class="sched-kpi-label">Ya Llamados</div>
                         </div>
                         <div class="sched-kpi-bar">
@@ -435,19 +439,19 @@
             <!-- Active Calls Counter -->
             <div class="realtime-stats" id="realtime-stats">
                 <div class="realtime-stat-card">
-                    <div class="realtime-stat-value" id="rt-active-count">0</div>
+                    <div class="realtime-stat-value" id="rt-active-count"><span class="skeleton-value sm"></span></div>
                     <div class="realtime-stat-label">Llamadas Activas</div>
                 </div>
                 <div class="realtime-stat-card">
-                    <div class="realtime-stat-value" id="rt-queued-count">0</div>
+                    <div class="realtime-stat-value" id="rt-queued-count"><span class="skeleton-value sm"></span></div>
                     <div class="realtime-stat-label">En Cola</div>
                 </div>
                 <div class="realtime-stat-card">
-                    <div class="realtime-stat-value" id="rt-ringing-count">0</div>
+                    <div class="realtime-stat-value" id="rt-ringing-count"><span class="skeleton-value sm"></span></div>
                     <div class="realtime-stat-label">Sonando</div>
                 </div>
                 <div class="realtime-stat-card">
-                    <div class="realtime-stat-value" id="rt-total-today">0</div>
+                    <div class="realtime-stat-value" id="rt-total-today"><span class="skeleton-value sm"></span></div>
                     <div class="realtime-stat-label">Total Hoy</div>
                 </div>
             </div>
@@ -472,19 +476,19 @@
                 </div>
                 <div class="test-stats" id="test-stats">
                     <div class="test-stat-pill">
-                        <span class="test-stat-value" id="test-total">0</span>
+                        <span class="test-stat-value" id="test-total"><span class="skeleton-value xs"></span></span>
                         <span class="test-stat-label">Total</span>
                     </div>
                     <div class="test-stat-pill success">
-                        <span class="test-stat-value" id="test-success">0</span>
+                        <span class="test-stat-value" id="test-success"><span class="skeleton-value xs"></span></span>
                         <span class="test-stat-label">Exitosas</span>
                     </div>
                     <div class="test-stat-pill danger">
-                        <span class="test-stat-value" id="test-failed">0</span>
+                        <span class="test-stat-value" id="test-failed"><span class="skeleton-value xs"></span></span>
                         <span class="test-stat-label">Fallidas</span>
                     </div>
                     <div class="test-stat-pill warning">
-                        <span class="test-stat-value" id="test-voicemail">0</span>
+                        <span class="test-stat-value" id="test-voicemail"><span class="skeleton-value xs"></span></span>
                         <span class="test-stat-label">Contestador</span>
                     </div>
                 </div>

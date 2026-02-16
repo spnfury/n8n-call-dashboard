@@ -23,6 +23,43 @@
     box-sizing: border-box;
 }
 
+/* ── Skeleton Loading Placeholders ── */
+@keyframes skeleton-shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.skeleton-value {
+    display: inline-block;
+    width: 60px;
+    height: 28px;
+    border-radius: 8px;
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0.04) 25%,
+            rgba(255, 255, 255, 0.10) 50%,
+            rgba(255, 255, 255, 0.04) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.8s ease-in-out infinite;
+    vertical-align: middle;
+}
+
+.skeleton-value.sm {
+    width: 44px;
+    height: 22px;
+    border-radius: 6px;
+}
+
+.skeleton-value.xs {
+    width: 32px;
+    height: 18px;
+    border-radius: 5px;
+}
+
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: var(--bg-primary);
@@ -1886,10 +1923,29 @@ input[type="password"]:focus {
     border: 1px solid rgba(139, 92, 246, 0.3);
 }
 
+.status-badge.llamando {
+    background: rgba(139, 92, 246, 0.25);
+    color: #c4b5fd;
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    animation: badgePulse 2s infinite;
+}
+
+@keyframes badgePulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}
+
 .status-badge.re-intentar {
-    background: rgba(239, 68, 68, 0.2);
-    color: #f87171;
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .status-badge.completado,

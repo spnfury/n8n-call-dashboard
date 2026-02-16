@@ -845,29 +845,6 @@ async function fetchSchedulerKPIs() {
     }
 }
 
-function animateKPIValue(elementId, targetValue) {
-    const el = document.getElementById(elementId);
-    if (!el) return;
-
-    const duration = 800;
-    const startTime = performance.now();
-    const startValue = 0;
-
-    function update(currentTime) {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        // Ease out cubic
-        const eased = 1 - Math.pow(1 - progress, 3);
-        const currentValue = Math.round(startValue + (targetValue - startValue) * eased);
-        el.textContent = currentValue.toLocaleString('es-ES');
-
-        if (progress < 1) {
-            requestAnimationFrame(update);
-        }
-    }
-
-    requestAnimationFrame(update);
-}
 
 async function fetchEligibleLeads(count, source) {
     // Fetch all leads, then filter client-side for eligible ones
@@ -1156,12 +1133,11 @@ function updateLeadsKPIs(leads) {
         return !s || s === 'nuevo';
     }).length;
     const programados = leads.filter(l => (l.status || '').toLowerCase() === 'programado').length;
+    const llamando = leads.filter(l => (l.status || '').toLowerCase() === 'llamando').length;
     const completados = leads.filter(l => (l.status || '').toLowerCase() === 'completado').length;
     const interesados = leads.filter(l => (l.status || '').toLowerCase() === 'interesado').length;
-    const fallidos = leads.filter(l => {
-        const s = (l.status || '').toLowerCase();
-        return s === 'fallido' || s === 'reintentar';
-    }).length;
+    const reintentar = leads.filter(l => (l.status || '').toLowerCase() === 'reintentar').length;
+    const fallidos = leads.filter(l => (l.status || '').toLowerCase() === 'fallido').length;
 
     // Conversion rate = (interesados + completados) / total
     const conversionRate = total > 0 ? Math.round(((interesados + completados) / total) * 100) : 0;
@@ -1169,20 +1145,20 @@ function updateLeadsKPIs(leads) {
     // Animate KPI values
     animateKPIValue('kpi-total-leads', total);
     animateKPIValue('kpi-nuevos', nuevos);
-    animateKPIValue('kpi-programados', programados);
+    animateKPIValue('kpi-programados', programados + llamando);
     animateKPIValue('kpi-completados', completados);
     animateKPIValue('kpi-interesados', interesados);
-    animateKPIValue('kpi-fallidos', fallidos);
+    animateKPIValue('kpi-fallidos', fallidos + reintentar);
 
     const convEl = document.getElementById('kpi-conversion');
     if (convEl) convEl.textContent = conversionRate + '%';
 
     // Update progress bars (percentage of total)
     setKPIBar('kpi-bar-nuevos', total > 0 ? (nuevos / total) * 100 : 0);
-    setKPIBar('kpi-bar-programados', total > 0 ? (programados / total) * 100 : 0);
+    setKPIBar('kpi-bar-programados', total > 0 ? ((programados + llamando) / total) * 100 : 0);
     setKPIBar('kpi-bar-completados', total > 0 ? (completados / total) * 100 : 0);
     setKPIBar('kpi-bar-interesados', total > 0 ? (interesados / total) * 100 : 0);
-    setKPIBar('kpi-bar-fallidos', total > 0 ? (fallidos / total) * 100 : 0);
+    setKPIBar('kpi-bar-fallidos', total > 0 ? ((fallidos + reintentar) / total) * 100 : 0);
 }
 
 function animateKPIValue(id, targetValue) {
@@ -1353,13 +1329,15 @@ function renderLeadsTable(leads) {
 
 function getBadgeStatusClass(status) {
     const s = (status || '').toLowerCase();
-    if (s.includes('nuevo')) return 'badge-info';
-    if (s.includes('completado')) return 'badge-success';
-    if (s.includes('reintentar')) return 'badge-warning';
-    if (s.includes('fallido')) return 'badge-danger';
-    if (s.includes('interesado')) return 'badge-success';
-    if (s.includes('contestador') || s.includes('voicemail')) return 'badge-voicemail';
-    return 'badge-secondary';
+    if (s.includes('nuevo')) return 'nuevo';
+    if (s.includes('completado')) return 'completado';
+    if (s.includes('llamando')) return 'llamando';
+    if (s.includes('reintentar')) return 're-intentar';
+    if (s.includes('fallido')) return 'fallido';
+    if (s.includes('interesado')) return 'interesado';
+    if (s.includes('programado')) return 'programado';
+    if (s.includes('contestador') || s.includes('voicemail')) return 'en-proceso';
+    return '';
 }
 
 // Global search for leads
@@ -1518,13 +1496,27 @@ async function loadData(skipEnrichment = false) {
                 call.evaluation = 'Confirmada ✓';
             }
         });
-
         allCalls = calls;
         currentCalls = calls;
 
         // Separate test/manual calls from campaign calls
-        // Test calls are identified by: is_test=true OR ended_reason='Manual Trigger' OR lead_name='Test Manual'
-        const isTestCall = (c) => c.is_test === true || c.is_test === 1 || (c.ended_reason || '').includes('Manual Trigger') || (c.lead_name || '').toLowerCase() === 'test manual';
+        // Test calls: is_test flag, Manual Trigger, known test names, or names without corporate suffix
+        const TEST_NAMES = ['test manual', 'juan', 'sergio', 'talleres', 'astro', 'ramel',
+            'talleres perez', 'tallerres perez', 'luis abogados', 'pamesa', 'spider ia',
+            'grupo gavina azul celeste', 'tecnologia actual variable', 'gestoria way',
+            'gatos felices 2', 'gatos felices 33', 'gatos felices 3', 'gatos felices 44', 'gatos felices',
+            'covermanager', 'tracfutveri', 'golosinas sa', 'golosinas', 'golosinas sl 2', 'golosinas sl',
+            'nenucos', 'nuevo', 'aaa', 'test', 'sans rober', 'mantecados 3', 'sergio test 3',
+            'locutorios martinez', 'viviana s.l.', 'consultoria luis', 'gestoria luis', 'gestalia'];
+        const isTestCall = (c) => {
+            if (c.is_test === true || c.is_test === 1) return true;
+            if ((c.ended_reason || '').includes('Manual Trigger')) return true;
+            const name = (c.lead_name || '').toLowerCase().trim();
+            if (TEST_NAMES.includes(name)) return true;
+            // Heuristic: if lead_name doesn't contain corporate suffixes and is short, classify as test
+            if (!/(sl|sa|s\.l\.|s\.a\.|sociedad|limitada)/i.test(name) && name.length > 0 && name.length < 25) return true;
+            return false;
+        };
         const testCalls = calls.filter(c => isTestCall(c));
         const campaignCalls = calls.filter(c => !isTestCall(c));
 

@@ -6,13 +6,13 @@
                     "interval": [
                         {
                             "field": "minutes",
-                            "minutesInterval": 1
+                            "minutesInterval": 3
                         }
                     ]
                 }
             },
             "id": "154447ff-1c8f-4be5-8c5e-6c71447e745d",
-            "name": "Every 1 Minutes",
+            "name": "Every 3 Minutes",
             "type": "n8n-nodes-base.scheduleTrigger",
             "typeVersion": 1.1,
             "position": [
@@ -47,32 +47,12 @@
         },
         {
             "parameters": {
-                "conditions": {
-                    "options": {
-                        "caseSensitive": true,
-                        "leftValue": "",
-                        "typeValidation": "loose",
-                        "version": 2
-                    },
-                    "conditions": [
-                        {
-                            "id": "is-due-check",
-                            "leftValue": "={{ $json.fecha_planificada }}",
-                            "operator": {
-                                "operation": "before",
-                                "type": "dateTime"
-                            },
-                            "rightValue": "={{ $now }}"
-                        }
-                    ],
-                    "combinator": "and"
-                },
-                "options": {}
+                "jsCode": "// FIX: Pre-filter leads to avoid n8n crashing on NULL fecha_planificada\n// Also checks that the date is in the past (due now)\nconst items = $input.all();\nconst now = new Date();\nconst due = [];\nconst skipped = [];\n\nfor (const item of items) {\n  const fp = item.json.fecha_planificada;\n  \n  // Skip leads with no fecha_planificada\n  if (!fp) {\n    skipped.push(item.json.name + ' (no date)');\n    continue;\n  }\n  \n  try {\n    const planned = new Date(fp);\n    if (isNaN(planned.getTime())) {\n      skipped.push(item.json.name + ' (invalid date: ' + fp + ')');\n      continue;\n    }\n    \n    if (planned <= now) {\n      due.push(item);\n    }\n  } catch (e) {\n    skipped.push(item.json.name + ' (date error)');\n  }\n}\n\nif (skipped.length > 0) {\n  console.log(`⚠️ Skipped ${skipped.length} leads: ${skipped.join(', ')}`);\n}\nconsole.log(`✅ ${due.length} leads are due now (out of ${items.length} total Programado)`);\n\nreturn due;"
             },
-            "id": "8901161b-794d-4bc7-a056-f9a970b55a08",
-            "name": "Is Due Now?",
-            "type": "n8n-nodes-base.filter",
-            "typeVersion": 2.2,
+            "id": "filter-due-safe-001",
+            "name": "Filter Due (Safe)",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
             "position": [
                 1660,
                 4460
@@ -80,10 +60,10 @@
         },
         {
             "parameters": {
-                "jsCode": "// SAFETY: Limit to max 5 leads per execution cycle\n// This prevents flooding Vapi with too many calls at once\nconst items = $input.all();\nconst MAX_PER_CYCLE = 5;\n\nif (items.length > MAX_PER_CYCLE) {\n  console.log(`⚠️ Limiting from ${items.length} to ${MAX_PER_CYCLE} leads this cycle`);\n  return items.slice(0, MAX_PER_CYCLE);\n}\n\nconsole.log(`✅ Processing ${items.length} leads this cycle`);\nreturn items;"
+                "jsCode": "// SAFETY: Limit to max 3 leads per execution cycle\n// This prevents flooding Vapi with too many calls at once\n// Even with concurrency checks, launching too many per cycle\n// can cause race conditions\nconst items = $input.all();\nconst MAX_PER_CYCLE = 3;\n\nif (items.length > MAX_PER_CYCLE) {\n  console.log(`⚠️ Limiting from ${items.length} to ${MAX_PER_CYCLE} leads this cycle`);\n  return items.slice(0, MAX_PER_CYCLE);\n}\n\nif (items.length === 0) {\n  console.log('ℹ️ No leads due this cycle');\n  return [];\n}\n\nconsole.log(`✅ Processing ${items.length} leads this cycle`);\nreturn items;"
             },
             "id": "limit-safety-001",
-            "name": "Limit Max 5",
+            "name": "Limit Max 3",
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
@@ -178,7 +158,7 @@
                                 "operation": "lt",
                                 "type": "number"
                             },
-                            "rightValue": 10
+                            "rightValue": 8
                         }
                     ],
                     "combinator": "and"
@@ -196,7 +176,7 @@
         },
         {
             "parameters": {
-                "amount": 30
+                "amount": 45
             },
             "id": "38653792-4824-45ad-8565-8464745bfbe9",
             "name": "Wait For Slot",
@@ -229,6 +209,45 @@
             "position": [
                 2980,
                 4460
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Validate phone before calling\nconst phone = $json.formattedPhone || '';\nconst leadName = $('Split In Batches1').item.json.name || 'Unknown';\n\nif (!phone || phone.length < 10) {\n  console.log(`❌ Skipping ${leadName}: invalid phone '${phone}'`);\n  return [{ json: { skip: true, reason: 'invalid_phone', leadName } }];\n}\n\n// Check for premium/special numbers that should be skipped\nconst cleanNum = phone.replace(/\\D/g, '');\nconst prefix = cleanNum.substring(2, 5); // after +34\nif (['900', '901', '902', '803', '806', '807'].includes(prefix)) {\n  console.log(`❌ Skipping ${leadName}: premium/special number ${phone}`);\n  return [{ json: { skip: true, reason: 'special_number', leadName } }];\n}\n\nconsole.log(`✅ Phone OK for ${leadName}: ${phone}`);\nreturn [{ json: { skip: false, formattedPhone: phone } }];"
+            },
+            "id": "validate-phone-001",
+            "name": "Validate Phone",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                3000,
+                4260
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "conditions": [
+                        {
+                            "id": "phone-valid-check",
+                            "leftValue": "={{ $json.skip }}",
+                            "operator": {
+                                "operation": "notEqual",
+                                "type": "boolean"
+                            },
+                            "rightValue": true
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "phone-valid-filter-001",
+            "name": "Phone Valid?",
+            "type": "n8n-nodes-base.filter",
+            "typeVersion": 2.2,
+            "position": [
+                3100,
+                4260
             ]
         },
         {
@@ -354,6 +373,45 @@
         },
         {
             "parameters": {
+                "jsCode": "// Only update lead status if the call was actually initiated\nconst vapiCallId = $json.vapi_call_id || $('Prepare Log1').item.json.vapi_call_id || '';\nconst endedReason = $json.ended_reason || $('Prepare Log1').item.json.ended_reason || '';\nconst leadId = $('Prepare Call Data1').item.json.leadId;\nconst leadName = $('Prepare Call Data1').item.json.empresa;\n\nif (!vapiCallId || endedReason.startsWith('Error')) {\n  console.log(`⚠️ Skipping lead status update for ${leadName} - call failed: ${endedReason}`);\n  return [{ json: { skipUpdate: true, leadId, leadName, reason: endedReason } }];\n}\n\nconsole.log(`✅ Will update ${leadName} to Completado`);\nreturn [{ json: { skipUpdate: false, leadId, leadName } }];"
+            },
+            "id": "check-call-success-001",
+            "name": "Call Succeeded?",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                4080,
+                4460
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "conditions": [
+                        {
+                            "id": "call-ok-check",
+                            "leftValue": "={{ $json.skipUpdate }}",
+                            "operator": {
+                                "operation": "notEqual",
+                                "type": "boolean"
+                            },
+                            "rightValue": true
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "call-ok-filter-001",
+            "name": "Should Update?",
+            "type": "n8n-nodes-base.filter",
+            "typeVersion": 2.2,
+            "position": [
+                4300,
+                4460
+            ]
+        },
+        {
+            "parameters": {
                 "method": "PATCH",
                 "url": "https://nocodb.srv889387.hstgr.cloud/api/v2/tables/mgot1kl4sglenym/records",
                 "sendHeaders": true,
@@ -367,7 +425,7 @@
                 },
                 "sendBody": true,
                 "specifyBody": "json",
-                "jsonBody": "=[{\"unique_id\": \"{{ $('Prepare Call Data1').item.json.leadId }}\", \"status\": \"Completado\", \"fecha_planificada\": null}]",
+                "jsonBody": "=[{\"unique_id\": \"{{ $json.leadId }}\", \"status\": \"Completado\", \"fecha_planificada\": null}]",
                 "options": {}
             },
             "id": "1711a4c1-b1a6-40e3-8b15-35f09c84d441",
@@ -375,20 +433,20 @@
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 4.2,
             "position": [
-                4080,
+                4520,
                 4460
             ]
         },
         {
             "parameters": {
-                "amount": 30
+                "amount": 45
             },
             "id": "3069e52a-e5f3-4412-b9e9-c9bbe3958f98",
-            "name": "Wait 30s",
+            "name": "Wait 45s",
             "type": "n8n-nodes-base.wait",
             "typeVersion": 1.1,
             "position": [
-                4300,
+                4740,
                 4460
             ],
             "webhookId": "e006aade-1c7b-4691-8c49-71878091bc8d"
@@ -601,7 +659,7 @@
         }
     ],
     "connections": {
-        "Every 1 Minutes": {
+        "Every 3 Minutes": {
             "main": [
                 [
                     {
@@ -616,25 +674,25 @@
             "main": [
                 [
                     {
-                        "node": "Is Due Now?",
+                        "node": "Filter Due (Safe)",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Is Due Now?": {
+        "Filter Due (Safe)": {
             "main": [
                 [
                     {
-                        "node": "Limit Max 5",
+                        "node": "Limit Max 3",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Limit Max 5": {
+        "Limit Max 3": {
             "main": [
                 [
                     {
@@ -770,7 +828,36 @@
             "main": [
                 [
                     {
+                        "node": "Call Succeeded?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Call Succeeded?": {
+            "main": [
+                [
+                    {
+                        "node": "Should Update?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Should Update?": {
+            "main": [
+                [
+                    {
                         "node": "Update Lead Status1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Wait 45s",
                         "type": "main",
                         "index": 0
                     }
@@ -781,14 +868,14 @@
             "main": [
                 [
                     {
-                        "node": "Wait 30s",
+                        "node": "Wait 45s",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Wait 30s": {
+        "Wait 45s": {
             "main": [
                 [
                     {
