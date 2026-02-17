@@ -228,6 +228,16 @@ async function enrichCallsFromVapi(calls) {
             const reasonLower = reason.toLowerCase();
             let evaluation = 'Sin datos';
 
+            // Detect IVR/answering machine by transcript patterns
+            const transcriptText = (vapiData.artifact?.transcript || '').toLowerCase();
+            const ivrPatterns = ['pulse 1', 'pulse 2', 'marque 1', 'marque 2',
+                'espere un momento', 'gracias por llamar',
+                'horario de atención', 'fuera de horario',
+                'deje su mensaje', 'buzón de voz', 'no disponible',
+                'nuestro horario', 'de lunes a', 'extensión'];
+            const ivrMatchCount = ivrPatterns.filter(p => transcriptText.includes(p)).length;
+            const isIVR = ivrMatchCount >= 2;
+
             if (isConf) {
                 evaluation = 'Confirmada ✓';
             } else if (reasonLower.includes('sip') && (reasonLower.includes('failed') || reasonLower.includes('error'))) {
@@ -238,7 +248,7 @@ async function enrichCallsFromVapi(calls) {
                 evaluation = 'No contesta';
             } else if (reasonLower.includes('transport')) {
                 evaluation = 'Fallida';
-            } else if (reason === 'voicemail' || reason === 'machine_detected' || (vapiData.analysis?.successEvaluation || '').toLowerCase().includes('contestador')) {
+            } else if (isIVR || reason === 'voicemail' || reason === 'machine_detected' || (vapiData.analysis?.successEvaluation || '').toLowerCase().includes('contestador')) {
                 evaluation = 'Contestador';
             } else if (reason === 'silence-timed-out') {
                 evaluation = duration > 10 ? 'Sin respuesta' : 'No contesta';
@@ -1754,6 +1764,7 @@ async function loadData(skipEnrichment = false) {
                 <td class="actions-cell-calls">
                     <button class="action-btn" data-index="${index}">👁 Ver Detalle</button>
                     <button class="action-btn mark-test-btn" data-call-id="${call.id || call.Id}" title="Marcar como Test">🧪</button>
+                    <button class="action-btn mark-contestador-btn" data-call-id="${call.id || call.Id}" data-phone="${call.phone_called || ''}" title="Marcar como Contestador">📞🤖</button>
                 </td>
             `;
             return tr;
@@ -1934,6 +1945,61 @@ async function toggleTestStatus(callId, markAsTest) {
 }
 window.toggleTestStatus = toggleTestStatus;
 
+// --- Toggle Contestador Status ---
+async function toggleContestadorStatus(callId, phone) {
+    if (!callId) return;
+    if (!confirm('¿Marcar esta llamada como Contestador Automático? El lead se excluirá de futuras programaciones.')) return;
+
+    try {
+        // 1. Update call_logs evaluation
+        const res = await fetch(`${API_BASE}/${CALL_LOGS_TABLE}/records`, {
+            method: 'PATCH',
+            headers: { 'xc-token': XC_TOKEN, 'Content-Type': 'application/json' },
+            body: JSON.stringify([{ id: parseInt(callId), evaluation: 'Contestador' }])
+        });
+
+        if (!res.ok) throw new Error('Error al actualizar call_logs');
+
+        // 2. Update local data immediately
+        const call = allCalls.find(c => (c.id || c.Id) == callId);
+        if (call) call.evaluation = 'Contestador';
+
+        // 3. Update lead status in Leads table by phone
+        if (phone) {
+            const LEADS_TABLE = 'mgot1kl4sglenym';
+            const cleanPhone = phone.replace(/^\+34/, '').replace(/\D/g, '');
+            // Try both formats
+            for (const searchPhone of [phone, cleanPhone]) {
+                try {
+                    const searchRes = await fetch(`${API_BASE}/${LEADS_TABLE}/records?where=(phone,like,%25${encodeURIComponent(searchPhone)}%25)&limit=5`, {
+                        headers: { 'xc-token': XC_TOKEN }
+                    });
+                    const searchData = await searchRes.json();
+                    if (searchData.list && searchData.list.length > 0) {
+                        const lead = searchData.list[0];
+                        const leadId = lead.unique_id || lead.Id || lead.id;
+                        await fetch(`${API_BASE}/${LEADS_TABLE}/records`, {
+                            method: 'PATCH',
+                            headers: { 'xc-token': XC_TOKEN, 'Content-Type': 'application/json' },
+                            body: JSON.stringify([{ unique_id: leadId, status: 'Contestador' }])
+                        });
+                        console.log(`[Contestador] Lead ${leadId} marked as Contestador`);
+                        break;
+                    }
+                } catch (e) {
+                    console.warn('[Contestador] Error searching lead:', e);
+                }
+            }
+        }
+
+        loadData(true); // Re-render
+    } catch (err) {
+        console.error('Error toggling contestador status:', err);
+        alert('Error al marcar como contestador');
+    }
+}
+window.toggleContestadorStatus = toggleContestadorStatus;
+
 // Event listeners
 document.getElementById('refresh-btn').addEventListener('click', loadData);
 document.getElementById('filter-confirmed').addEventListener('change', loadData);
@@ -1986,6 +2052,14 @@ document.getElementById('call-table').addEventListener('click', async (e) => {
         e.stopPropagation();
         const callId = markTestBtn.getAttribute('data-call-id');
         await toggleTestStatus(callId, true);
+        return;
+    }
+    const markContestadorBtn = target.closest('.mark-contestador-btn');
+    if (markContestadorBtn) {
+        e.stopPropagation();
+        const callId = markContestadorBtn.getAttribute('data-call-id');
+        const phone = markContestadorBtn.getAttribute('data-phone');
+        await toggleContestadorStatus(callId, phone);
         return;
     }
     const actionBtn = target.closest('.action-btn');

@@ -250,7 +250,7 @@ async function main() {
         // Exclude test leads (Sergio entries)
         if ((lead.name || '').toLowerCase() === 'sergio') return false;
         const status = (lead.status || '').toLowerCase();
-        if (status.includes('completado') || status.includes('llamando')) return false;
+        if (status.includes('completado') || status.includes('llamando') || status.includes('contestador')) return false;
         return true;
     });
 
