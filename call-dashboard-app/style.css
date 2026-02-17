@@ -843,6 +843,42 @@ input[type="password"]:focus {
     border-bottom: 2px solid var(--warning) !important;
 }
 
+/* Unenriched / Loading Row Styles */
+.unenriched-row {
+    opacity: 0.55;
+}
+
+.unenriched-row:hover {
+    opacity: 0.75;
+}
+
+.unenriched-placeholder {
+    color: var(--text-secondary);
+    opacity: 0.4;
+    font-size: 13px;
+    animation: unenrichedPulse 2s ease-in-out infinite;
+}
+
+.unenriched-badge {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: var(--text-secondary) !important;
+    border: 1px dashed rgba(255, 255, 255, 0.15) !important;
+    animation: unenrichedPulse 2s ease-in-out infinite;
+    font-style: italic;
+}
+
+@keyframes unenrichedPulse {
+
+    0%,
+    100% {
+        opacity: 0.4;
+    }
+
+    50% {
+        opacity: 0.8;
+    }
+}
+
 .filter-container {
     display: flex;
     align-items: center;

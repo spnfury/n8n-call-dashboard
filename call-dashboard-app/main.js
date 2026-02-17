@@ -1702,6 +1702,12 @@ async function loadData(skipEnrichment = false) {
             const confirmed = isConfirmed(call);
             if (confirmed) tr.classList.add('confirmed-row');
 
+            // Detect unenriched rows (data not yet fetched from Vapi)
+            const isUnenriched = !call.evaluation || call.evaluation === 'Pendiente' ||
+                call.ended_reason === 'Call Initiated' || call.ended_reason === 'call_initiated' ||
+                call.ended_reason === 'Bulk Call Trigger' || call.ended_reason === 'Manual Trigger';
+            if (isUnenriched) tr.classList.add('unenriched-row');
+
             // Add retry styling class
             if (isRetry) {
                 tr.classList.add('retry-subcall-row');
@@ -1750,17 +1756,20 @@ async function loadData(skipEnrichment = false) {
                 empresaCell += ` <span class="retry-count-badge" title="${retryCount} rellamada(s)">🔄 ${retryCount}</span>`;
             }
 
+            // Build cell content — grey placeholders for unenriched rows
+            const placeholderSpan = '<span class="unenriched-placeholder">⏳</span>';
+
             tr.innerHTML = `
                 <td data-label="Call ID">${idCell}</td>
                 <td data-label="Empresa">${empresaCell}</td>
                 <td data-label="Teléfono" class="phone">${call.phone_called || '-'}</td>
                 <td data-label="Fecha">${formatDate(call.call_time || call.CreatedAt)}</td>
-                <td data-label="Resultado">${resultadoCell}</td>
-                <td data-label="Evaluación"><span class="badge ${getBadgeClass(call.evaluation)}">${call.evaluation || 'Pendiente'}</span></td>
-                <td data-label="Duración">${formatDuration(call.duration_seconds)}</td>
-                <td data-label="Score"><span class="score-badge ${scoreLbl.cls}" style="--score-color: ${scoreClr}">${scoreLbl.emoji} ${scoreVal}</span></td>
+                <td data-label="Resultado">${isUnenriched ? placeholderSpan : resultadoCell}</td>
+                <td data-label="Evaluación">${isUnenriched ? '<span class="badge unenriched-badge">⏳ Cargando...</span>' : `<span class="badge ${getBadgeClass(call.evaluation)}">${call.evaluation || 'Pendiente'}</span>`}</td>
+                <td data-label="Duración">${isUnenriched ? placeholderSpan : formatDuration(call.duration_seconds)}</td>
+                <td data-label="Score">${isUnenriched ? placeholderSpan : `<span class="score-badge ${scoreLbl.cls}" style="--score-color: ${scoreClr}">${scoreLbl.emoji} ${scoreVal}</span>`}</td>
                 <td data-label="Notas" class="table-notes">${call.Notes ? `<span class="note-indicator" data-index="${index}" title="${call.Notes}" style="cursor: pointer;">📝</span>` : '-'}</td>
-                <td data-label="Confirmado">${confirmedCell}</td>
+                <td data-label="Confirmado">${isUnenriched ? placeholderSpan : confirmedCell}</td>
                 <td class="actions-cell-calls">
                     <button class="action-btn" data-index="${index}">👁 Ver Detalle</button>
                     <button class="action-btn mark-test-btn" data-call-id="${call.id || call.Id}" title="Marcar como Test">🧪</button>
