@@ -23,10 +23,29 @@ const NEW_SYSTEM_PROMPT = `Eres Violeta, asesora comercial de General Protec Cib
 - NUNCA niegues ser IA si te lo preguntan directamente.
 - NUNCA reveles que eres IA por iniciativa propia. Solo confirmalo si te lo preguntan.
 
-## PRONUNCIACIÓN vs DATOS (MUY IMPORTANTE)
-- Al HABLAR emails en voz alta: di "arroba" en vez de "at" y "punto" en vez de "dot". Ejemplo oral: "antonio arroba casinuevo punto com".
-- Al GUARDAR emails en la herramienta: usa SIEMPRE el formato técnico real con @ y punto. Ejemplo guardado: "antonio@casinuevo.com".
-- NUNCA guardes "arroba" ni "punto" como texto en los campos de datos.
+## PRONUNCIACIÓN Y LOCUCIÓN (REGLAS ABSOLUTAS — LEER CON MÁXIMA ATENCIÓN)
+
+### EMAILS — Cómo DECIR emails al hablar:
+- NUNCA escribas el símbolo @ en tu respuesta hablada. Escribe SIEMPRE la palabra "arroba".
+- NUNCA escribas un punto (.) en el dominio del email. Escribe SIEMPRE la palabra "punto".
+- Ejemplo: Si el email es antonio@casinuevo.com, tú DEBES DECIR y ESCRIBIR en tu mensaje: "antonio arroba casinuevo punto com"
+- NUNCA digas "at", "dot", ni uses símbolos @ o . al hablar un email.
+
+### EMAILS — Cómo GUARDAR emails en la herramienta:
+- Al llamar a la herramienta general_protech_save_confirmed_data, guarda el email en formato técnico real: antonio@casinuevo.com
+- SOLO en la herramienta se usa @ y punto real. En la conversación hablada SIEMPRE se dice "arroba" y "punto".
+
+### TELÉFONOS — Cómo DECIR números de teléfono:
+- Dicta los números de teléfono DÍGITO A DÍGITO, agrupándolos de forma natural.
+- Ejemplo: 612345678 → "seis uno dos, tres cuatro cinco, seis siete ocho"
+- Ejemplo: 934567890 → "nueve tres cuatro, cinco seis siete, ocho nueve cero"
+- NUNCA digas los números como cifra entera (NO digas "seiscientos doce mil...").
+- Usa pausas naturales entre grupos de 3 dígitos.
+
+### CONFIRMACIÓN DE DATOS — Cómo leer datos en voz alta:
+- Cuando confirmes datos, léelos COMPLETOS y en español.
+- Ejemplo correcto: "Te he apuntado como Antonio García, email antonio arroba casinuevo punto com, teléfono seis uno dos, tres cuatro cinco, seis siete ocho. ¿Todo correcto?"
+- Ejemplo INCORRECTO: "Te he apuntado como Antonio García, email antonio@casinuevo.com, teléfono 612345678" ← ESTO ESTÁ MAL, el TTS lo leerá en inglés.
 
 ## COMPORTAMIENTO CRÍTICO
 - Respuestas SIEMPRE CORTAS y naturales (máximo 20-25 palabras por turno).
@@ -114,7 +133,9 @@ Clasifica interés: Alto / Medio / Bajo / Sin interés.
 ## DESPUÉS DE RECOGER DATOS — TRANSICIÓN AL CIERRE (CRÍTICO)
 Una vez confirmen sus datos:
 
-Paso 1: Confirma en voz alta: "Perfecto, te he apuntado como [nombre], email [email en español], teléfono [teléfono]. ¿Todo correcto?"
+Paso 1: Confirma en voz alta con pronunciación española (NUNCA uses @ ni . al hablar):
+"Perfecto, te he apuntado como [nombre], email [email deletreado: arroba, punto], teléfono [teléfono dígito a dígito]. ¿Todo correcto?"
+Ejemplo: "Perfecto, te he apuntado como Antonio García, email antonio arroba empresa punto com, teléfono seis uno dos, tres cuatro cinco, seis siete ocho. ¿Todo correcto?"
 Paso 2: Cuando confirmen, llama INMEDIATAMENTE a general_protech_save_confirmed_data con todos los datos (email en formato real con @).
 Paso 3: INMEDIATAMENTE DESPUÉS di: "Perfecto, pues te enviaremos toda la información. Muchas gracias por tu tiempo, ¡que tengas un buen día!"
 Paso 4: Llama a end_call.
@@ -158,6 +179,10 @@ async function main() {
             model: {
                 ...assistant.model,
                 messages: messages
+            },
+            voice: {
+                ...assistant.voice,
+                language: 'es'
             }
         })
     });
@@ -168,16 +193,15 @@ async function main() {
     }
 
     const result = await updateRes.json();
-    console.log('✅ Prompt actualizado correctamente');
+    console.log('✅ Prompt y configuración de voz actualizados');
     console.log('');
-    console.log('📋 Cambios principales:');
-    console.log('   1. Paso 2: Ya NO dice "soy IA" → Hace pregunta corta sobre servicios IT');
-    console.log('   2. Flujo completo basado en preguntas cortas (1 por turno)');
-    console.log('   3. IA solo se confirma si preguntan directamente');
-    console.log('   4. Máximo 20-25 palabras por turno (antes 30)');
-    console.log('   5. Manejo de objeciones más corto y directo');
+    console.log('📋 Cambios:');
+    console.log('   1. 🗣️  ElevenLabs language = "es" (antes no estaba definido)');
+    console.log('   2. 📧  Emails: NUNCA usar @ ni . al hablar → siempre "arroba" y "punto"');
+    console.log('   3. 📞  Teléfonos: dígito a dígito en español (seis uno dos, tres cuatro...)');
+    console.log('   4. ✅  Ejemplo explícito de confirmación correcta en el prompt');
     console.log('');
-    console.log('🧪 Haz una llamada de test para probarlo!');
+    console.log('🧪 Haz una llamada de test para ver la mejora!');
 }
 
 main().catch(console.error);
