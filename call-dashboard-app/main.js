@@ -403,6 +403,65 @@ function renderChart(calls) {
     });
 }
 
+async function openDetailDirect(call) {
+    if (!call) return;
+    activeDetailCall = call;
+
+    const vapiId = call.vapi_call_id || call.lead_id || call.id || call.Id;
+
+    document.getElementById('modal-title').textContent = call.lead_name || 'Llamada';
+    document.getElementById('modal-subtitle').textContent = `${call.phone_called} • ${formatDate(call.call_time || call.CreatedAt)}`;
+
+    const transcriptEl = document.getElementById('modal-transcript');
+    const audioSec = document.getElementById('recording-section');
+    const audio = document.getElementById('modal-audio');
+
+    transcriptEl.innerHTML = '<span class="loading-pulse">⌛ Obteniendo transcripción en tiempo real desde Vapi...</span>';
+    audioSec.style.display = 'none';
+
+    document.getElementById('modal-notes').value = call.Notes || '';
+    document.getElementById('save-notes-btn').setAttribute('data-id', call.id || call.Id);
+
+    const testToggleBtn = document.getElementById('toggle-test-btn');
+    const isCurrentlyTest = call.is_test === true || call.is_test === 1 || (call.ended_reason || '').includes('Manual Trigger') || (call.lead_name || '').toLowerCase() === 'test manual';
+    if (testToggleBtn) {
+        testToggleBtn.textContent = isCurrentlyTest ? '🔄 Quitar de Test' : '🧪 Marcar como Test';
+        testToggleBtn.setAttribute('data-id', call.id || call.Id);
+        testToggleBtn.setAttribute('data-is-test', isCurrentlyTest ? '1' : '0');
+    }
+
+    document.getElementById('detail-modal').classList.add('active');
+    document.body.classList.add('modal-open');
+
+    // Fetch Vapi data
+    if (vapiId && vapiId.startsWith('019')) {
+        try {
+            const res = await fetch(`https://api.vapi.ai/call/${vapiId}`, {
+                headers: { 'Authorization': `Bearer ${VAPI_API_KEY}` }
+            });
+            if (res.ok) {
+                const vapi = await res.json();
+                const transcript = vapi.artifact?.transcript || vapi.transcript || '';
+                transcriptEl.innerHTML = transcript
+                    ? `<pre style="white-space:pre-wrap;font-family:inherit;">${transcript}</pre>`
+                    : '<span style="color:var(--text-secondary)">Sin transcripción disponible</span>';
+
+                const recordingUrl = vapi.artifact?.recordingUrl || vapi.recordingUrl;
+                if (recordingUrl) {
+                    audioSec.style.display = 'block';
+                    audio.src = recordingUrl;
+                }
+            } else {
+                transcriptEl.innerHTML = '<span style="color:var(--text-secondary)">No se pudo obtener la transcripción</span>';
+            }
+        } catch (e) {
+            transcriptEl.innerHTML = '<span style="color:var(--danger)">Error al conectar con Vapi</span>';
+        }
+    } else {
+        transcriptEl.innerHTML = '<span style="color:var(--text-secondary)">Sin ID de Vapi</span>';
+    }
+}
+
 async function openDetail(index) {
     const call = currentCallsPage[index];
     if (!call) return;
@@ -750,6 +809,10 @@ function initTabs() {
                 startRealtimePolling();
             } else {
                 stopRealtimePolling();
+            }
+            // If switching to reports, load them
+            if (target === 'reports') {
+                loadReports();
             }
         });
     });
@@ -1852,9 +1915,6 @@ function renderTestCalls(testCalls) {
         const scoreLbl = getScoreLabel(scoreVal);
         const scoreClr = getScoreColor(scoreVal);
 
-        // Find the real index in currentCallsPage for openDetail
-        const globalIndex = currentCallsPage.indexOf(call);
-
         tr.innerHTML = `
             <td data-label="Call ID"><code style="font-family: monospace; color: #a855f7; font-size: 11px;" title="${vapiId}">${shortId}</code> <button class="copy-id-btn" data-copy-id="${vapiId}" title="Copiar ID completo" style="background:none;border:none;cursor:pointer;font-size:12px;padding:2px 4px;opacity:0.6;transition:opacity 0.2s;vertical-align:middle;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">📋</button></td>
             <td data-label="Empresa"><strong>${call.lead_name || '-'}</strong></td>
@@ -1866,18 +1926,19 @@ function renderTestCalls(testCalls) {
             <td data-label="Score"><span class="score-badge ${scoreLbl.cls}" style="--score-color: ${scoreClr}">${scoreLbl.emoji} ${scoreVal}</span></td>
             <td data-label="Confirmado">${confirmedCell}</td>
             <td class="actions-cell-calls">
-                <button class="action-btn test-detail-btn" data-global-index="${globalIndex}">👁 Ver Detalle</button>
+                <button class="action-btn test-detail-btn" data-test-index="${idx}">👁 Ver Detalle</button>
                 <button class="action-btn unmark-test-btn" data-call-id="${call.id || call.Id}" title="Quitar de Test">↩️</button>
             </td>
         `;
         tbody.appendChild(tr);
     });
 
-    // Attach click handler for test detail buttons
+    // Attach click handler for test detail buttons — use test call array directly
     tbody.querySelectorAll('.test-detail-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            const globalIndex = parseInt(btn.getAttribute('data-global-index'));
-            if (globalIndex >= 0) openDetail(globalIndex);
+            const testIdx = parseInt(btn.getAttribute('data-test-index'));
+            const call = testCalls[testIdx];
+            if (call) openDetailDirect(call);
         });
     });
 
@@ -3252,3 +3313,147 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 // Also start it immediately in case DOMContentLoaded already fired
 setTimeout(startRealtimeBgPolling, 3000);
+
+// ══════════════════════════════════════════════════════════════
+// ── REPORTS / INFORMES DIARIOS ──
+// ══════════════════════════════════════════════════════════════
+
+const REPORTS_TABLE = 'matif11dcltlmn6';
+let reportsLoaded = false;
+
+async function loadReports() {
+    const container = document.getElementById('reports-timeline');
+    if (!container) return;
+
+    if (!reportsLoaded) {
+        container.innerHTML = '<div class="loading" style="text-align:center;padding:60px;color:var(--text-secondary)">Cargando informes...</div>';
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/${REPORTS_TABLE}/records?limit=50&sort=-report_date`, {
+            headers: { 'xc-token': XC_TOKEN }
+        });
+        const data = await res.json();
+        const reports = data.list || [];
+
+        if (reports.length === 0) {
+            container.innerHTML = `
+                <div class="reports-empty">
+                    <div style="font-size: 48px; margin-bottom: 16px;">📊</div>
+                    <h3>No hay informes todavía</h3>
+                    <p>Ejecuta el primer análisis con el botón "🤖 Ejecutar Análisis Hoy" o espera al cron nocturno.</p>
+                </div>`;
+            reportsLoaded = true;
+            return;
+        }
+
+        container.innerHTML = reports.map(r => renderReportCard(r)).join('');
+        reportsLoaded = true;
+    } catch (err) {
+        console.error('Error loading reports:', err);
+        container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--danger)">❌ Error al cargar informes</div>';
+    }
+}
+
+function renderReportCard(report) {
+    const score = report.ai_score || 0;
+    const scoreColor = score >= 75 ? 'var(--success)' : score >= 50 ? 'var(--warning)' : 'var(--danger)';
+    const scoreEmoji = score >= 75 ? '🟢' : score >= 50 ? '🟡' : '🔴';
+
+    // Format date nicely
+    const dateStr = report.report_date || '—';
+    const dateParts = dateStr.split('-');
+    const formattedDate = dateParts.length === 3
+        ? new Date(dateStr + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+        : dateStr;
+
+    const successRate = report.total_calls > 0 ? Math.round((report.successful / report.total_calls) * 100) : 0;
+    const contestadorRate = report.total_calls > 0 ? Math.round((report.contestador / report.total_calls) * 100) : 0;
+
+    // Format analysis text with basic markdown-like rendering
+    const analysisHtml = (report.ai_analysis || 'Sin análisis disponible.')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br>');
+
+    const recommendationsHtml = (report.ai_recommendations || '')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br>');
+
+    return `
+    <div class="report-card">
+        <div class="report-card-header">
+            <div class="report-date-section">
+                <div class="report-date">${formattedDate}</div>
+                <div class="report-date-raw">${dateStr}</div>
+            </div>
+            <div class="report-score-gauge">
+                <div class="report-score-circle" style="--score-color: ${scoreColor}">
+                    <span class="report-score-value">${score}</span>
+                    <span class="report-score-label">/ 100</span>
+                </div>
+                <div class="report-score-emoji">${scoreEmoji}</div>
+            </div>
+        </div>
+
+        <div class="report-kpis">
+            <div class="report-kpi">
+                <div class="report-kpi-value">${report.total_calls || 0}</div>
+                <div class="report-kpi-label">Llamadas</div>
+            </div>
+            <div class="report-kpi success">
+                <div class="report-kpi-value">${report.successful || 0}</div>
+                <div class="report-kpi-label">Exitosas (${successRate}%)</div>
+            </div>
+            <div class="report-kpi danger">
+                <div class="report-kpi-value">${report.failed || 0}</div>
+                <div class="report-kpi-label">Fallidas</div>
+            </div>
+            <div class="report-kpi warning">
+                <div class="report-kpi-value">${report.contestador || 0}</div>
+                <div class="report-kpi-label">Contestador (${contestadorRate}%)</div>
+            </div>
+            <div class="report-kpi">
+                <div class="report-kpi-value">${report.avg_duration || 0}s</div>
+                <div class="report-kpi-label">Dur. Media</div>
+            </div>
+            <div class="report-kpi">
+                <div class="report-kpi-value">$${(report.total_cost || 0).toFixed(2)}</div>
+                <div class="report-kpi-label">Coste</div>
+            </div>
+            <div class="report-kpi">
+                <div class="report-kpi-value">${report.confirmation_rate || 0}%</div>
+                <div class="report-kpi-label">Confirmados</div>
+            </div>
+        </div>
+
+        <div class="report-section">
+            <div class="report-section-title" onclick="this.parentElement.classList.toggle('expanded')">
+                🤖 Análisis IA <span class="report-toggle-icon">▶</span>
+            </div>
+            <div class="report-section-body">
+                ${analysisHtml}
+            </div>
+        </div>
+
+        ${recommendationsHtml ? `
+        <div class="report-section">
+            <div class="report-section-title" onclick="this.parentElement.classList.toggle('expanded')">
+                💡 Recomendaciones <span class="report-toggle-icon">▶</span>
+            </div>
+            <div class="report-section-body">
+                ${recommendationsHtml}
+            </div>
+        </div>` : ''}
+    </div>`;
+}
+
+// Wire up reports buttons
+document.getElementById('reports-refresh-btn')?.addEventListener('click', () => {
+    reportsLoaded = false;
+    loadReports();
+});
+
+document.getElementById('reports-run-btn')?.addEventListener('click', () => {
+    alert('Para ejecutar el análisis de hoy, usa el comando:\\n\\nOPENAI_API_KEY=sk-... node daily_analysis.mjs\\n\\nDesde la carpeta call-dashboard-app/');
+});
+

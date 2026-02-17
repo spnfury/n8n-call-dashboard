@@ -56,6 +56,7 @@
             <div class="nav-tab" data-tab="scheduler">📅 Programar Llamadas</div>
             <div class="nav-tab" data-tab="realtime" id="nav-tab-realtime">🔴 En Vivo <span id="realtime-badge"
                     class="realtime-badge" style="display:none;">0</span></div>
+            <div class="nav-tab" data-tab="reports">📈 Informes</div>
             <div class="nav-tab" data-tab="test">🧪 Test</div>
         </nav>
 
@@ -463,6 +464,28 @@
                     <h3>Escaneando llamadas activas...</h3>
                     <p>El sistema busca llamadas en curso automáticamente cada 5 segundos.</p>
                 </div>
+            </div>
+        </div>
+
+        <!-- Tab: Reports / Informes diarios -->
+        <div id="view-reports" class="view-content">
+            <div class="reports-header">
+                <div class="reports-header-info">
+                    <h2 style="margin: 0; font-size: 20px; display: flex; align-items: center; gap: 10px;">📈 Informes
+                        Diarios</h2>
+                    <p style="color: var(--text-secondary); font-size: 13px; margin-top: 4px;">Análisis automático de
+                        rendimiento generado por IA cada día.</p>
+                </div>
+                <div class="reports-controls">
+                    <button class="refresh-btn" id="reports-refresh-btn">🔄 Actualizar</button>
+                    <button class="refresh-btn" id="reports-run-btn"
+                        style="background: var(--accent); border-color: var(--accent);">🤖 Ejecutar Análisis
+                        Hoy</button>
+                </div>
+            </div>
+            <div id="reports-timeline" class="reports-timeline">
+                <div class="loading" style="text-align: center; padding: 60px; color: var(--text-secondary);">Cargando
+                    informes...</div>
             </div>
         </div>
 
