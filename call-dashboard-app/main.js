@@ -814,6 +814,10 @@ function initTabs() {
             if (target === 'reports') {
                 loadReports();
             }
+            // If switching to agents, load prompt
+            if (target === 'agents') {
+                loadAgentPrompt();
+            }
         });
     });
 }
@@ -3455,5 +3459,149 @@ document.getElementById('reports-refresh-btn')?.addEventListener('click', () => 
 
 document.getElementById('reports-run-btn')?.addEventListener('click', () => {
     alert('Para ejecutar el análisis de hoy, usa el comando:\\n\\nOPENAI_API_KEY=sk-... node daily_analysis.mjs\\n\\nDesde la carpeta call-dashboard-app/');
+});
+
+// ── Agent Prompt Editor ──
+let currentAgentConfig = null; // cache the full assistant object for the selected agent
+
+async function loadAgentPrompt() {
+    const assistantId = document.getElementById('agent-select').value;
+    const feedback = document.getElementById('agent-feedback');
+    const textarea = document.getElementById('agent-prompt-textarea');
+    const infoBar = document.getElementById('prompt-info-bar');
+    const editorWrapper = document.getElementById('prompt-editor-wrapper');
+    const actionsBar = document.getElementById('prompt-actions');
+    const loadBtn = document.getElementById('agent-load-btn');
+
+    loadBtn.disabled = true;
+    loadBtn.textContent = '⏳ Cargando...';
+    feedback.textContent = '';
+    feedback.className = '';
+
+    try {
+        const res = await fetch(`https://api.vapi.ai/assistant/${assistantId}`, {
+            headers: { 'Authorization': `Bearer ${VAPI_API_KEY}` }
+        });
+        if (!res.ok) throw new Error(`Error ${res.status}: ${await res.text()}`);
+        const assistant = await res.json();
+        currentAgentConfig = assistant;
+
+        // Extract prompt
+        const prompt = assistant.model?.messages?.[0]?.content || assistant.instructions || '';
+        textarea.value = prompt;
+
+        // Populate info bar
+        document.getElementById('agent-info-name').textContent = assistant.name || 'Sin nombre';
+        document.getElementById('agent-info-model').textContent =
+            `${assistant.model?.provider || '?'} / ${assistant.model?.model || '?'}`;
+        document.getElementById('agent-info-chars').textContent = prompt.length.toLocaleString();
+
+        // Update character count
+        document.getElementById('prompt-char-count').textContent = `${prompt.length.toLocaleString()} caracteres`;
+
+        // Show editor sections
+        infoBar.style.display = 'flex';
+        editorWrapper.style.display = 'block';
+        actionsBar.style.display = 'flex';
+
+        feedback.textContent = `✅ Prompt cargado: ${assistant.name}`;
+        feedback.style.color = 'var(--success)';
+    } catch (err) {
+        console.error('[Agent Editor] Error loading assistant:', err);
+        feedback.textContent = `❌ Error: ${err.message}`;
+        feedback.style.color = 'var(--danger)';
+    } finally {
+        loadBtn.disabled = false;
+        loadBtn.textContent = '📥 Cargar Prompt';
+    }
+}
+
+async function saveAgentPrompt() {
+    const assistantId = document.getElementById('agent-select').value;
+    const textarea = document.getElementById('agent-prompt-textarea');
+    const feedback = document.getElementById('agent-feedback');
+    const saveBtn = document.getElementById('agent-save-btn');
+    const newPrompt = textarea.value;
+
+    if (!currentAgentConfig) {
+        feedback.textContent = '⚠️ Primero carga un agente antes de guardar.';
+        feedback.style.color = 'var(--warning)';
+        return;
+    }
+
+    if (!newPrompt.trim()) {
+        feedback.textContent = '⚠️ El prompt no puede estar vacío.';
+        feedback.style.color = 'var(--warning)';
+        return;
+    }
+
+    if (!confirm('¿Guardar los cambios en el prompt del agente? Esto se aplicará inmediatamente en producción.')) {
+        return;
+    }
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = '⏳ Guardando...';
+    feedback.textContent = '';
+
+    try {
+        // Build update payload preserving the existing model config
+        const updates = {};
+        if (currentAgentConfig.model?.messages) {
+            updates.model = {
+                ...currentAgentConfig.model,
+                messages: currentAgentConfig.model.messages.map((msg, i) =>
+                    i === 0 ? { ...msg, content: newPrompt } : msg
+                )
+            };
+        } else {
+            updates.instructions = newPrompt;
+        }
+
+        const res = await fetch(`https://api.vapi.ai/assistant/${assistantId}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${VAPI_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updates)
+        });
+
+        if (!res.ok) throw new Error(`Error ${res.status}: ${await res.text()}`);
+        const updatedAssistant = await res.json();
+        currentAgentConfig = updatedAssistant;
+
+        // Update info
+        document.getElementById('agent-info-chars').textContent = newPrompt.length.toLocaleString();
+        document.getElementById('prompt-char-count').textContent = `${newPrompt.length.toLocaleString()} caracteres`;
+
+        feedback.textContent = `✅ Prompt guardado con éxito para ${updatedAssistant.name}`;
+        feedback.style.color = 'var(--success)';
+    } catch (err) {
+        console.error('[Agent Editor] Error saving prompt:', err);
+        feedback.textContent = `❌ Error al guardar: ${err.message}`;
+        feedback.style.color = 'var(--danger)';
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = '💾 Guardar Prompt';
+    }
+}
+
+// Agent editor event listeners
+document.getElementById('agent-load-btn')?.addEventListener('click', loadAgentPrompt);
+document.getElementById('agent-save-btn')?.addEventListener('click', saveAgentPrompt);
+document.getElementById('agent-select')?.addEventListener('change', loadAgentPrompt);
+
+// Update character count on input
+document.getElementById('agent-prompt-textarea')?.addEventListener('input', () => {
+    const len = document.getElementById('agent-prompt-textarea').value.length;
+    document.getElementById('prompt-char-count').textContent = `${len.toLocaleString()} caracteres`;
+});
+
+// Ctrl+S shortcut to save prompt when textarea is focused
+document.getElementById('agent-prompt-textarea')?.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        saveAgentPrompt();
+    }
 });
 
