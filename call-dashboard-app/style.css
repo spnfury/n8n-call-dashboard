@@ -3941,3 +3941,231 @@ input:checked+.slider:before {
         min-height: 300px;
     }
 }
+
+/* ── Changelog / Registro de Cambios ── */
+.changelog-header {
+    margin-bottom: 24px;
+}
+
+.changelog-timeline {
+    position: relative;
+}
+
+/* Summary bar */
+.changelog-summary-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+    animation: fadeInUp 0.5s ease;
+}
+
+.changelog-summary-stat {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.changelog-summary-stat:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.changelog-summary-value {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -1px;
+    line-height: 1;
+}
+
+.changelog-summary-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+}
+
+/* Day blocks */
+.changelog-day {
+    position: relative;
+    padding-left: 32px;
+    margin-bottom: 32px;
+    border-left: 2px solid rgba(255, 255, 255, 0.08);
+    animation: fadeInUp 0.4s ease;
+}
+
+.changelog-day-latest {
+    border-left-color: var(--accent);
+}
+
+.changelog-day-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.changelog-day-dot {
+    position: absolute;
+    left: -8px;
+    top: 4px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--bg-card);
+    border: 3px solid rgba(255, 255, 255, 0.15);
+    z-index: 1;
+}
+
+.changelog-day-latest .changelog-day-dot {
+    border-color: var(--accent);
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.changelog-day-date {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.changelog-today-badge {
+    background: var(--accent);
+    color: white;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 10px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    animation: glow-pulse 2s infinite;
+}
+
+.changelog-day-count {
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+}
+
+/* Entry cards */
+.changelog-entries {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.changelog-entry {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    border-left: 3px solid var(--entry-color, var(--accent));
+}
+
+.changelog-entry:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    border-color: var(--entry-border, var(--border));
+}
+
+.changelog-entry-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.changelog-entry-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.changelog-entry-hours {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.06);
+    padding: 3px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.changelog-day-hours {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    background: rgba(99, 102, 241, 0.1);
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    white-space: nowrap;
+}
+
+.changelog-entry-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.changelog-entry-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .changelog-summary-bar {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .changelog-day {
+        padding-left: 24px;
+    }
+
+    .changelog-entry {
+        padding: 14px 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .changelog-summary-bar {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .changelog-summary-stat {
+        padding: 14px 12px;
+    }
+
+    .changelog-summary-value {
+        font-size: 24px;
+    }
+}

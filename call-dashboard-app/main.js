@@ -48,6 +48,12 @@ function formatDuration(seconds) {
 function calculateCallScore(call) {
     const breakdown = { duration: 0, evaluation: 0, confirmed: 0, endReason: 0, transcript: 0 };
 
+    // Contestador (answering machine) calls always score 0
+    const evalLower = (call.evaluation || '').toLowerCase();
+    if (evalLower.includes('contestador') || evalLower.includes('voicemail') || evalLower.includes('buzón') || evalLower.includes('máquina')) {
+        return { total: 0, breakdown };
+    }
+
     // 1. Duration (max 25)
     const dur = parseInt(call.duration_seconds) || 0;
     if (dur >= 60) breakdown.duration = 25;
@@ -817,6 +823,10 @@ function initTabs() {
             // If switching to agents, load prompt
             if (target === 'agents') {
                 loadAgentPrompt();
+            }
+            // If switching to changelog, render it
+            if (target === 'changelog') {
+                renderChangelog();
             }
         });
     });
@@ -3604,4 +3614,169 @@ document.getElementById('agent-prompt-textarea')?.addEventListener('keydown', (e
         saveAgentPrompt();
     }
 });
+
+// ── Changelog / Registro de Cambios ──
+const CHANGELOG_DATA = [
+    {
+        date: '2026-02-19',
+        entries: [
+            { type: 'feature', title: 'Sección "Changelog" — Registro de Cambios', hours: 2, desc: 'Diseño e implementación de nueva pestaña "📝 Changelog" con timeline visual día a día, badges por tipo de cambio (feature, fix, mejora, prompt), barra de resumen con KPIs y diseño responsive.' },
+            { type: 'fix', title: 'Score de contestador automático a 0', hours: 1, desc: 'Modificación del sistema de scoring para que las llamadas que terminan en contestador automático reciban automáticamente un score de 0, evitando inflar las métricas de calidad del agente.' },
+            { type: 'fix', title: 'Investigación de llamada cortada (019c757d)', hours: 1.5, desc: 'Análisis detallado de una llamada que se cortó inesperadamente: revisión de logs de Vapi, transcripción, motivo de finalización y ajuste de parámetros para prevenir reincidencias.' },
+            { type: 'improvement', title: 'Estimación de horas en changelog', hours: 1, desc: 'Añadidas estimaciones de tiempo por tarea al registro de cambios para justificar la inversión de horas en el proyecto y dar visibilidad al cliente del trabajo realizado.' },
+        ]
+    },
+    {
+        date: '2026-02-18',
+        entries: [
+            { type: 'feature', title: 'Editor de Prompts de Agentes', hours: 3.5, desc: 'Diseño e implementación completa de la sección "🤖 Agentes" del dashboard: selector de asistentes, carga del prompt actual desde Vapi API, editor de texto con contador de caracteres, guardado en producción con feedback visual, y atajo Ctrl+S.' },
+            { type: 'improvement', title: 'Barra de info del agente seleccionado', hours: 1, desc: 'Se muestra automáticamente el nombre, modelo de IA y longitud del prompt del agente seleccionado al cargarlo, dando contexto inmediato al usuario.' },
+            { type: 'fix', title: 'Reviews duplicadas por persona/marca', hours: 1.5, desc: 'Investigación y corrección del sistema de reviews: se implementó filtrado para mostrar solo una review por persona por marca, aumentando la credibilidad y seriedad de las reseñas públicas.' },
+            { type: 'improvement', title: 'Validación de prompt antes de guardar', hours: 0.5, desc: 'Se añadió validación para evitar guardar prompts vacíos o demasiado cortos, protegiendo contra errores accidentales.' },
+        ]
+    },
+    {
+        date: '2026-02-17',
+        entries: [
+            { type: 'prompt', title: 'Prompt de Violeta v2 — conversación interactiva', hours: 3, desc: 'Reescritura completa del prompt del agente Violeta: enfoque en preguntas cortas y relevantes, eliminación de monólogos iniciales largos, revelación de identidad IA solo si preguntan directamente. Objetivo: reducir drásticamente la tasa de cuelgue en los primeros 15 segundos.' },
+            { type: 'improvement', title: 'Análisis de tasa de abandono', hours: 2, desc: 'Análisis detallado de las llamadas con alta tasa de abandono: identificación de patrones (monólogos >20s, revelación prematura de IA, falta de interactividad) y propuesta de mejoras para el flujo conversacional.' },
+            { type: 'fix', title: 'Detección de contestador automático mejorada', hours: 1.5, desc: 'Mejora del algoritmo de detección de buzón de voz: ahora se identifican correctamente los contestadores automáticos por la duración del tono, respuesta estándar y falta de interacción humana.' },
+            { type: 'fix', title: 'Bug llamada bloqueada 10 minutos', hours: 1, desc: 'Investigación y resolución de un caso donde una llamada a contestador duró 10 minutos sin finalizar: se ajustaron los timeouts y condiciones de corte para evitar costes innecesarios.' },
+            { type: 'fix', title: 'Validación de contraseñas en autenticación', hours: 1, desc: 'Corrección del sistema de validación de passwords en Convex Auth que rechazaba contraseñas válidas durante el inicio de sesión.' },
+        ]
+    },
+    {
+        date: '2026-02-16',
+        entries: [
+            { type: 'improvement', title: 'Loading states con skeletons en todo el dashboard', hours: 2, desc: 'Implementación de indicadores visuales de carga (skeleton loading) en todas las cards de estadísticas, KPIs y tablas del dashboard. Los valores ahora muestran una animación pulsante en lugar de "0" o "—" mientras se cargan, eliminando la confusión del usuario.' },
+            { type: 'fix', title: 'Lógica de horario comercial', hours: 2, desc: 'Las llamadas ahora respetan estrictamente el horario comercial español: mañanas 9:00-13:00 y tardes 15:30-17:30. Se implementó lógica de reprogramación automática para llamadas fuera de horario: si es antes de las 15:30, se mueve a la tarde; si es después de las 17:30, se mueve al día siguiente a las 9:00.' },
+            { type: 'fix', title: 'Filtrado y separación de llamadas de test', hours: 1.5, desc: 'Las llamadas de prueba/test ya no aparecen mezcladas con las de producción. Se implementó detección automática por "Manual Trigger" en el motivo de finalización y nombre "test manual".' },
+            { type: 'feature', title: 'Sección de llamadas de Test', hours: 2, desc: 'Nueva pestaña "🧪 Test" con estadísticas independientes (total, exitosas, fallidas, contestador) y tabla dedicada para visualizar y gestionar las llamadas de prueba sin contaminar los datos de producción.' },
+            { type: 'fix', title: 'Limpieza de registros duplicados', hours: 1, desc: 'Script de limpieza para eliminar registros duplicados y erróneos en los logs de llamadas de NocoDB, evitando que aparezcan en el dashboard y distorsionen las estadísticas.' },
+            { type: 'fix', title: 'Reprogramación de llamadas fuera de horario', hours: 1, desc: 'Script para detectar y reprogramar automáticamente todas las llamadas que se habían programado incorrectamente fuera del horario comercial al siguiente slot disponible.' },
+        ]
+    },
+    {
+        date: '2026-02-15',
+        entries: [
+            { type: 'feature', title: 'Sección de llamadas programadas con countdown', hours: 3, desc: 'Implementación completa de la sección de planificación: banner resumen con total programadas/vencidas/pendientes, lista compacta con temporizador en tiempo real por cada llamada, indicador de "PRÓXIMA" llamada, y click para editar cada lead.' },
+            { type: 'fix', title: 'Bug crítico de timezone UTC vs local', hours: 2, desc: 'Descubierto y corregido un bug donde las fechas planificadas se almacenaban en UTC pero se parseaban como hora local, causando que las llamadas no aparecieran en el dashboard o aparecieran con horas incorrectas. Se implementaron funciones de conversión UTC↔Local.' },
+            { type: 'improvement', title: 'Display compacto para +200 llamadas', hours: 1.5, desc: 'Optimización del renderizado de la sección de planificación: se limita a 50 llamadas visibles inicialmente con botón "mostrar más", evitando lag en el navegador con volúmenes grandes de datos.' },
+            { type: 'feature', title: 'Trigger automático de llamadas en n8n', hours: 2.5, desc: 'Implementación del disparador automático en n8n: Schedule Trigger cada minuto que busca leads con estado "Programado" y fecha_planificada <= ahora, los llama vía Vapi API respetando concurrencia máxima (evitando sobrepasar el límite de llamadas simultáneas).' },
+            { type: 'improvement', title: 'Paginación de datos para +500 leads', hours: 1, desc: 'Implementación de carga paginada en la API de NocoDB para soportar bases de datos con más de 200 leads sin perder registros, con safety limit de 2000.' },
+        ]
+    },
+    {
+        date: '2026-02-14',
+        entries: [
+            { type: 'feature', title: 'Configuración de Live Reload con Capacitor', hours: 2.5, desc: 'Configuración completa del entorno de desarrollo móvil: Vite como servidor de desarrollo, exposición en red local con --host, actualización de capacitor.config.ts para apuntar al servidor Vite, y scripts npm para arrancar fácilmente el entorno de live reload.' },
+            { type: 'improvement', title: 'Scripts de desarrollo en package.json', hours: 0.5, desc: 'Añadidos scripts npm de conveniencia (dev, dev:ios, dev:android, sync) para simplificar el workflow de desarrollo sin tener que recordar comandos largos de Capacitor.' },
+            { type: 'feature', title: 'Sistema de importación de llamadas Vapi', hours: 2, desc: 'Desarrollo de script de importación (import_vapi_calls.mjs) para sincronizar las llamadas de Vapi con la base de datos NocoDB, incluyendo deduplicación y mapeo de campos.' },
+        ]
+    },
+    {
+        date: '2026-02-13',
+        entries: [
+            { type: 'feature', title: 'Dashboard de llamadas v0.0.1 — versión inicial', hours: 4, desc: 'Diseño y desarrollo completo de la primera versión del dashboard: arquitectura SPA con HTML/CSS/JS vanilla, integración con NocoDB API, tabla de historial de llamadas con paginación, y sistema de autenticación con contraseña.' },
+            { type: 'feature', title: 'Integración con Vapi API — transcripciones y grabaciones', hours: 2, desc: 'Conexión directa con la API de Vapi para obtener transcripciones en tiempo real y URLs de grabación de audio de cada llamada, mostradas en el modal de detalle.' },
+            { type: 'feature', title: 'Gráfico de rendimiento con Chart.js', hours: 1.5, desc: 'Implementación del gráfico de barras de rendimiento de llamadas por día con Chart.js, mostrando distribución de resultados (éxito, fallida, contestador, no contesta).' },
+            { type: 'feature', title: 'Modal de detalle de llamada', hours: 2, desc: 'Diseño e implementación del modal de detalle: transcripción completa, reproductor de audio, sección de datos confirmados, notas del agente con guardado, toggle test/producción, y sistema de scoring de calidad con gauge visual.' },
+            { type: 'feature', title: 'Sistema de scoring de calidad', hours: 1.5, desc: 'Diseño del algoritmo de scoring multi-dimensional: duración (25pts), evaluación IA (30pts), datos confirmados (20pts), motivo de fin (15pts), transcripción (10pts). Gauge visual con colores por rango y breakdown detallado.' },
+        ]
+    }
+];
+
+const CHANGELOG_TYPE_CONFIG = {
+    feature: { icon: '🚀', label: 'Nueva Funcionalidad', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.12)', border: 'rgba(34, 197, 94, 0.3)' },
+    fix: { icon: '🔧', label: 'Corrección', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)', border: 'rgba(245, 158, 11, 0.3)' },
+    improvement: { icon: '⚡', label: 'Mejora', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.12)', border: 'rgba(59, 130, 246, 0.3)' },
+    prompt: { icon: '🧠', label: 'Cambio de Prompt', color: '#a855f7', bg: 'rgba(168, 85, 247, 0.12)', border: 'rgba(168, 85, 247, 0.3)' },
+};
+
+function renderChangelog() {
+    const container = document.getElementById('changelog-timeline');
+    if (!container) return;
+
+    const dateOpts = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+    let totalEntries = 0;
+    let totalHours = 0;
+    CHANGELOG_DATA.forEach(day => {
+        totalEntries += day.entries.length;
+        day.entries.forEach(e => totalHours += (e.hours || 0));
+    });
+
+    let html = `
+        <div class="changelog-summary-bar">
+            <div class="changelog-summary-stat">
+                <span class="changelog-summary-value">${CHANGELOG_DATA.length}</span>
+                <span class="changelog-summary-label">Días de trabajo</span>
+            </div>
+            <div class="changelog-summary-stat">
+                <span class="changelog-summary-value">${totalEntries}</span>
+                <span class="changelog-summary-label">Cambios realizados</span>
+            </div>
+            <div class="changelog-summary-stat">
+                <span class="changelog-summary-value">${totalHours.toFixed(1)}h</span>
+                <span class="changelog-summary-label">Horas invertidas</span>
+            </div>
+            <div class="changelog-summary-stat">
+                <span class="changelog-summary-value">${CHANGELOG_DATA.reduce((acc, d) => acc + d.entries.filter(e => e.type === 'feature').length, 0)}</span>
+                <span class="changelog-summary-label">Nuevas funcionalidades</span>
+            </div>
+            <div class="changelog-summary-stat">
+                <span class="changelog-summary-value">${CHANGELOG_DATA.reduce((acc, d) => acc + d.entries.filter(e => e.type === 'fix').length, 0)}</span>
+                <span class="changelog-summary-label">Correcciones</span>
+            </div>
+        </div>
+    `;
+
+    CHANGELOG_DATA.forEach((day, dayIdx) => {
+        const dateObj = new Date(day.date + 'T12:00:00');
+        const dateStr = dateObj.toLocaleDateString('es-ES', dateOpts);
+
+        // Check if this day is today
+        const today = new Date();
+        const isToday = day.date === today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+
+        // Calculate hours for this day
+        const dayHours = day.entries.reduce((acc, e) => acc + (e.hours || 0), 0);
+
+        html += `
+            <div class="changelog-day ${dayIdx === 0 ? 'changelog-day-latest' : ''}">
+                <div class="changelog-day-header">
+                    <div class="changelog-day-dot"></div>
+                    <div class="changelog-day-date">
+                        ${isToday ? '<span class="changelog-today-badge">HOY</span>' : ''}
+                        ${dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}
+                    </div>
+                    <div class="changelog-day-count">${day.entries.length} ${day.entries.length === 1 ? 'cambio' : 'cambios'}</div>
+                    <div class="changelog-day-hours">🕐 ${dayHours.toFixed(1)}h</div>
+                </div>
+                <div class="changelog-entries">
+        `;
+
+        day.entries.forEach(entry => {
+            const cfg = CHANGELOG_TYPE_CONFIG[entry.type] || CHANGELOG_TYPE_CONFIG.improvement;
+            html += `
+                <div class="changelog-entry" style="--entry-color: ${cfg.color}; --entry-bg: ${cfg.bg}; --entry-border: ${cfg.border};">
+                    <div class="changelog-entry-header">
+                        <div class="changelog-entry-badge" style="background: ${cfg.bg}; border-color: ${cfg.border}; color: ${cfg.color};">
+                            ${cfg.icon} ${cfg.label}
+                        </div>
+                        ${entry.hours ? `<div class="changelog-entry-hours">🕐 ${entry.hours}h</div>` : ''}
+                    </div>
+                    <div class="changelog-entry-title">${entry.title}</div>
+                    <div class="changelog-entry-desc">${entry.desc}</div>
+                </div>
+            `;
+        });
+
+        html += `
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
 
