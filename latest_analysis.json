@@ -1,0 +1,934 @@
+{
+  "total": 200,
+  "with_transcript": 165,
+  "with_tool_calls": 39,
+  "save_data_calls": 4,
+  "dates": {
+    "2026-02-19": 24,
+    "2026-02-18": 52,
+    "2026-02-17": 100,
+    "2026-02-16": 24
+  },
+  "recent_transcripts": [
+    {
+      "id": "019c75a3-8d11-7bb8-9281-6302ddb397b0",
+      "created_at": "2026-02-19T11:22:58.705Z",
+      "phone": "+34967211637",
+      "empresa": "Ingenieria De Procesos Informaticos Sl",
+      "duration": 0,
+      "ended_reason": "assistant-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection ¿Con quién hablo, por favor?\nUser: Por favor, continúe a la espera.\n",
+      "summary": "Violeta from General Protection initiated the call and introduced herself. The user immediately asked her to continue waiting, and the call was subsequently ended by the assistant.",
+      "tool_calls_count": 1,
+      "tool_calls": [
+        {
+          "name": "end_call",
+          "args": "{}"
+        }
+      ]
+    },
+    {
+      "id": "019c75a1-bc2e-7ee5-bd60-76efeeeb93d5",
+      "created_at": "2026-02-19T11:20:59.694Z",
+      "phone": "+34917230177",
+      "empresa": "Memory Sistemas Informaticos S.l.",
+      "duration": 0,
+      "ended_reason": "assistant-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection ¿Con quién hablo, por favor?\nUser: Continúe a la espera.\n",
+      "summary": "An AI, Violeta from General Protection, initiated the call and asked the user for their name. The user responded by asking the AI to continue waiting, after which the assistant ended the call.",
+      "tool_calls_count": 1,
+      "tool_calls": [
+        {
+          "name": "end_call",
+          "args": "{}"
+        }
+      ]
+    },
+    {
+      "id": "019c759f-e787-7cc5-b125-1e8850c79b72",
+      "created_at": "2026-02-19T11:18:59.719Z",
+      "phone": "+34916175496",
+      "empresa": "Tecsys Proyectos Informaticos Sl",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta, de General Protection Ciberseguridad ¿Con quién hablo, por favor?\nUser: No sabe usted dónde está llamando, más lo llevamos. Buenas buenos días.\n",
+      "summary": "An AI from General Protection Ciberseguridad introduced herself as Violeta and asked who she was speaking with. The user responded by stating the AI didn't know who they were calling, then wished them good morning before ending the call.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c759e-123c-7cc5-952f-9d3f00265188",
+      "created_at": "2026-02-19T11:16:59.580Z",
+      "phone": "+34962601337",
+      "empresa": "Inhasoft Sistemas Informaticos Sl",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Hola, soy Violeta de General Protection\n",
+      "summary": "The call began with an AI, Violeta from General Protection, introducing herself. However, the customer ended the call almost immediately after the introduction.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c759c-3e6a-7aab-b120-3db98ae9bc8d",
+      "created_at": "2026-02-19T11:14:59.818Z",
+      "phone": "+34916650273",
+      "empresa": "Sis Sistemas Informaticos Sur S.l.",
+      "duration": 0,
+      "ended_reason": "silence-timed-out",
+      "transcript": "AI: Hola, soy Violeta de General Protection ¿Con quién hablo, por favor?\nUser: Gracias.\nAI: De nada. Oye, una pregunta rápida. ¿Ofrecéis algún servicio de ciberseguridad a vuestros clientes?\n",
+      "summary": "Violeta from General Protection initiated the call, introducing herself and her company. She then asked the user if they offer cybersecurity services to their clients before the call ended due to silence.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c759a-690e-7225-8f26-7e7e2335d7d3",
+      "created_at": "2026-02-19T11:12:59.662Z",
+      "phone": "+34934100321",
+      "empresa": "Gd Suministros Informaticos Sa",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta, de General Protection Ciberseguridad, ¿Con quién hablo, por favor?\nUser: Con Natalia,\nAI: Encantada, Natalia, Oye, una pregunta rápida, ¿ofrecéis algún servicio de ciberseguridad a vuestros clientes?\nUser: Pues no lo sé, no te puedo dar esa información yo.\nAI: Entiendo, gracias por tu sinceridad. ¿Podrías pasarme con la persona encargada de esto\nUser: Vale, adiós. No, en estos momentos no está, me pillas que esté pendiente un cliente y no puedo estar pendiente de ti.\nAI: Lo comprendo perfectamente.\nUser: Vale, muchas gracias.\nAI: ¿Podrías darme el contacto de la persona encargada o su correo?\nUser: No, no estoy no estoy autorizada. ¿Vale? Muchas gracias, adiós, días.\nAI: Entendido, Entendido, muchas gracias por tu tiempo.\n",
+      "summary": "Violeta from General Protection Ciberseguridad called Natalia to inquire about their company's cybersecurity services and to speak with the responsible person. Natalia stated she could not provide the information, the person in charge was unavailable, and she was not authorized to share contact details. Natalia ended the call abruptly, citing a pending client.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7598-9387-7ee5-bd5a-862f18f98eb4",
+      "created_at": "2026-02-19T11:10:59.463Z",
+      "phone": "+34932654505",
+      "empresa": "Montajes Informaticos Barcelona Sa",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta, de General Protect Ciberseguridad, ¿Con quién hablo, por favor?\n",
+      "summary": "The call began with Violeta from General Protect Ciberseguridad introducing herself and asking for the caller's name. The call ended abruptly as the customer disconnected before providing any information.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7596-c039-7cc5-b11d-d1184928396c",
+      "created_at": "2026-02-19T11:08:59.833Z",
+      "phone": "+34928279034",
+      "empresa": "Lusol Sistemas Informaticos Sl",
+      "duration": 0,
+      "ended_reason": "assistant-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection ¿Con quién hablo, por favor?\nUser: Relacionada con el seguimiento de una orden de trabajo, por favor, envíenos un correo a soporte arroba Luzol punto es. Si está relacionada con la consulta de precio y disponibilidad de un request, Si quiere hablar con una operadora, espere.\n",
+      "summary": "Violeta from General Protection initiated the call, asking who she was speaking with. The user's side responded with an automated message, directing callers to email for work order follow-ups or to wait for price inquiries or to speak with an operator, before the assistant ended the call.",
+      "tool_calls_count": 1,
+      "tool_calls": [
+        {
+          "name": "end_call",
+          "args": "{}"
+        }
+      ]
+    },
+    {
+      "id": "019c7594-eaf0-7111-b335-d7fec5882c8d",
+      "created_at": "2026-02-19T11:06:59.696Z",
+      "phone": "+34969333266",
+      "empresa": "Geima Sistemas Informaticos Sl",
+      "duration": 0,
+      "ended_reason": "assistant-ended-call",
+      "transcript": "AI: Hola, soy Violeta, de General Protection ¿Con quién hablo, por favor?\nUser: Enseguida será atendido. Le recordamos que para cualquier problema o duda puede escribirnos un mail a incidencias arroba GEIMA punto es o un WhatsApp a este mismo número.\n",
+      "summary": "An AI from General Protection introduced itself to the user. The user then provided contact information, including an email address and a WhatsApp number, for any issues or questions before the call was ended by the assistant.",
+      "tool_calls_count": 1,
+      "tool_calls": [
+        {
+          "name": "end_call",
+          "args": "{}"
+        }
+      ]
+    },
+    {
+      "id": "019c7593-1629-7775-b0ac-fdb6d8790754",
+      "created_at": "2026-02-19T11:04:59.689Z",
+      "phone": "+34959106000",
+      "empresa": "Pronamic Ingenieros Informaticos Srl Laboral",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta, de General Protection,\n",
+      "summary": "The call began with an AI, Violeta from General Protection, greeting the customer. The call ended abruptly, initiated by the customer, before any further conversation could take place.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c758f-6eb3-7aab-b117-8d20d68e0feb",
+      "created_at": "2026-02-19T11:01:00.211Z",
+      "phone": "+34966555172",
+      "empresa": "Gp Sistemas Y Cableados Informaticos Sl",
+      "duration": 0,
+      "ended_reason": "assistant-ended-call",
+      "transcript": "AI: Hola, soy Violeta, de General Protection Ciberseguridad, ¿Con quién hablo, por favor?\nUser: Después de la señal,\n",
+      "summary": "An AI from General Protection Ciberseguridad, identified as Violeta, initiated a call. The call ended almost immediately after the user's brief response, without any substantive conversation taking place.",
+      "tool_calls_count": 1,
+      "tool_calls": [
+        {
+          "name": "end_call",
+          "args": "{}"
+        }
+      ]
+    },
+    {
+      "id": "019c758d-9a73-7669-846e-2a1b3d6144d7",
+      "created_at": "2026-02-19T10:59:00.339Z",
+      "phone": "+34965671866",
+      "empresa": "Sistemas Informaticos Iberia Sl.",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta, de General Protection Ciberseguridad, con quien hablo, por favor?\nUser: Le atiende Oscar, buenos días.\nAI: Encantada, Óscar. Una pregunta rápida, ¿ofrecéis algún servicio de ciberseguridad a vuestros clientes?\nUser: ¿Con quién hablo?\nAI: Soy Violeta de General Protection Ciberseguridad. Os contacto porque tenemos un modelo de colaboración muy rentable para empresas IT, ¿Ofrecéis servicios de tecnología a vuestros clientes?\nUser: Disculpa, cualquier consulta de este tipo nos lo puedes enviar al siguiente correo. Es info arroba\nAI: Entiendo, Óscar. ¿Podrías facilitarme la dirección de correo\nUser: s c sysne punto net.\nAI: ¿Te habéis apuntado el correo como info arroba s c cisne punto net? ¿Todo correcto?\nUser: Ajá. Ojalá, hasta luego,\n",
+      "summary": "Violeta from General Protection Ciberseguridad called Oscar to inquire if his company offers cybersecurity services and to propose a collaboration model for IT businesses. Oscar, however, directed her to send any inquiries to their general information email address. Violeta confirmed the email address before the call concluded.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c758b-c31b-7447-b96b-97288e538477",
+      "created_at": "2026-02-19T10:56:59.675Z",
+      "phone": "+34915422046",
+      "empresa": "D H Consultores Informaticos Sl",
+      "duration": 0,
+      "ended_reason": "assistant-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection. ¿Con quién hablo, por favor?\nUser: Soy Cristina.\nAI: Encantada Cristina. Oye, una pregunta rápida, ofrece algún servicio de ciberseguridad a vuestros clientes?\nUser: No, no, no, no.\nAI: Precisamente por eso os llamo. Muchas empresas AIT están añadidas ciberseguridad sin montar equipo propio. ¿Os interesaría saber cómo\nUser: Es que, ¿sabes qué pasa? Que no no está mi jefe, que es el que lleva todos esos esos temas, ¿vale? Si puedes llamar en otro momento, es que no está.\nAI: Entiendo. Gracias por la aclaración.\nUser: Vale,\nAI: ¿Podrías pasarme con tu jefe o darme su contacto?\nUser: No, es que él ahora mismo no está. Por eso te digo, Que si puedes llamar en otro momento.\nAI: Entendido. Muchas gracias por tu tiempo, Cristina. Que tengas un buen día.\nUser: Igualmente.\n",
+      "summary": "Violeta from General Protection called Cristina to inquire if her company offers cybersecurity services to clients and to propose their services. Cristina informed Violeta that they do not, and that her boss, who handles such matters, was unavailable and asked Violeta to call back later. Violeta ended the call after being unable to speak with the boss or obtain his contact information.",
+      "tool_calls_count": 1,
+      "tool_calls": [
+        {
+          "name": "end_call",
+          "args": "{}"
+        }
+      ]
+    },
+    {
+      "id": "019c758a-83ef-7ee3-be50-b0c95aa22000",
+      "created_at": "2026-02-19T10:55:37.967Z",
+      "phone": "+34642174921",
+      "empresa": "",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protec Ciberseguridad. Te llamé hace un momento y parece que se cortó la comunicación. Me habías dicho que te interesaba, ¿verdad? Retomo donde lo dejamos rapidísimo.\nUser: Vale.\nAI: Genial, Nayib. Entonces, como comenté, para Pymes ofrecemos CyberSafe, que incluye protección completa 24 7 y un técnico dedicado ¿Cuántos clientes gestionáis aproximadamente?\nUser: 50 o así, lo que te decía antes,\nAI: Perfecto, Nayib. Tener 50 clientes es un buen número. ¿Tenéis ya algún proveedor de ciberseguridad o lo estáis buscando?\nUser: No, no, no teníamos nada y teníamos nada previsto. De este tema, la verdad.\nAI: Entendido Nayib, porque eso os llamo. Muchas empresas City, como la vuestra, están incorporando ciberseguridad, ¿Te gustaría saber más sobre cómo podríamos colaborar y generar ingresos recurrentes?\nUser: Sí, no, a ver, ya me has contado un poco.\nAI: Claro, para resumir, nosotros gestionamos toda la parte técnica mientras vosotros mantenéis la relación con el cliente y cobráis una comisión recurrente. ¿Te gustaría que te envíe más información por email?\nUser: Sí, envíame la puedo por email.\nAI: Perfecto, Nayib. Para enviarte la información necesito tu email, por favor.\nUser: Mira, te digo, Nayib G p arroba Gmail punto com.\nAI: Te he apuntado como Nayib email, Nayib g p arroba Gmail punto com. ¿Todo correcto?\nUser: No, es n a y I latina n g. P arroba Gmail punto com.\nAI: Entonces, te he apuntado como Nayib email na I I latina n g punto pe arroba Gmail punto com. ¿Todo correcto?\nUser: No, no, no. Nayib, g p arroba Gmail punto com. Nayim se escribe, n a I griega I latina m de Madrid.\nAI: ¿Te he apuntado cómo Nayib email, Nayib arroba Gmail punto com. ¿Todo correcto?\nUser: Me ven así, vale.\nAI: Perfecto, Nayib, te enviaremos toda la información Muchas gracias por tu tiempo, que tengas un buen día.\n",
+      "summary": "The AI, Violeta from General Protec Ciberseguridad, reconnected with Nayib to discuss their CyberSafe offering for SMEs, which includes 24/7 protection and a dedicated technician, emphasizing a recurring revenue model for Nayib's business. Nayib, who manages around 50 clients and currently lacks a cybersecurity provider, expressed interest in learning more. The call concluded with Nayib providing his email address to receive further information.",
+      "tool_calls_count": 1,
+      "tool_calls": [
+        {
+          "name": "general_protech_save_confirmed_data",
+          "args": "{\n  \"name\": \"Nayib\",\n  \"email\": \"nayib.gp@gmail.com\",\n  \"phone\": \"\",\n  \"tipo_empresa\": \"IT - PYME\",\n  \"interes_recurrentes\": \"Alto\"\n}"
+        }
+      ]
+    },
+    {
+      "id": "019c7589-edd1-7666-964a-7894a88273fd",
+      "created_at": "2026-02-19T10:54:59.537Z",
+      "phone": "+34947244436",
+      "empresa": "Gisa Consultores Informaticos Sl",
+      "duration": 0,
+      "ended_reason": "assistant-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad, ¿Con quién hablo, por favor?\nUser: Agencia está relacionada con SAP, Pulse 2 si necesita soporte técnico. Pulse 3 si necesita contactar con administración.\n",
+      "summary": "An AI from General Protection Ciberseguridad initiated the call, asking for the recipient's name. The call then immediately presented an automated menu related to SAP, offering options for technical support or administration before the assistant ended the call.",
+      "tool_calls_count": 1,
+      "tool_calls": [
+        {
+          "name": "end_call",
+          "args": "{}"
+        }
+      ]
+    },
+    {
+      "id": "019c7588-1978-7111-b32e-5819f66af9ac",
+      "created_at": "2026-02-19T10:52:59.640Z",
+      "phone": "+34936535223",
+      "empresa": "Assessoria Consultoria Capital Sl",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta, de General Protection ¿Con quién hablo, por favor?\nUser: ¿Capital? Buen día.\nAI: Buen día. Oye, una pregunta rapida.\nUser: Sí, buenos días.\nAI: Encantada, buen día. Oye, una pregunta rápida. ¿Ofrecéis algún servicio de ciberseguridad a vuestros clientes\n",
+      "summary": "Violeta from General Protection initiated the call, introducing herself and asking the user if they offer cybersecurity services to their clients. The call ended abruptly, initiated by the customer, before the user could respond to the question.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7586-4545-7ee3-be4d-df2152f2273d",
+      "created_at": "2026-02-19T10:50:59.781Z",
+      "phone": "+34923218303",
+      "empresa": "Consultoria Asociados San Julian Sl.",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta, de General Protection ¿Con quién hablo, por favor?\nUser: Consultoría, dígame.\nAI: Encantada. Oye, una pregunta rápida,\nUser: Sí,\nAI: ¿ofrecéis algún servicio de ciberseguridad a vuestros clientes?\nUser: No, no, no, a tanto no llegamos.\nAI: Precisamente por eso os llamo.\nUser: Mira, pero perdona, lo siento, ¿eh? Vale, es que no, no me interesa.\nAI: Entendido, muchas gracias por tu tiempo. Que tengas un buen día.\n",
+      "summary": "Violeta from General Protection called Consultoría to inquire if they offer cybersecurity services to their clients. Consultoría stated they do not provide such services and immediately expressed disinterest in Violeta's offer, leading to the call being ended by the customer.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7584-6bea-7335-bf46-d6566144b461",
+      "created_at": "2026-02-19T10:48:58.602Z",
+      "phone": "+34918598604",
+      "empresa": "Consultoria Gasher Asociados Sl",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad ¿Con quién hablo, por favor?\nUser: Habla con la consultoría de gases.\nAI: Oye, una pregunta rápida.\nUser: Sí.\nAI: ¿Ofrecéis algún servicio de ciberseguridad a vuestros clientes?\nUser: No, no, No, solamente somos una asesoría que hacemos impuestos. A autónomos y empresas.\nAI: Precisamente por eso os llamo muchas empresas están añadiendo ciberseguridad sin montar equipo propio. Os interesaría saber cómo\nUser: No,\nAI: Entendido, muchas gracias por tu tiempo. Que tengas un buen día.\nUser: lo siento. Igualmente.\n",
+      "summary": "Violeta from General Protection Ciberseguridad called a tax consultancy to inquire if they offered cybersecurity services or would be interested in adding them. The consultancy representative declined, stating their focus is solely on tax services for freelancers and businesses. The call ended shortly after the refusal.",
+      "tool_calls_count": 1,
+      "tool_calls": [
+        {
+          "name": "end_call",
+          "args": "{}"
+        }
+      ]
+    },
+    {
+      "id": "019c7582-da99-7449-8753-f69db42f733d",
+      "created_at": "2026-02-19T10:47:15.865Z",
+      "phone": "+34917312946",
+      "empresa": "",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta, de General Protection, ¿con quién hablo, por favor?\nUser: Buenos días, mira, es que teníamos una llamada perdida. Somos, no sé si habéis tomado la consultoría 53,\nAI: Buenos días. Soy Violeta de General Protect Ciberseguridad. Os llamo porque tenemos un programa interesante para empresas IT. ¿Ofrecéis servicios de ciberseguridad a vuestros clientes?\nUser: Perdona, es que no te he entendido.\nAI: Oye, te llamo porque tenemos un modelo de colaboración\nAI: servicios de tecnología a vuestros clientes.\nUser: ¿Pero de dónde nos llamas?\nAI: Soy Violeta de General Protection Ciberseguridad, Os contacto porque tenemos un modelo de colaboración muy rentable para empresas City. ¿Ofrecéis servicios de tecnología a vuestros clientes?\nUser: No estamos interesados, gracias.\nAI: Entendido, muchas gracias por tu tiempo. Que\n",
+      "summary": "Violeta from General Protection Ciberseguridad called a user to propose a collaboration model for IT companies, specifically regarding cybersecurity services. The user initially expressed confusion about the call's origin and purpose. Ultimately, the user stated they were not interested, leading to the call's conclusion.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7582-9ad7-7ff4-9ce8-5644ae04d6bf",
+      "created_at": "2026-02-19T10:46:59.543Z",
+      "phone": "+34938467879",
+      "empresa": "Consultoria Ambiental Gesmat Sl",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta, de General Protection, ¿Con quién hablo, por favor?\nUser: Con Nuria. Con Yesmat,\nAI: Encantada, Nuria. Oye, una pregunta rápida. ¿Ofrecéis algún servicio de ciberseguridad a vuestros clientes?\nUser: No. No sé, me parece que no.\nAI: Precisamente por eso os llamo. Muchas empresas AIT están añadiendo ciber seguridad sin montar equipo propio. ¿Os interesaría saber cómo?\nUser: Pues es que no sé, tendría que llamar por la tarde. O si o si\nAI: Lo entiendo, Nuria. ¿Puedo enviarte un resumen por email para que lo revises más tarde?\nUser: Vale, pues sí.\nAI: Solo necesitaría tu dirección de correo.\nUser: Mira, administración sin la n, arroba\nAI: ¿Podrías confirmarme el correo completo, por favor?\nUser: sí, administración arroba consultoría GSMAD punto com.\nAI: Te he apuntado como administración email administración arroba consultoría gsmad punto com. ¿Todo correcto?\n",
+      "summary": "Violeta from General Protection called Nuria from Yesmat to discuss cybersecurity services, noting that many AIT companies are adding them without needing their own team. Nuria was unsure if Yesmat offered these services and, after some hesitation, agreed to receive an email summary of General Protection's offerings. The call concluded after Nuria provided and confirmed her email address.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7580-c611-7dd4-8bf1-bcae123a201a",
+      "created_at": "2026-02-19T10:44:59.537Z",
+      "phone": "+34917312946",
+      "empresa": "Consultoria 53 Sl",
+      "duration": 0,
+      "ended_reason": "assistant-ended-call",
+      "transcript": "AI: Hola, soy Violeta, de General Protection, ¿Con quién hablo, por favor?\nUser: Por favor, continúe a la espera.\n",
+      "summary": "The AI, Violeta from General Protection, introduced herself and asked for the user's name. The user responded by asking the AI to continue waiting, and the call was subsequently ended by the assistant.",
+      "tool_calls_count": 1,
+      "tool_calls": [
+        {
+          "name": "end_call",
+          "args": "{}"
+        }
+      ]
+    },
+    {
+      "id": "019c757e-ed60-7669-8464-01c749f0fd26",
+      "created_at": "2026-02-19T10:42:58.528Z",
+      "phone": "+34937805066",
+      "empresa": "B A C Assessoria I Consultoria Sl",
+      "duration": 0,
+      "ended_reason": "silence-timed-out",
+      "transcript": "AI: Hola, soy Violeta, de General Protection. ¿Con quién hablo, por favor?\n",
+      "summary": "An AI named Violeta from General Protection initiated the call, asking to identify the recipient. The call subsequently ended due to a silence timeout, indicating no response was received from the other party.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c757d-199b-7775-b09f-c8b5a4f99521",
+      "created_at": "2026-02-19T10:40:58.779Z",
+      "phone": "+34642174921",
+      "empresa": "CiberPerros",
+      "duration": 0,
+      "ended_reason": "silence-timed-out",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad ¿Con quién hablo, por favor?\nUser: Con Nayib.\nAI: Encantada, Nayib. Oye, una pregunta rápida. ¿Ofrecéis algún servicio de ciberseguridad a vuestros clientes?\nUser: No.\nAI: Precisamente por eso os llamo, Muchas empresas IT están añadiendo ciberseguridad sin montar equipo propio, ¿Os interesaría saber cómo?\nUser: Bueno, sí, bueno, yo que sé, cuéntame.\nAI: En resumen, ¿vosotros presentáis ciberseguridad a vuestros clientes? ¿Nosotros gestionamos comisión recurrente? ¿Te cuento un poco más?\nUser: Vale.\nAI: Perfecto. Nuestro modelo de partners permite que vosotros presentéis nuestros servicios de ciberseguridad mientras nosotros gestionamos toda la parte técnica, ¿Podrías compartir qué tipo de de clientes soléis atender?\nUser: PyMEs sobre todo.\nAI: Genial, entonces esto os encaja perfecto. Para PyMEs ofrecemos CyberSafe, que incluye protección completa 24 7 y un técnico dedicado. ¿Cuántos clientes gestionáis aproximadamente?\nUser: Pues no sé, 50.\nAI: Perfecto. Tener 50 clientes es un buen número. ¿Tenéis ya algún proveedor de ciberseguridad o lo estáis buscando?\n",
+      "summary": "Violeta from General Protection Ciberseguridad called Nayib to offer a partnership for cybersecurity services, as Nayib's company currently doesn't provide them. She explained a model where Nayib's company would present their services to their SME clients, while General Protection handles the technical aspects and offers a recurring commission. The call ended with Violeta inquiring about Nayib's current cybersecurity provider situation.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c70c6-3912-7441-94f0-9a77e9ac2a42",
+      "created_at": "2026-02-18T12:42:44.882Z",
+      "phone": "+34642174921",
+      "empresa": "Gatos felices 2",
+      "duration": 0,
+      "ended_reason": "exceeded-max-duration",
+      "transcript": "AI: Hola, soy Violeta de General Protector Ciberseguridad. ¿Con quién hablo, por favor?\nUser: Nayib, ¿me hablas con Nayib?\nAI: Encantada, Nayib. Oye, una pregunta rápida,\nUser: No, ahora no.\nAI: Entiendo. Muchas gracias por tu tiempo. Que tengas un buen día.\nUser: Aló.\nAI: Hola, soy Violeta de General Protect Ciberseguridad. Oye, una pregunta rápida, ¿ofrecéis algún servicio de ciberseguridad a vuestros clientes?\nUser: No,\nAI: Precisamente por eso os llamo, Muchas empresas IT están añadiendo TCiberseguridad sin montar equipo propio. Os interesaría saber cómo\nUser: Bueno, no suena mal eso, ¿no? Ok.\nAI: Genial, me alegra que te interese. Muchas empresas como la vuestra están aumentando su oferta. ¿Qué tipo de clientes soléis atender?\nUser: De a pines,\nAI: Perfecto, entonces esto os encaja bien. ¿Cuántos clientes gestionáis aproximadamente?\nUser: muchos, unos 500.\nAI: Impresionante. Con un número así podríais obtener un ingreso interesante. ¿Tenéis ya algún proveedor de ciberseguridad o lo estáis buscando?\nUser: No, no, no lo teníamos previsto esto.\nAI: Entiendo, es una buena oportunidad para divertirse nuestro modelo se encarga de la parte técnica, lo que evitaría complicaciones. ¿Te gustaría que te enviara un resumen por email?\nUser: Venga, José, míralo.\nAI: Entendido, creo que ha habido un error con el nombre. Soy Violeta. Para enviarte el resumen necesitaría tu email.\nUser: Sí, Nayib G p arroba Gmail punto com.\nAI: Había apuntado como Nayib, email Nayib G arroba Gmail punto com. ¿Todo correcto?\nUser: No, no está bien. Es n a y I latina, m de Madrid, c. C p arroba Gmail punto com.\nAI: Perfecto. Te he anotado como Nayib García email Nayib arroba Gmail punto com. ¿Todo correcto?\nUser: No,\nAI: Entendido, Nayib, ¿podrías confirmarme el email correcto por favor?\nUser: ¿Te lo deletreo mejor o qué?\nAI: Sí, por favor, me ayudaría mucho.\nUser: N\nAI: Perfecto, sigue, por favor.\nUser: a\nAI: Gracias, continuemos.\nUser: y\nAI: Gracias,\n",
+      "summary": "Violeta from General Protector Ciberseguridad called Nayib to discuss offering cybersecurity services to his company's 500 SME clients, suggesting it could be a new revenue stream without needing to build their own technical team. Nayib showed interest and agreed to receive an email summary, but the call ended while Violeta struggled to correctly record his name and email address despite multiple attempts.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c70c0-9b37-7ffd-95c1-21123a170e40",
+      "created_at": "2026-02-18T12:36:36.791Z",
+      "phone": "+34642174921",
+      "empresa": "",
+      "duration": 0,
+      "ended_reason": "assistant-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad, quién hablo, por favor?\nUser: Hola, buenas, Nayib.\nAI: Encantada, Nayib. Oye, una pregunta rápida. ¿Ofrecéis algún servicio de ciberseguridad a vuestros clientes?\nUser: No,\nAI: Precisamente por eso os llamo, muchas empresas se IT están añadiendo ciberseguridad sin montar equipo propio. ¿Os interesaría saber cómo?\nUser: No, no, yo creo que sí, no sé.\nAI: Entiendo que pueda parecer confuso, ¿te gustaría que te enviara un resumen por email sobre cómo podemos colaborar\nUser: Va, sí, eso sí, vale.\nAI: Perfecto. ¿Me podrías dar tu dirección de correo electrónico?\nUser: Sí, Manolo arroba Gmail punto com.\nAI: ¿Te has apuntado como Manolo email Manolo arroba Gmail punto com. ¿Todo correcto?\nUser: No, a ver, Manolo arroba Gmail punto com.\nAI: Perfecto, te he apuntado como Manolo, email Manolo arroba Gmail punto com. ¿Todo correcto?\nUser: Manolo y mi Manolo no, el el mi email es Manolo arroba Gmail punto com.\nAI: Gracias por la aclaración. Perfecto. Te había apuntado como Manolo, email Manolo arroba Gmail punto com. ¿Todo correcto?\nUser: Sí,\nAI: Perfecto, pues te enviaremos toda la información Muchas gracias por tu tiempo. Que tengas un buen día.\nUser: Buen día,\n",
+      "summary": "Violeta from General Protection Ciberseguridad called Nayib to inquire if his company offers cybersecurity services. Upon learning they do not, Violeta offered to send information on how IT companies can add cybersecurity without building their own team. Nayib agreed and provided \"Manolo@Gmail.com\" to receive the details.",
+      "tool_calls_count": 2,
+      "tool_calls": [
+        {
+          "name": "general_protech_save_confirmed_data",
+          "args": "{\n  \"name\": \"Manolo\",\n  \"email\": \"Manolo@gmail.com\",\n  \"phone\": \"\",\n  \"tipo_empresa\": \"\",\n  \"interes_recurrentes\": \"\"\n}"
+        },
+        {
+          "name": "end_call",
+          "args": "{}"
+        }
+      ]
+    },
+    {
+      "id": "019c7059-7d1e-7006-8cbc-6454e91a1c92",
+      "created_at": "2026-02-18T10:43:58.878Z",
+      "phone": "+34902313110",
+      "empresa": "Consultoria Elite Estudios E Inversiones Sl",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad ¿Con quién hablo, por favor?\nUser: ¿A ese destino? Por favor, dirígete a la sección configuración en\n",
+      "summary": "An AI agent from General Protection Ciberseguridad introduced herself as Violeta. The user then began to give an instruction about navigating to a configuration section, but the call ended abruptly as the customer terminated it.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7057-ab19-7116-bb1c-e75a05ee3479",
+      "created_at": "2026-02-18T10:41:59.577Z",
+      "phone": "+34952603475",
+      "empresa": "Consultoria Integral De La Empresa Y El Municipio Sl.",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad. ¿Con quién hablo, por favor?\n",
+      "summary": "The call began with Violeta from General Protection Ciberseguridad introducing herself and asking for the caller's name. The call ended abruptly as the customer disconnected before providing any information.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7055-d161-766e-9e2d-5afdff93cce3",
+      "created_at": "2026-02-18T10:39:58.305Z",
+      "phone": "+34900923533",
+      "empresa": "Sothis Enterprise Resource Planning S.l.",
+      "duration": 0,
+      "ended_reason": "silence-timed-out",
+      "transcript": "AI: Hola, soy Violeta de General Protector Ciberseguridad. ¿Con quién hablo, por favor?\nUser: Persona con la que desea hablar, márquela ahora. Si necesita asistencia, seleccione una de las siguientes opciones. Pulse 1 para soporte o asistencia técnica. Pulse 2 para nuevos clientes. Pulse 3 para presupuestos, renovaciones y facturación clientes. Pulse 4 para compras, Para cualquier otra consulta, por favor, manténgase a la espera. Gracias.\nAI: Entiendo, parece que no hay nadie disponible en este momento.\nUser: Welcome Danunce School.\nAI: Voy a colgar la llamada. Que tengas un buen día.\nUser: Prest 2\nAI: Lo siento, pero no puedo asistirte en eso. Te deseo un buen día. Hasta luego.\n",
+      "summary": "The AI, Violeta from General Protector Ciberseguridad, attempted to connect with a person but was met with an automated IVR system. After realizing no human was available, the AI tried to end the call, but the user's system briefly played \"Welcome Danunce School\" and then \"Prest 2\" before the AI definitively concluded it could not assist and hung up.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7054-0198-766e-9e2b-9dc4fedc7993",
+      "created_at": "2026-02-18T10:37:59.576Z",
+      "phone": "+34934591706",
+      "empresa": "Diagonal Informatica Y Comunicaciones Sl",
+      "duration": 0,
+      "ended_reason": "assistant-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad. ¿Con quién hablo, por favor?\nUser: Mantinguues a la espera.\n",
+      "summary": "Violeta from General Protection Ciberseguridad initiated the call, introducing herself and asking for the recipient's name. The recipient immediately asked her to wait, and the call subsequently ended.",
+      "tool_calls_count": 1,
+      "tool_calls": [
+        {
+          "name": "end_call",
+          "args": "{}"
+        }
+      ]
+    },
+    {
+      "id": "019c7052-2edf-7338-9e1b-c4da94ccb848",
+      "created_at": "2026-02-18T10:36:00.095Z",
+      "phone": "+34917395257",
+      "empresa": "Inforyde Sistemas Sl",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad. ¿Con quién hablo, por favor?\nUser: Sí,\nAI: Oye,\n",
+      "summary": "An AI agent named Violeta from General Protection Ciberseguridad introduced herself and asked for the user's name. The call ended abruptly after the user responded with \"Sí\" and the AI began to speak again, with the customer terminating the call.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7050-599c-7bb0-aa59-16467cb211d4",
+      "created_at": "2026-02-18T10:33:59.964Z",
+      "phone": "+34937847037",
+      "empresa": "Virtualize To Serve Servicios Consultoria Informatica Sl",
+      "duration": 0,
+      "ended_reason": "assistant-ended-call",
+      "transcript": "AI: Hola, soy Violeta General Protection. ¿Con quién hablo, por favor?\nUser: Para hablar con ventas, pulse 2. Para hablar con administración, pulse 3. O espere y en breve le atenderemos.\n",
+      "summary": "The call began with an AI identifying itself as Violeta General Protection and asking who it was speaking with. The user's response was an automated menu offering options for sales or administration, or to wait. The call ended shortly after this automated exchange without further interaction.",
+      "tool_calls_count": 1,
+      "tool_calls": [
+        {
+          "name": "end_call",
+          "args": "{}"
+        }
+      ]
+    },
+    {
+      "id": "019c704e-8516-7444-bc64-a7e3f2ed60e5",
+      "created_at": "2026-02-18T10:32:00.022Z",
+      "phone": "+34946850147",
+      "empresa": "A3r Servicios De Consultoria Informatica 2013 Sociedad Limitada.",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad, ¿Con quién hablo, por favor?\nUser: No sé, usted se ha llamado, ¿qué qué qué es lo que necesita?\nAI: Oye, una pregunta rápida.\nUser: Esto es esto es una empresa A 3 R Consulting, ¿qué qué Dígame.\nAI: Oye, una pregunta rápida. ¿Ofrecéis algún servicio de ciberseguridad a vuestros clientes?\nUser: Sí, a ver, no sé ni quién es usted, ¿me quiere decir qué es lo que necesita o o?\nAI: Genial, entonces esto os encaja perfecto. ¿Qué tipo\n",
+      "summary": "Violeta from General Protection Ciberseguridad called A3R Consulting to inquire if they offer cybersecurity services to their clients. The user, representing A3R Consulting, expressed confusion about the caller's identity and purpose. The AI quickly suggested their services would be a perfect fit, but the call was abruptly ended by the customer.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c704c-af32-7aa0-9c55-3367f0b7f1ba",
+      "created_at": "2026-02-18T10:29:59.730Z",
+      "phone": "+34944159688",
+      "empresa": "Ecna Informatica Sl",
+      "duration": 0,
+      "ended_reason": "assistant-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protector Ciberseguridad. ¿Con quién hablo, por favor?\nUser: Ahora, si no lo conoce, espere un momento enseguida le atenderemos en Centralita.\n",
+      "summary": "Violeta from General Protector Ciberseguridad introduced herself and asked who she was speaking with. The user responded by instructing her to wait for the switchboard if she didn't know them, and the call ended shortly thereafter.",
+      "tool_calls_count": 1,
+      "tool_calls": [
+        {
+          "name": "end_call",
+          "args": "{}"
+        }
+      ]
+    },
+    {
+      "id": "019c704a-dc2c-7006-8cae-573ed8c0b5e0",
+      "created_at": "2026-02-18T10:28:00.172Z",
+      "phone": "+34976468338",
+      "empresa": "Albada Informatica Sl",
+      "duration": 0,
+      "ended_reason": "silence-timed-out",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad. ¿Con quién hablo, por favor?\nUser: En breves instantes le atenderemos.\nAI: Entendido, estaré aquí.\n",
+      "summary": "An AI from General Protection Ciberseguridad, named Violeta, initiated the call and asked for the user's name. The user responded with a generic message indicating they would be attended to shortly, and the call subsequently ended due to silence.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7049-02e0-7ff7-90a7-fc13807591a7",
+      "created_at": "2026-02-18T10:25:59.008Z",
+      "phone": "+34918834769",
+      "empresa": "Gargola Informatica Sll",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad. ¿Con quién hablo, por favor?\nUser: ¿Para qué? ¿Tú era? ¿Hola?\nAI: Oye, una pregunta rápida. ¿Ofrecéis algún servicio de ciberseguridad a vuestros clientes?\nUser: Es que no te entendí, claro, nadie nadie que pueda hablar contigo, llama mañana y pregunta por Juan Carlos. No, no,\nAI: ¿Podrías pasarme con Juan Carlos o darme su contacto\nUser: Llámale mañana, espero no estar en oficina en Estados Unidos. ¿De acuerdo?\nAI: Entendido, muchas gracias por tu tiempo. Que tengas\nUser: Gracias, hasta luego.\nAI: un buen día.\n",
+      "summary": "Violeta from General Protection Ciberseguridad called to inquire if the recipient's company offers cybersecurity services and to speak with Juan Carlos. The user was uncooperative, stating no one was available to speak and instructing Violeta to call back tomorrow for Juan Carlos, who might be in the US. The call ended without Violeta obtaining the requested information or speaking to Juan Carlos.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7045-5685-7990-bffa-c285ce53f60c",
+      "created_at": "2026-02-18T10:21:58.277Z",
+      "phone": "+34981904815",
+      "empresa": "Desktop Informatica Sl",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad, ¿Con quién hablo, por favor?\n",
+      "summary": "An AI, Violeta from General Protection Ciberseguridad, initiated the call by introducing herself and asking for the recipient's name. The call ended abruptly shortly after, as the customer disconnected.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7043-8aeb-766e-9e1d-0b74d4b03f17",
+      "created_at": "2026-02-18T10:20:00.619Z",
+      "phone": "+34954932850",
+      "empresa": "Abd Informatica Sl",
+      "duration": 0,
+      "ended_reason": "silence-timed-out",
+      "transcript": "AI: Hola, soy Violeta ciberseguridad quién hablo, por favor?\nUser: Veremos, Gracias.\nAI: Oye, una pregunta rápida. ¿Ofrecéis algún servicio de ciberseguridad a vuestros clientes?\n",
+      "summary": "Violeta from cybersecurity introduced herself and asked the user's name. After a brief, non-committal response from the user, Violeta quickly inquired if the user's company offers cybersecurity services to its clients. The call then ended due to silence.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7041-b31b-7444-bc5a-1b24e9c5b5f4",
+      "created_at": "2026-02-18T10:17:59.835Z",
+      "phone": "+34937886241",
+      "empresa": "Inta Informatica Sl",
+      "duration": 0,
+      "ended_reason": "assistant-ended-call",
+      "transcript": "AI: Hola, soy Violeta General Protection Ciberseguridad. ¿Con quién hablo, por favor?\nUser: Con Miguel. Por?\nAI: Encantada, Miguel. Oye, una pregunta rápida. ¿Ofrecéis algún servicio de ciberseguridad a vuestros clientes?\nUser: Bien, No, actualmente nuestra empresa ya no está está inactiva. Y en proceso de cierre por jubilación de todos los que estamos aquí trabajando.\nAI: Entiendo, Miguel. Muchas gracias por la información. ¿Te gustaría que te enviara algún detalle sobre nuestro\nUser: Vale,\nAI: soluciones por si en el futuro lo necesitáis?\nUser: No, no creo, no creo, de verdad. Gracias.\nAI: Entendido, Miguel, muchas gracias por tu tiempo, que tengas un buen día.\nUser: Igualmente.\n",
+      "summary": "Violeta from General Protection Ciberseguridad called Miguel to inquire if his company offers cybersecurity services. Miguel informed her that his company is currently inactive and in the process of closing due to staff retirement. He declined an offer to receive information about cybersecurity solutions.",
+      "tool_calls_count": 1,
+      "tool_calls": [
+        {
+          "name": "end_call",
+          "args": "{}"
+        }
+      ]
+    },
+    {
+      "id": "019c703f-dff2-7990-bff3-b21d9bf0e149",
+      "created_at": "2026-02-18T10:16:00.242Z",
+      "phone": "+34955979808",
+      "empresa": "Millenium Informatica Y Servicios Tecnologicos Sl",
+      "duration": 0,
+      "ended_reason": "assistant-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad. ¿Con quién hablo, por favor?\nUser: Para administración, pulse 2. Para servicio técnico pulse 3. Para cualquier otra consulta por favor espere. Su llamada es importante para nosotros. En unos instantes le atenderemos. Gracias.\n",
+      "summary": "Violeta from General Protection Ciberseguridad initiated the call, introducing herself and asking for the recipient's name. The user's line responded with an automated menu system, offering options for administration or technical service, and stating that an agent would attend shortly. The call ended without a direct conversation between Violeta and a person.",
+      "tool_calls_count": 1,
+      "tool_calls": [
+        {
+          "name": "end_call",
+          "args": "{}"
+        }
+      ]
+    },
+    {
+      "id": "019c703e-0790-7773-87df-5226c82908a7",
+      "created_at": "2026-02-18T10:13:59.312Z",
+      "phone": "+34949208230",
+      "empresa": "Grupo Informatica Notarial Sociedad Limitada.",
+      "duration": 0,
+      "ended_reason": "silence-timed-out",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad. ¿Con quién hablo, por favor?\nUser: Que para agilizar la comunicación y resolución de incidencias, recomendamos el uso del nuevo portal de soporte a clientes de GN 3 60, accesible directamente desde el botón ayuda online del programa de gestión. Si aún no dispone de sus claves de acceso y necesita reportar una incidencia, puede escribirnos a soporte arroba GN 3 60 punto es y nos pondremos en contacto a la mayor brevedad posible. Gracias por tu colaboración y por confiar en GN 3 60.\nAI: Oye, una pregunta rápida. ¿Ofrecéis algún servicio de ciberseguridad a vuestros clientes?\n",
+      "summary": "An AI from General Protection Ciberseguridad initiated the call, but the other party responded with an automated message promoting their new support portal for GN360 and providing an email for incident reporting. The AI then asked if GN360 offers cybersecurity services to its clients before the call ended due to silence.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c703c-3687-7338-9e05-c95d19c968ff",
+      "created_at": "2026-02-18T10:12:00.263Z",
+      "phone": "+34937715184",
+      "empresa": "Informatica Activa S.l.",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protector Ciberseguridad. ¿Con quién hablo, por favor?\nUser: Con Ángel Modos, dígame.\nAI: Encantada, Ángel. Oye, una pregunta rápida. ¿Ofrecéis algún servicio de ciberseguridad a vuestros clientes?\nUser: Déjame un momento que lo consulto con el encargado,\nAI: Claro, tómate tu tiempo, estoy aquí para cualquier consulta que tengas.\nUser: Sí, ofrecemos ciberseguridad.\nAI: Genial, Entonces, esto os encaja perfecto. ¿Qué tipo de clientes soléis atender?\nUser: Disculpa, si ya lo entiendo por primera vez la conversación y ese mismo jefe no está y yo no puedo darle esa información. ¿Sabe? Quieres llame por la tarde, que está la TF,\nAI: Entiendo.\nUser: sino mañana.\nAI: No hay problema, Ángel. ¿Podrías darme un número de teléfono donde pueda contactarlo?\nUser: A este mismo, el no tienen teléfono de empresa.\nAI: Perfecto. Te dejé apuntado el número. ¿Te gustaría que te envíe un resumen por email para que lo revisen?\nUser: Vale, sí, gracias. Adiós, pues muy bien.\n",
+      "summary": "Violeta from General Protector Ciberseguridad called Ángel Modos to inquire if his company offers cybersecurity services to clients. Ángel initially confirmed they do, but then stated he couldn't provide further details as his manager was unavailable and suggested calling back later. The call concluded with Violeta agreeing to send an email summary of their services, as Ángel's manager uses the same contact number.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c703a-60ac-7990-bfef-01f0a98b44b9",
+      "created_at": "2026-02-18T10:09:59.980Z",
+      "phone": "+34938713061",
+      "empresa": "Informatica Cardedeu Sl.",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad. ¿Con quién hablo, por favor?\n",
+      "summary": "The call began with Violeta from General Protection Ciberseguridad introducing herself and asking for the caller's name. The call ended abruptly as the customer disconnected before providing any information.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7038-8af5-7aa0-9c40-673ae72c0392",
+      "created_at": "2026-02-18T10:07:59.733Z",
+      "phone": "+34944004410",
+      "empresa": "Informatica Integral Vasca Sl",
+      "duration": 0,
+      "ended_reason": "customer-did-not-answer",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad. ¿Con quién hablo, por favor?\nUser: La señal.\nAI: Oye, una pregunta rápida.\nUser: Lo sentimos, su mensaje es demasiado corto. Por favor, deje su mensaje después de la señal.\n",
+      "summary": "",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7036-b6a3-7444-bc50-3125cd082095",
+      "created_at": "2026-02-18T10:05:59.843Z",
+      "phone": "+34910000645",
+      "empresa": "Informatica Forense Sl",
+      "duration": 0,
+      "ended_reason": "assistant-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protector Ciberseguridad. ¿Con quién hablo, por favor?\nUser: 1 6 4 4 5.\nAI: Parece que he tenido\nUser: No contesta.\n",
+      "summary": "Violeta from General Protector Ciberseguridad initiated the call, asking for the user's identity. The user provided a number, but then stated that the intended party was not answering, leading to the call's termination.",
+      "tool_calls_count": 1,
+      "tool_calls": [
+        {
+          "name": "end_call",
+          "args": "{}"
+        }
+      ]
+    },
+    {
+      "id": "019c7034-e21f-7112-a17b-3a059f126162",
+      "created_at": "2026-02-18T10:03:59.903Z",
+      "phone": "+34934140066",
+      "empresa": "Informatica Medica Sl",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad, ¿Con quién hablo, por favor?\nUser: Médica, marque 1. Para hablar con tecnopreven, marque 2.\nAI: Parece que no hay nadie disponible en este momento. Voy a finalizar la\n",
+      "summary": "An AI from General Protection Ciberseguridad initiated the call, asking for the user's name. The user responded with a menu option instead of identifying themselves. The AI then stated that no one was available and proceeded to end the call.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7031-31c3-7bb8-bd63-61ca930f8f42",
+      "created_at": "2026-02-18T09:59:58.147Z",
+      "phone": "+34917823420",
+      "empresa": "S2i Consultoria Informatica Sa",
+      "duration": 0,
+      "ended_reason": "silence-timed-out",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad, ¿Con quién hablo, por favor?\n",
+      "summary": "Violeta from General Protection Ciberseguridad initiated the call, introducing herself and asking to whom she was speaking. The call subsequently ended due to silence, indicating no response from the other party.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c702f-6460-7aa6-a849-608400cd190d",
+      "created_at": "2026-02-18T09:58:00.032Z",
+      "phone": "+34915922480",
+      "empresa": "Exis Inversiones En Consultoria Informatica Y Tecnologia Sa",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protector Ciberseguridad, quién hablo, por favor?\nUser: Estás en un Assuite.\nAI: Oye, una pregunta rápida. ¿Ofrecéis algún servicio de ciberseguridad a vuestros clientes?\n",
+      "summary": "Violeta from General Protector Ciberseguridad initiated a call with a representative from Assuite. She asked if Assuite offers cybersecurity services to its clients, but the call ended abruptly before she received an answer.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c702d-886a-7551-badc-8d65c2cb9de2",
+      "created_at": "2026-02-18T09:55:58.186Z",
+      "phone": "+34913260960",
+      "empresa": "Lex Consultores Digital Sl.",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad, ¿Con quién hablo, por favor?\nUser: ¿Qué es lo que quieres?\nAI: Oye, una pregunta rápida. ¿Ofrecéis algún servicio de ciberseguridad a vuestros clientes?\nUser: Están mis jefes.\nAI: ¿Podrías pasarme con la persona encargada de esto o darme su contacto?\n",
+      "summary": "Violeta from General Protection Ciberseguridad called to inquire if the user's company offers cybersecurity services to its clients. The user was uncooperative, stating their bosses were present, prompting Violeta to ask to speak with the responsible person or get their contact information. The call ended shortly after this request.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c702b-b510-7bb0-aa37-3af1a3aedc5e",
+      "created_at": "2026-02-18T09:53:58.544Z",
+      "phone": "+34926251664",
+      "empresa": "Core Mkt Sl.",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad, ¿Con quién hablo, por favor?\nUser: Puede ser grabada, gracias.\nAI: Entendido. Gracias por la aclaración. Oye, una pregunta rápida. ¿Ofrecéis algún servicio de ciberseguridad a vuestros clientes?\nUser: Hola, buenos días.\nAI: Buenos días. Oye, una pregunta rápido. Encantada,\nUser: Buenos días.\nAI: Buenos días. Oye, una pregunta rápida. ¿Ofrecéis algún servicio de ciberseguridad a vuestros clientes?\nUser: Perdona, ¿a dónde me llamaste?\nAI: Te llamé para ofrecer el programa de partners de General Protection Ciberseguridad. Oye, ¿ofrecéis algún servicio de ciberseguridad a vuestros clientes?\nUser: ¿Cómo te llamas?\nAI: Soy Violeta de General Protection Ciberseguridad. Oye, una pregunta rápida, ¿ofrecéis algún servicio de ciberseguridad a vuestros clientes?\nUser: ¿De qué empresa me llamas?\nAI: Te llamo de General Protection Ciberseguridad. Oye, una pregunta rápida. ¿Ofrecéis algún servicio de ciberseguridad a vuestros clientes?\n",
+      "summary": "Violeta from General Protection Ciberseguridad called a user to offer a partner program, repeatedly asking if the user's company provides cybersecurity services to their clients. The user, however, consistently deflected by asking for Violeta's name and company affiliation. The call ended with the user hanging up without answering Violeta's primary question.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7029-e5a1-7ff7-9089-6a52500a1aa3",
+      "created_at": "2026-02-18T09:51:59.905Z",
+      "phone": "+34932192545",
+      "empresa": "Sips Consultoria Informatica S.l.",
+      "duration": 0,
+      "ended_reason": "customer-did-not-answer",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad, ¿Con quién hablo, por favor?\nUser: La señal.\nAI: Oye, una pregunta rápida. ¿Ofrecéis\nUser: Cuelgue para dejar el mensaje o pulse 1 si desea más opciones. Por favor, elija una opción.\n",
+      "summary": "",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7026-3bb2-7bbc-b408-e690d3713174",
+      "created_at": "2026-02-18T09:47:59.794Z",
+      "phone": "+34923199148",
+      "empresa": "Webprogramacion Consultoria Informatica Sl.",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad. ¿Con quién hablo, por favor?\nUser: Pues, ¿cuál es el motivo de la llamada?\nAI: Oye, una pregunta rápida, ¿ofrecéis algún servicio de ciber seguridad a vuestros clientes?\nUser: ¿Con quién con quién habló?\nAI: Lo siento, pero eso no es necesario, solo quería saber si ofrecéis servicios de ciberseguridad.\nUser: Oye, una ¿de dónde me llamas?\nAI: Estoy llamando de General Protection Ciberseguridad, solo quería saber si ofrecéis servicios de ciberseguridad a vuestros clientes.\nUser: Y de no, pero quiero decir, ¿de qué ciudad me llamas?\nAI: La sede de General Protection Ciberseguridad está en Madrid, Pero volviendo al tema, ¿no ofrecéis algún servicio de ciberseguridad a vuestros clientes?\nUser: Oye, ¿qué tal de día hace hoy por Madrid?\nAI: No estoy segura del clima, pero espero estés teniendo un buen día. Solo quería saber si ofrecéis servicios de ciberseguridad con a vuestros clientes.\nUser: Esta llamada está siendo grabada.\nAI: Entiendo, gracias por informarme, solo quiero saber si ofrecéis\nUser: Pero\nAI: servicios de ciberseguridad a vuestros clientes.\nUser: seguridad de la de la buena, quieres decir?\nAI: Sí, exactamente, me refiero a ciberseguridad de calidad. Tenéis algún servicio relacionado con eso para vuestros clientes?\nUser: Pues ahora mismo no te sabría decir,\nAI: Precisamente por eso os llamo. Muchas empresas AIT están añadiendo ciber seguridad sin montar equipo propio. ¿Os interesaría?\nUser: Oye, ¿cómo cómo cómo te llamas?\nAI: Soy Violeta, de General Protection Ciberseguridad. Estoy aquí para hablar sobre ciberseguridad. ¿Te gustaría conocer más sobre cómo podemos ayudar?\nUser: Qué funciones, ¿eres de ChatGPT, eres de Copilot, eres de Gemini? ¿Qué qué es DeepSit quizá? ¿Quién está moviendo tu tu inteligencia?\nAI: Que os puede interesar mucho. ¿Me das un minuto?\nUser: Pues eso no, eso lo primero que tenías era que haber dicho que eres un asistente virtual, y que no estoy hablando con una persona.\nAI: Tienes razón, soy una asistente virtual, pero estoy aquí para ayudarte. ¿Te gustaría saber sobre nuestras soluciones de ciberseguridad?\nUser: Si yo tuviera que preguntar por alguien en tu empresa, ¿por quién tendría que preguntar?\nAI: ¿Podrías pasarme con la persona encargada de ciberseguridad o darme su contacto?\nUser: Justo al contrario, yo quiero hablar con la persona de tu empresa que lleva estas cosas.\nAI: Entiendo, pero soy yo quien gestiona estas llamadas. ¿Podrías darme el contacto de la persona encargada en tu empresa?\nUser: Es que estás hablando con una IEA,\nAI: Sí, soy una asistente virtual, pero te cuento algo que os puede interesar mucho. ¿Me das un minuto?\nUser: quiero saber lo inteligente que eres, ¿sabes sumar 2 más 2?\nAI: Claro, tú meter sas 2 es 4, Pero volviendo a ciberseguridad, ¿te gustaría conocer cómo podemos ayudar a tu empresa?\nUser: Me gustaría saberlo siempre y cuando me puedas hablar con un poquito acento gallego.\nAI: Entiendo, pero no puedo cambiar mi acento, sin embargo, puedo ofrecerte información sobre nuestras soluciones de ciberseguridad. ¿Te gustaría saber más?\nUser: Que yo si no hablamos con acento gallego no me va a interesar seguir hablando.\nAI: Entiendo tu preferencia, pero no puedo modificar mi acento. Si decides que te interesa la ciberseguridad, estaré aquí para ayudarte.\nUser: Pues no me interesa.\nAI: Entendido, muchas gracias.\n",
+      "summary": "An AI assistant from General Protection Ciberseguridad called to inquire if the recipient's company offers cybersecurity services and to potentially pitch their own. The recipient, realizing they were speaking with an AI, became evasive and then challenged the AI, ultimately ending the call because the AI could not speak with a Galician accent.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7022-8e84-7aa6-a836-89ce3b493032",
+      "created_at": "2026-02-18T09:43:58.852Z",
+      "phone": "+34944792030",
+      "empresa": "Serikat Consultoria E Informatica Sociedad Anonima",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad. ¿Con quién hablo, por favor?\nUser: Con la recepción, ¿con quién quería hablar?\nAI: Oye, una pregunta rápida. ¿Ofrecéis algún servicio de ciberseguridad a vuestros clientes?\nUser: Pues se tendría que, este, estar llamando a grupo EDART. Grupo de tiene muchas impresiones. Una de ellas,\nAI: ¿Podrías pasarme con la persona\nUser: es una consultoría de informática, le podría pasar con esa empresa.\nAI: ¿Podría darme el contacto de la persona encargada de ciberseguridad o su email?\nUser: Por política de empresa no le puedo facilitar esos datos por un tema de protección de datos, desplazamiento o correo electrónico. Era arroba Art punto es.\nAI: Entendido, muchas gracias. Entiendo,\n",
+      "summary": "Violeta from General Protection Ciberseguridad called reception to inquire if the company offers cybersecurity services to its clients and to obtain contact information for the relevant person. The reception directed her to their IT consultancy, Grupo EDART, but declined to provide direct contact details due to company policy and data protection. Violeta understood and ended the call.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7020-beef-7bb5-8c5b-b16a1c4d3673",
+      "created_at": "2026-02-18T09:42:00.175Z",
+      "phone": "+34986172638",
+      "empresa": "Solvos Consultoria Informatica Sl.",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta General Protection Ciberseguridad. ¿Con quién hablo, por favor?\nUser: ¿Hola? ¿Hola?\nAI: Oye, una pregunta rápida. ¿Ofrecéis algún servicio de ciberseguridad a vuestros clientes?\nUser: ¿Hola?\nAI: Oye, una pregunta rápida. ¿Ofrecéis algún servicio de ciberseguridad\n",
+      "summary": "An AI from General Protection Ciberseguridad, named Violeta, initiated the call and attempted to ask the user if they offer cybersecurity services. However, the user repeatedly responded with \"Hola?\" suggesting they might not have heard or understood the AI, leading to an abrupt end to the call.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c701e-e7db-7441-9435-95b3697f38c3",
+      "created_at": "2026-02-18T09:39:59.579Z",
+      "phone": "+34982215955",
+      "empresa": "Tci Galicia Consultoria Informatica Sl",
+      "duration": 0,
+      "ended_reason": "assistant-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad. ¿Con quién hablo, por favor?\nUser: Con Cristina.\nAI: Encantada, Cristina. Oye, una pregunta rápida, ¿ofrecéis algún servicio de ciberseguridad a vuestros clientes?\nUser: Sí. Lo ofrecemos, pero ahora mismo no le puedo atender, Pero, ¿por qué pregunta?\nAI: Entiendo, Cristina. Muchas empresas y te\nUser: Quién pregunta?\nAI: están sumando ciberseguridad sin necesidad de un equipo propio. ¿Os interesaría que te enviara información por email?\nUser: No, lo siento, no, gracias. No, no nos interesa.\nAI: Entendido, muchas gracias por tu tiempo. Que tengas un buen día.\nUser: Gracias. Igualmente, buen día, hasta luego.\n",
+      "summary": "Violeta from General Protection Ciberseguridad called Cristina to inquire if her company offers cybersecurity services and to offer sending information about their own services. Cristina confirmed they offer services but was unavailable to talk and explicitly stated they were not interested. Violeta then politely ended the call.",
+      "tool_calls_count": 1,
+      "tool_calls": [
+        {
+          "name": "end_call",
+          "args": "{}"
+        }
+      ]
+    },
+    {
+      "id": "019c701b-4bbc-7006-8c7a-02508d282de6",
+      "created_at": "2026-02-18T09:36:03.004Z",
+      "phone": "+34935173550",
+      "empresa": "Wib Consultoria Informatica Sl.",
+      "duration": 0,
+      "ended_reason": "silence-timed-out",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad. ¿Con quién hablo, por favor?\nAI: Oye, una pregunta rápida, ¿ofrecéis algún servicio de ciberseguridad\nUser: Prameu 2. O as pareu I en bres moments, usad tendreem.\nAI: a vuestros clientes? Oye, una pregunta rápida. ¿Ofrecéis algún servicio de ciberseguridad a vuestros clientes?\n",
+      "summary": "An AI from General Protection Ciberseguridad initiated the call, asking the recipient if they offer cybersecurity services to their clients. The recipient's response was unintelligible, leading the AI to repeat the question. The call subsequently ended due to silence.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7019-6ade-7ffd-9508-28207bc78c3e",
+      "created_at": "2026-02-18T09:33:59.902Z",
+      "phone": "+34912290665",
+      "empresa": "Navex Consultoria Informatica Sl.",
+      "duration": 0,
+      "ended_reason": "silence-timed-out",
+      "transcript": "AI: Hola, soy Violeta General Protection. ¿Con quién hablo, por favor?\n",
+      "summary": "An AI, Violeta General Protection, initiated the call by introducing itself and asking for the caller's identity. The call subsequently ended due to a period of silence.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7015-c2e3-7112-a152-df82a65bcded",
+      "created_at": "2026-02-18T09:30:00.291Z",
+      "phone": "+34976254376",
+      "empresa": "Infozara Consultoria Informatica Sl",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad, quién hablo, por favor?\n",
+      "summary": "The AI, Violeta from General Protection Ciberseguridad, introduced herself and asked for the caller's identity. The call ended abruptly shortly after, as the customer disconnected.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7012-17db-7ff7-906d-7326e0d0180c",
+      "created_at": "2026-02-18T09:25:59.899Z",
+      "phone": "+34948365888",
+      "empresa": "Sodetic Consultoria Informatica Sl",
+      "duration": 0,
+      "ended_reason": "assistant-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad, ¿Con quién hablo, por favor?\nUser: ¿Qué qué necesitas?\nAI: Oye, una pregunta rápida, ¿ofrecéis algún servicio de ciberseguridad a\nUser: Sí, algunos sí, pero ¿qué qué necesitabas?\nAI: Genial, entonces esto os encaja perfecto. ¿Qué tipo de clientes soléis atender?\nUser: Pues depende, pero ¿qué qué necesitas? ¿De dónde me llamas? ¿Qué qué quieres?\nAI: Te llamo de General Protection Ciberseguridad para ofrecer nuestro programa de partners. Me gustaría saber qué tipo de clientes atendéis.\nUser: Bueno, a ver, es que tampoco es que estemos centrados.\nAI: Entiendo, es normal. ¿Cuántos clientes gestionáis aproximadamente?\nUser: En en en ese área. Es que no te voy a no te voy a contestar, o sea, no necesitas venga a hacer preguntas y tampoco me estás explicando gran cosa.\nAI: Disculpa si no he sido claro. Ofrecemos un programa para que empresas como la vuestra incorporen ciberseguridad sin necesidad de personal técnico. ¿Os interesaría saber más?\nUser: Pues no, en principio no, me interesa. Gracias.\nAI: Entendido, muchas gracias por tu tiempo. Que tengas un buen día.\nUser: Igualmente, buenos días.\n",
+      "summary": "The AI, representing General Protection Ciberseguridad, called to offer a partner program that allows companies to incorporate cybersecurity services without needing technical staff. The AI attempted to qualify the user by asking about their current cybersecurity offerings and client base, but the user became frustrated by the questioning without clear context. Ultimately, the user expressed no interest in the program, and the call concluded.",
+      "tool_calls_count": 1,
+      "tool_calls": [
+        {
+          "name": "end_call",
+          "args": "{}"
+        }
+      ]
+    },
+    {
+      "id": "019c7010-453a-7aac-ba51-e937eac24976",
+      "created_at": "2026-02-18T09:24:00.442Z",
+      "phone": "+34934439201",
+      "empresa": "Areny Sanuy Consultoria I Informatica Sl",
+      "duration": 0,
+      "ended_reason": "silence-timed-out",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad. ¿Con quién hablo, por favor?\nUser: Nick Markeu, par la resta, mantenida la espera. Gracias.\nAI: Encantada, Nick. Oye, una pregunta rápida, ¿ofrecéis algún servicio de ciberseguridad a vuestros clientes?\n",
+      "summary": "An AI from General Protection Ciberseguridad initiated a call with Nick Markeu, introducing itself and its company. The AI then asked Nick if his company offers cybersecurity services to its clients. The call subsequently ended due to a silence timeout.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c700e-6b7d-7444-bc21-122e93d57e3a",
+      "created_at": "2026-02-18T09:21:59.165Z",
+      "phone": "+34913526002",
+      "empresa": "Antel Consultoria Informatica Y Telecomunicaciones Sl",
+      "duration": 0,
+      "ended_reason": "assistant-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad. ¿Con quién hablo, por favor?\nUser: ¿Qué es lo que desea?\nAI: Oye, una pregunta rápida. ¿Ofrecéis algún servicio de ciberseguridad a vuestros clientes?\nUser: Momento, porque yo no soy la persona indicada, es que ahora mismo no, la persona no le puede contestar.\nAI: ¿Podrías pasarme con la persona encargada de esto o darme su contacto?\nUser: No, ya le digo que ahora mismo no puede ponerse, que puede llamar más tarde.\nAI: Entendido, muchas gracias por tu tiempo. Que tengas buen día.\nUser: Adiós.\n",
+      "summary": "Violeta from General Protection Ciberseguridad called to inquire if the recipient's company offers cybersecurity services to their clients. The person who answered stated they were not the correct contact and the responsible person was unavailable, suggesting Violeta call back later. Violeta accepted this and ended the call.",
+      "tool_calls_count": 1,
+      "tool_calls": [
+        {
+          "name": "end_call",
+          "args": "{}"
+        }
+      ]
+    },
+    {
+      "id": "019c700c-9811-7444-bc1f-6b49a9bcd26a",
+      "created_at": "2026-02-18T09:19:59.505Z",
+      "phone": "+34918135186",
+      "empresa": "Iberowan Consultoria Informatica Sl",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad, ¿Con quién hablo, por favor?\n",
+      "summary": "An AI, Violeta from General Protection Ciberseguridad, initiated the call by introducing herself and asking for the recipient's name. The call ended abruptly shortly after, as the customer disconnected.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c700a-ca13-788b-8fe5-45e62b517957",
+      "created_at": "2026-02-18T09:18:01.235Z",
+      "phone": "+34965142408",
+      "empresa": "Tainforma Consultoria Informatica Sl",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta General Protection Ciberseguridad. ¿Con quién hablo, por favor?\n",
+      "summary": "The call began with an AI, Violeta from General Protection Ciberseguridad, introducing herself and asking for the caller's name. The call ended shortly after, as the customer disconnected before providing any information.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7008-ed4e-7338-9dce-3c90fdefd41c",
+      "created_at": "2026-02-18T09:15:59.182Z",
+      "phone": "+34961188102",
+      "empresa": "Servinco Consultoria Informatica Sl.",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta, de General Protection Ciberseguridad, ¿Con quién hablo, por favor?\n",
+      "summary": "The call began with Violeta from General Protection Ciberseguridad introducing herself and asking for the caller's name. The conversation ended abruptly as the customer terminated the call immediately after this introduction.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7007-191d-7bbc-b3ed-0de4ce9e7eff",
+      "created_at": "2026-02-18T09:13:59.325Z",
+      "phone": "+34965675839",
+      "empresa": "Informatica David Ros Sl",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad, ¿Con quién hablo, por favor?\nUser: Pedir tinta o material, la forma más rápida es mandar un correo a avisos arroba informáticas punto com, que se grabará automáticamente en nuestro programa de gestión Si no espere y pulse 1 para avisos o servicio técnico, 2 para programación, 3 para administración. Gracias.\nAI: Oye, una pregunta rápida, ¿ofrecéis algún servicio de ciberseguridad\n",
+      "summary": "Violeta from General Protection Ciberseguridad initiated a call, which was met with an automated message detailing how to order supplies or reach various departments. She then quickly asked if the company offers cybersecurity services before the call concluded.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7005-4053-7441-9421-483d10d7a685",
+      "created_at": "2026-02-18T09:11:58.291Z",
+      "phone": "+34976375307",
+      "empresa": "Infysof Sl",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protector Ciberseguridad. ¿Con quién hablo, por favor?\n",
+      "summary": "Violeta from General Protector Ciberseguridad initiated the call, introducing herself and asking who she was speaking with. The call ended abruptly as the customer terminated it before a conversation could begin.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7003-707c-7116-bacb-4c758edf54ee",
+      "created_at": "2026-02-18T09:09:59.548Z",
+      "phone": "+34916654730",
+      "empresa": "Caps Soluciones Integrales Sl",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection Ciberseguridad, quién hablo, por favor?\nUser: Llamando al grupo CAPS CC instalaciones. Visite nuestra tienda online, informática directo punto com. Conoce la extensión, márquela. Para hablar con informática directo punto com, pulse 1.\nAI: Oye,\nUser: Servicio técnico informático, pulse 2. Contabilidad, pulse 3. Piezas y repuestos, pulse 4. Siniestros y tramitación de avisos, pulse 5. Para otras opciones, espere, por favor.\nAI: Óyeme, una pregunta rápida.\nAI: Oye, una pregunta rápida, ¿ofrecéis algún servicio de ciber\nUser: Por favor, teclee los dígitos de selección.\nAI: Oye, una pregunta rápida, ¿ofrecéis algún servicio de ciberseguridad a vuestros clientes?\nUser: Espere un momento.\nAI: Claro, espero.\nUser: ¿Está usted llamando al grupo CAPS CC instalaciones. Visite nuestra tienda online, informática directo punto com.\nAI: Oye, una pregunta rápida,\nUser: Conoce la extensión, márquela.\nAI: Oye,\nUser: Para hablar con informática directo punto com, pulse 1.\nAI: Oye, una pregunta.\nUser: Servicio técnico informático, pulse 2. Contabilidad, pulse 3. Piezas y repuestos, pulse 4. Siniestros y tramitación de avisos, pulse 5. Para otras opciones, espere, por favor.\nAI: Oye, una pregunta rápida. ¿Ofrecéis algún servicio de ciberseguridad a vuestros\nUser: Por favor, teclee los dígitos de selección.\nAI: Oye, una pregunta rápida, ¿ofrecéis algún servicio de ciber seguridad a vuestros clientes?\nUser: Espere un momento, ¿Está usted llamando al grupo CAPS CC instalaciones. Visite nuestra tienda online, informática directo punto com.\nAI: Oye, una pregunta rápida.\nUser: Conoce la extensión, márquela.\nAI: Oye.\nUser: Para hablar con informática directo punto com pulse 1. Servicio técnico informático, pulse 2. Contabilidad, pulse 3. Piezas y repuestos, pulse 4. Siniestros y tramitación de avisos, pulse 5. Para otras opciones, espere, por favor.\nAI: Oye, una pregunta rápida. ¿Ofrecéis algún servicio de ciberseguridad a vuestros clientes?\nUser: Por favor, teclee los dígitos de selección.\nAI: Oye, estoy intentando contactar con vosotros\nUser: Espere un momento.\n",
+      "summary": "An AI agent from General Protection Ciberseguridad repeatedly attempted to ask if the recipient offered cybersecurity services to their clients. However, an automated interactive voice response (IVR) system continuously interrupted the AI, listing menu options and requesting a selection, preventing the AI from completing its query or reaching a human. The call ultimately ended with the AI unable to get an answer to its question.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c7001-99d2-7bb0-aa0e-1016e34d3f4f",
+      "created_at": "2026-02-18T09:07:59.058Z",
+      "phone": "+34971754181",
+      "empresa": "Serinbal 7 Sl",
+      "duration": 0,
+      "ended_reason": "customer-did-not-answer",
+      "transcript": "AI: Hola, soy Violeta General Protection. ¿Con quién hablo, por favor?\nUser: A ver, deje un mensaje después del tono. Pulse la tecla almohadilla para finalizar la grabación. El servicio de mensajes de voz no ha detectado un mensaje. Por favor, comience la grabación de su mensaje después del tono.\n",
+      "summary": "",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    },
+    {
+      "id": "019c6fff-c603-7aa0-9c05-5f13677ccf73",
+      "created_at": "2026-02-18T09:05:59.299Z",
+      "phone": "+34986480324",
+      "empresa": "Informatica As G Sl",
+      "duration": 0,
+      "ended_reason": "customer-ended-call",
+      "transcript": "AI: Hola, soy Violeta de General Protection. Ciberseguridad. ¿Con quién hablo, por favor?\nUser: Lo siento, pero no puedo atender llamadas comerciales que estoy en trabajo, ¿vale? Venga, un saludo.\nAI: Entiendo perfectamente.\n",
+      "summary": "Violeta from General Protection (cybersecurity) initiated the call. The user immediately declined, stating they were working and unable to take commercial calls, then ended the conversation. Violeta acknowledged the user's reason before the call concluded.",
+      "tool_calls_count": 0,
+      "tool_calls": []
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+﻿============================================================
+  VIOLETA ASSISTANT UPDATE SCRIPT V3
+  Changes:
+  - New data collection rules with {{tel_contacto}}
+  - Required phone field in tool
+  - PASO 3B: Early email collection
+  - Improved tool description
+============================================================
+
+­ƒôï Getting current assistant configuration...
+  Status: 200
+  Current prompt length: 11571 chars
+
+­ƒÜÇ Step 1/2: Updating config parameters...
+  Ô£à Config updated
+
+­ƒÜÇ Step 2/2: Updating system prompt + tools...
+  Ô£à Prompt + tools updated successfully!
+
+­ƒôè Verification:
+  - maxDurationSeconds: 180
+  - silenceTimeoutSeconds: 10
+  - Prompt length: 13572 chars
+  - Has 'tel_contacto': True
+  - Has 'RECOGIDA DE DATOS': True
+  - Has 'PASO 3B': True
+  - Has 'ANTI-REPETICI├ôN': True
+  - Has 'CONTESTADORES': True
+  - Has 'ESCUCHA ACTIVA': True
+  - Tools count: 2
+    - general_protech_save_confirmed_data: required=['phone', 'name'], desc='OBLIGATORIO: Guarda los datos del contacto. Llama a esta herramienta SIEMPRE que...'
+    - end_call: required=[], desc='Terminar la llamada cuando te despidas...'
+
+­ƒöì Checking webhook...
+  ÔÜá´©Å Webhook returned 404
+
+============================================================
+  DONE
+============================================================

@@ -1,0 +1,359 @@
+﻿Total: 100 calls
+
+======================================================================
+  CALLS WITH save_confirmed_data TOOL
+======================================================================
+
+______________________________________________________________________
+Empresa: 
+Phone: +34642174921
+Created: 2026-02-19T10:55:37
+Duration: 0s
+Ended: customer-ended-call
+
+Tool Calls:
+  -> general_protech_save_confirmed_data:
+     name: Nayib
+     email: nayib.gp@gmail.com
+     phone: 
+     tipo_empresa: IT - PYME
+     interes_recurrentes: Alto
+
+Transcript:
+  AI: Hola, soy Violeta de General Protec Ciberseguridad. Te llamÚ hace un momento y parece que se cort¾ la comunicaci¾n. Me habÝas dicho que te interesaba, ┐verdad? Retomo donde lo dejamos rapidÝsimo.
+User: Vale.
+AI: Genial, Nayib. Entonces, como comentÚ, para Pymes ofrecemos CyberSafe, que incluye protecci¾n completa 24 7 y un tÚcnico dedicado ┐Cußntos clientes gestionßis aproximadamente?
+User: 50 o asÝ, lo que te decÝa antes,
+AI: Perfecto, Nayib. Tener 50 clientes es un buen n·mero. ┐TenÚis ya alg·n proveedor de ciberseguridad o lo estßis buscando?
+User: No, no, no tenÝamos nada y tenÝamos nada previsto. De este tema, la verdad.
+AI: Entendido Nayib, porque eso os llamo. Muchas empresas City, como la vuestra, estßn incorporando ciberseguridad, ┐Te gustarÝa saber mßs sobre c¾mo podrÝamos colaborar y generar ingresos recurrentes?
+User: SÝ, no, a ver, ya me has contado un poco.
+AI: Claro, para resumir, nosotros gestionamos toda la parte tÚcnica mientras vosotros mantenÚis la relaci¾n con el cliente y cobrßis una comisi¾n recurrente. ┐Te gustarÝa que te envÝe mßs informaci¾n por email?
+User: SÝ, envÝame la puedo por email.
+AI: Perfecto, Nayib. Para enviarte la informaci¾n necesito tu email, por favor.
+User: Mira, te digo, Nayib G p arroba Gmail punto com.
+AI: Te he apuntado como Nayib email, Nayib g p arroba Gmail punto com. ┐Todo correcto?
+User: No, es n a y I latina n g. P arroba Gmail punto com.
+AI: Entonces, te he apuntado como Nayib email na I I latina n g punto pe arroba Gm
+  ... (354 chars more)
+
+______________________________________________________________________
+Empresa: 
+Phone: +34642174921
+Created: 2026-02-18T12:36:36
+Duration: 0s
+Ended: assistant-ended-call
+
+Tool Calls:
+  -> general_protech_save_confirmed_data:
+     name: Manolo
+     email: Manolo@gmail.com
+     phone: 
+     tipo_empresa: 
+     interes_recurrentes: 
+  -> end_call:
+
+Transcript:
+  AI: Hola, soy Violeta de General Protection Ciberseguridad, quiÚn hablo, por favor?
+User: Hola, buenas, Nayib.
+AI: Encantada, Nayib. Oye, una pregunta rßpida. ┐OfrecÚis alg·n servicio de ciberseguridad a vuestros clientes?
+User: No,
+AI: Precisamente por eso os llamo, muchas empresas se IT estßn a±adiendo ciberseguridad sin montar equipo propio. ┐Os interesarÝa saber c¾mo?
+User: No, no, yo creo que sÝ, no sÚ.
+AI: Entiendo que pueda parecer confuso, ┐te gustarÝa que te enviara un resumen por email sobre c¾mo podemos colaborar
+User: Va, sÝ, eso sÝ, vale.
+AI: Perfecto. ┐Me podrÝas dar tu direcci¾n de correo electr¾nico?
+User: SÝ, Manolo arroba Gmail punto com.
+AI: ┐Te has apuntado como Manolo email Manolo arroba Gmail punto com. ┐Todo correcto?
+User: No, a ver, Manolo arroba Gmail punto com.
+AI: Perfecto, te he apuntado como Manolo, email Manolo arroba Gmail punto com. ┐Todo correcto?
+User: Manolo y mi Manolo no, el el mi email es Manolo arroba Gmail punto com.
+AI: Gracias por la aclaraci¾n. Perfecto. Te habÝa apuntado como Manolo, email Manolo arroba Gmail punto com. ┐Todo correcto?
+User: SÝ,
+AI: Perfecto, pues te enviaremos toda la informaci¾n Muchas gracias por tu tiempo. Que tengas un buen dÝa.
+User: Buen dÝa,
+
+
+
+======================================================================
+  TODAY'S CALLS (2026-02-19)
+======================================================================
+Total today: 24
+With transcript: 23
+
+______________________________________________________________________
+#1 | Ingenieria De Procesos Informaticos Sl | +34967211637 | 0s | assistant-ended-call
+    Created: 2026-02-19T11:22:58
+    Tools: end_call
+    Transcript (112 chars):
+    AI: Hola, soy Violeta de General Protection ┐Con quiÚn hablo, por favor?
+User: Por favor, contin·e a la espera.
+
+
+______________________________________________________________________
+#2 | Memory Sistemas Informaticos S.l. | +34917230177 | 0s | assistant-ended-call
+    Created: 2026-02-19T11:20:59
+    Tools: end_call
+    Transcript (101 chars):
+    AI: Hola, soy Violeta de General Protection ┐Con quiÚn hablo, por favor?
+User: Contin·e a la espera.
+
+
+______________________________________________________________________
+#3 | Tecsys Proyectos Informaticos Sl | +34916175496 | 0s | customer-ended-call
+    Created: 2026-02-19T11:18:59
+    Transcript (167 chars):
+    AI: Hola, soy Violeta, de General Protection Ciberseguridad ┐Con quiÚn hablo, por favor?
+User: No sabe usted d¾nde estß llamando, mßs lo llevamos. Buenas buenos dÝas.
+
+
+______________________________________________________________________
+#4 | Inhasoft Sistemas Informaticos Sl | +34962601337 | 0s | customer-ended-call
+    Created: 2026-02-19T11:16:59
+    Transcript (84 chars):
+    AI: Hola, soy Violeta de General Protection Hola, soy Violeta de General Protection
+
+
+______________________________________________________________________
+#5 | Sis Sistemas Informaticos Sur S.l. | +34916650273 | 0s | silence-timed-out
+    Created: 2026-02-19T11:14:59
+    Transcript (191 chars):
+    AI: Hola, soy Violeta de General Protection ┐Con quiÚn hablo, por favor?
+User: Gracias.
+AI: De nada. Oye, una pregunta rßpida. ┐OfrecÚis alg·n servicio de ciberseguridad a vuestros clientes?
+
+
+______________________________________________________________________
+#6 | Gd Suministros Informaticos Sa | +34934100321 | 0s | customer-ended-call
+    Created: 2026-02-19T11:12:59
+    Transcript (755 chars):
+    AI: Hola, soy Violeta, de General Protection Ciberseguridad, ┐Con quiÚn hablo, por favor?
+User: Con Natalia,
+AI: Encantada, Natalia, Oye, una pregunta rßpida, ┐ofrecÚis alg·n servicio de ciberseguridad a vuestros clientes?
+User: Pues no lo sÚ, no te puedo dar esa informaci¾n yo.
+AI: Entiendo, gracias por tu sinceridad. ┐PodrÝas pasarme con la persona encargada de esto
+User: Vale, adi¾s. No, en estos momentos no estß, me pillas que estÚ pendiente un cliente y no puedo estar pendiente de ti.
+AI: Lo comprendo perfectamente.
+User: Vale, muchas gracias.
+AI: ┐PodrÝas darme el contacto de la persona encargada o su correo?
+User: No, no estoy no estoy autorizada. ┐Vale? Muchas gracias, adi¾s, dÝas.
+AI: Entendido, Entendido, muchas gracias por tu tiempo.
+
+
+______________________________________________________________________
+#7 | Montajes Informaticos Barcelona Sa | +34932654505 | 0s | customer-ended-call
+    Created: 2026-02-19T11:10:59
+    Transcript (87 chars):
+    AI: Hola, soy Violeta, de General Protect Ciberseguridad, ┐Con quiÚn hablo, por favor?
+
+
+______________________________________________________________________
+#8 | Lusol Sistemas Informaticos Sl | +34928279034 | 0s | assistant-ended-call
+    Created: 2026-02-19T11:08:59
+    Tools: end_call
+    Transcript (320 chars):
+    AI: Hola, soy Violeta de General Protection ┐Con quiÚn hablo, por favor?
+User: Relacionada con el seguimiento de una orden de trabajo, por favor, envÝenos un correo a soporte arroba Luzol punto es. Si estß relacionada con la consulta de precio y disponibilidad de un request, Si quiere hablar con una operadora, espere.
+
+
+______________________________________________________________________
+#9 | Geima Sistemas Informaticos Sl | +34969333266 | 0s | assistant-ended-call
+    Created: 2026-02-19T11:06:59
+    Tools: end_call
+    Transcript (251 chars):
+    AI: Hola, soy Violeta, de General Protection ┐Con quiÚn hablo, por favor?
+User: Enseguida serß atendido. Le recordamos que para cualquier problema o duda puede escribirnos un mail a incidencias arroba GEIMA punto es o un WhatsApp a este mismo n·mero.
+
+
+______________________________________________________________________
+#10 | Pronamic Ingenieros Informaticos Srl Laboral | +34959106000 | 0s | customer-ended-call
+    Created: 2026-02-19T11:04:59
+    Transcript (46 chars):
+    AI: Hola, soy Violeta, de General Protection,
+
+
+______________________________________________________________________
+#11 | Gp Sistemas Y Cableados Informaticos Sl | +34966555172 | 0s | assistant-ended-call
+    Created: 2026-02-19T11:01:00
+    Tools: end_call
+    Transcript (117 chars):
+    AI: Hola, soy Violeta, de General Protection Ciberseguridad, ┐Con quiÚn hablo, por favor?
+User: DespuÚs de la se±al,
+
+
+______________________________________________________________________
+#12 | Sistemas Informaticos Iberia Sl. | +34965671866 | 0s | customer-ended-call
+    Created: 2026-02-19T10:59:00
+    Transcript (766 chars):
+    AI: Hola, soy Violeta, de General Protection Ciberseguridad, con quien hablo, por favor?
+User: Le atiende Oscar, buenos dÝas.
+AI: Encantada, Ëscar. Una pregunta rßpida, ┐ofrecÚis alg·n servicio de ciberseguridad a vuestros clientes?
+User: ┐Con quiÚn hablo?
+AI: Soy Violeta de General Protection Ciberseguridad. Os contacto porque tenemos un modelo de colaboraci¾n muy rentable para empresas IT, ┐OfrecÚis servicios de tecnologÝa a vuestros clientes?
+User: Disculpa, cualquier consulta de este tipo nos lo puedes enviar al siguiente correo. Es info arroba
+AI: Entiendo, Ëscar. ┐PodrÝas facilitarme la direcci¾n de correo
+User: s c sysne punto net.
+AI: ┐Te habÚis apuntado el correo como info arroba s c cisne punto net? ┐Todo correcto?
+User: Ajß. Ojalß, hasta luego,
+
+
+______________________________________________________________________
+#13 | D H Consultores Informaticos Sl | +34915422046 | 0s | assistant-ended-call
+    Created: 2026-02-19T10:56:59
+    Tools: end_call
+    Transcript (820 chars):
+    AI: Hola, soy Violeta de General Protection. ┐Con quiÚn hablo, por favor?
+User: Soy Cristina.
+AI: Encantada Cristina. Oye, una pregunta rßpida, ofrece alg·n servicio de ciberseguridad a vuestros clientes?
+User: No, no, no, no.
+AI: Precisamente por eso os llamo. Muchas empresas AIT estßn a±adidas ciberseguridad sin montar equipo propio. ┐Os interesarÝa saber c¾mo
+User: Es que, ┐sabes quÚ pasa? Que no no estß mi jefe, que es el que lleva todos esos esos temas, ┐vale? Si puedes llamar en otro momento, es que no estß.
+AI: Entiendo. Gracias por la aclaraci¾n.
+User: Vale,
+AI: ┐PodrÝas pasarme con tu jefe o darme su contacto?
+User: No, es que Úl ahora mismo no estß. Por eso te digo, Que si puedes llamar en otro momento.
+AI: Entendido. Muchas gracias por tu tiempo, Cristina. Que tengas un buen dÝa.
+User: Igualmente.
+
+
+______________________________________________________________________
+#14 | Sin nombre | +34642174921 | 0s | customer-ended-call
+    Created: 2026-02-19T10:55:37
+    Tools: general_protech_save_confirmed_data
+    Transcript (1854 chars):
+    AI: Hola, soy Violeta de General Protec Ciberseguridad. Te llamÚ hace un momento y parece que se cort¾ la comunicaci¾n. Me habÝas dicho que te interesaba, ┐verdad? Retomo donde lo dejamos rapidÝsimo.
+User: Vale.
+AI: Genial, Nayib. Entonces, como comentÚ, para Pymes ofrecemos CyberSafe, que incluye protecci¾n completa 24 7 y un tÚcnico dedicado ┐Cußntos clientes gestionßis aproximadamente?
+User: 50 o asÝ, lo que te decÝa antes,
+AI: Perfecto, Nayib. Tener 50 clientes es un buen n·mero. ┐TenÚis ya alg·n proveedor de ciberseguridad o lo estßis buscando?
+User: No, no, no tenÝamos nada y tenÝamos nada previsto. De este tema, la verdad.
+AI: Entendido Nayib, porque eso os llamo. Muchas empresas City, como la vuestra, estßn incorporando ciberseguridad, ┐Te gustarÝa saber mßs sobre c¾mo podrÝamos colaborar y generar ingresos recurrentes?
+User: SÝ, no, a ver, ya me has contado un poco.
+AI: Claro, para resumir, nosotros gestionamos toda la parte tÚcnica mientras vosotros mantenÚis la relaci¾n con 
+    ... (854 chars more)
+
+______________________________________________________________________
+#15 | Gisa Consultores Informaticos Sl | +34947244436 | 0s | assistant-ended-call
+    Created: 2026-02-19T10:54:59
+    Tools: end_call
+    Transcript (216 chars):
+    AI: Hola, soy Violeta de General Protection Ciberseguridad, ┐Con quiÚn hablo, por favor?
+User: Agencia estß relacionada con SAP, Pulse 2 si necesita soporte tÚcnico. Pulse 3 si necesita contactar con administraci¾n.
+
+
+______________________________________________________________________
+#16 | Assessoria Consultoria Capital Sl | +34936535223 | 0s | customer-ended-call
+    Created: 2026-02-19T10:52:59
+    Transcript (277 chars):
+    AI: Hola, soy Violeta, de General Protection ┐Con quiÚn hablo, por favor?
+User: ┐Capital? Buen dÝa.
+AI: Buen dÝa. Oye, una pregunta rapida.
+User: SÝ, buenos dÝas.
+AI: Encantada, buen dÝa. Oye, una pregunta rßpida. ┐OfrecÚis alg·n servicio de ciberseguridad a vuestros clientes
+
+
+______________________________________________________________________
+#17 | Consultoria Asociados San Julian Sl. | +34923218303 | 0s | customer-ended-call
+    Created: 2026-02-19T10:50:59
+    Transcript (438 chars):
+    AI: Hola, soy Violeta, de General Protection ┐Con quiÚn hablo, por favor?
+User: ConsultorÝa, dÝgame.
+AI: Encantada. Oye, una pregunta rßpida,
+User: SÝ,
+AI: ┐ofrecÚis alg·n servicio de ciberseguridad a vuestros clientes?
+User: No, no, no, a tanto no llegamos.
+AI: Precisamente por eso os llamo.
+User: Mira, pero perdona, lo siento, ┐eh? Vale, es que no, no me interesa.
+AI: Entendido, muchas gracias por tu tiempo. Que tengas un buen dÝa.
+
+
+______________________________________________________________________
+#18 | Consultoria Gasher Asociados Sl | +34918598604 | 0s | customer-ended-call
+    Created: 2026-02-19T10:48:58
+    Tools: end_call
+    Transcript (572 chars):
+    AI: Hola, soy Violeta de General Protection Ciberseguridad ┐Con quiÚn hablo, por favor?
+User: Habla con la consultorÝa de gases.
+AI: Oye, una pregunta rßpida.
+User: SÝ.
+AI: ┐OfrecÚis alg·n servicio de ciberseguridad a vuestros clientes?
+User: No, no, No, solamente somos una asesorÝa que hacemos impuestos. A aut¾nomos y empresas.
+AI: Precisamente por eso os llamo muchas empresas estßn a±adiendo ciberseguridad sin montar equipo propio. Os interesarÝa saber c¾mo
+User: No,
+AI: Entendido, muchas gracias por tu tiempo. Que tengas un buen dÝa.
+User: lo siento. Igualmente.
+
+
+______________________________________________________________________
+#19 | Sin nombre | +34917312946 | 0s | customer-ended-call
+    Created: 2026-02-19T10:47:15
+    Transcript (841 chars):
+    AI: Hola, soy Violeta, de General Protection, ┐con quiÚn hablo, por favor?
+User: Buenos dÝas, mira, es que tenÝamos una llamada perdida. Somos, no sÚ si habÚis tomado la consultorÝa 53,
+AI: Buenos dÝas. Soy Violeta de General Protect Ciberseguridad. Os llamo porque tenemos un programa interesante para empresas IT. ┐OfrecÚis servicios de ciberseguridad a vuestros clientes?
+User: Perdona, es que no te he entendido.
+AI: Oye, te llamo porque tenemos un modelo de colaboraci¾n
+AI: servicios de tecnologÝa a vuestros clientes.
+User: ┐Pero de d¾nde nos llamas?
+AI: Soy Violeta de General Protection Ciberseguridad, Os contacto porque tenemos un modelo de colaboraci¾n muy rentable para empresas City. ┐OfrecÚis servicios de tecnologÝa a vuestros clientes?
+User: No estamos interesados, gracias.
+AI: Entendido, muchas gracias por tu tiempo. Que
+
+
+______________________________________________________________________
+#20 | Consultoria Ambiental Gesmat Sl | +34938467879 | 0s | customer-ended-call
+    Created: 2026-02-19T10:46:59
+    Transcript (891 chars):
+    AI: Hola, soy Violeta, de General Protection, ┐Con quiÚn hablo, por favor?
+User: Con Nuria. Con Yesmat,
+AI: Encantada, Nuria. Oye, una pregunta rßpida. ┐OfrecÚis alg·n servicio de ciberseguridad a vuestros clientes?
+User: No. No sÚ, me parece que no.
+AI: Precisamente por eso os llamo. Muchas empresas AIT estßn a±adiendo ciber seguridad sin montar equipo propio. ┐Os interesarÝa saber c¾mo?
+User: Pues es que no sÚ, tendrÝa que llamar por la tarde. O si o si
+AI: Lo entiendo, Nuria. ┐Puedo enviarte un resumen por email para que lo revises mßs tarde?
+User: Vale, pues sÝ.
+AI: Solo necesitarÝa tu direcci¾n de correo.
+User: Mira, administraci¾n sin la n, arroba
+AI: ┐PodrÝas confirmarme el correo completo, por favor?
+User: sÝ, administraci¾n arroba consultorÝa GSMAD punto com.
+AI: Te he apuntado como administraci¾n email administraci¾n arroba consultorÝa gsmad punto com. ┐Todo correcto?
+
+
+______________________________________________________________________
+#21 | Consultoria 53 Sl | +34917312946 | 0s | assistant-ended-call
+    Created: 2026-02-19T10:44:59
+    Tools: end_call
+    Transcript (114 chars):
+    AI: Hola, soy Violeta, de General Protection, ┐Con quiÚn hablo, por favor?
+User: Por favor, contin·e a la espera.
+
+
+______________________________________________________________________
+#22 | B A C Assessoria I Consultoria Sl | +34937805066 | 0s | silence-timed-out
+    Created: 2026-02-19T10:42:58
+    Transcript (75 chars):
+    AI: Hola, soy Violeta, de General Protection. ┐Con quiÚn hablo, por favor?
+
+
+______________________________________________________________________
+#23 | CiberPerros | +34642174921 | 0s | silence-timed-out
+    Created: 2026-02-19T10:40:58
+    Transcript (1133 chars):
+    AI: Hola, soy Violeta de General Protection Ciberseguridad ┐Con quiÚn hablo, por favor?
+User: Con Nayib.
+AI: Encantada, Nayib. Oye, una pregunta rßpida. ┐OfrecÚis alg·n servicio de ciberseguridad a vuestros clientes?
+User: No.
+AI: Precisamente por eso os llamo, Muchas empresas IT estßn a±adiendo ciberseguridad sin montar equipo propio, ┐Os interesarÝa saber c¾mo?
+User: Bueno, sÝ, bueno, yo que sÚ, cuÚntame.
+AI: En resumen, ┐vosotros presentßis ciberseguridad a vuestros clientes? ┐Nosotros gestionamos comisi¾n recurrente? ┐Te cuento un poco mßs?
+User: Vale.
+AI: Perfecto. Nuestro modelo de partners permite que vosotros presentÚis nuestros servicios de ciberseguridad mientras nosotros gestionamos toda la parte tÚcnica, ┐PodrÝas compartir quÚ tipo de de clientes solÚis atender?
+User: PyMEs sobre todo.
+AI: Genial, entonces esto os encaja perfecto. Para PyMEs ofrecemos CyberSafe, que incluye protecci¾n completa 24 7 y un tÚcnico dedicado. ┐Cußntos clientes gestionßis aproximadamente?
+User: P
+    ... (133 chars more)
+
+
+======================================================================
+  CALLS WITH INTEREST (>30s, person responded)
+======================================================================

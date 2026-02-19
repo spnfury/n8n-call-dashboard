@@ -1,0 +1,8 @@
+{
+    "name": "Test Webhook",
+    "phone": "+34000000000",
+    "email": "test@test.com",
+    "notas": "Test desde script",
+    "tipo_empresa": "IT - PYME",
+    "interes_recurrentes": "Alto"
+}

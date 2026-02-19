@@ -1,6 +1,7 @@
 const API_BASE = 'https://nocodb.srv889387.hstgr.cloud/api/v2/tables';
 const CALL_LOGS_TABLE = 'm013en5u2cyu30j';
 const XC_TOKEN = 'jx3uoKeVaidZLF7M0skVb9pV6yvNsam0Hu-Vfeww';
+const VAPI_API_KEY = '852080ba-ce7c-4778-b218-bf718613a2b6';
 
 let allCalls = [];
 let currentCallsPage = [];
@@ -12,6 +13,24 @@ async function fetchData(tableId, limit = 100) {
     });
     const data = await res.json();
     return data.list || [];
+}
+
+const STATUS_MAP = {
+    'voicemail': 'Buzón de Voz',
+    'customer-ended-call': 'Llamada Finalizada',
+    'assistant-ended-call': 'Llamada Finalizada',
+    'call-in-progress.error-sip-outbound-call-failed-to-connect': 'Fallo de Conexión',
+    'call-in-progress.error-vapi-internal': 'Error Interno',
+    'call-initiated': 'Iniciando...',
+    'no-answer': 'Sin Respuesta',
+    'busy': 'Ocupado'
+};
+
+function formatStatus(reason) {
+    if (!reason) return '-';
+    // Clean and match
+    const clean = reason.toLowerCase().trim();
+    return STATUS_MAP[clean] || reason;
 }
 
 function formatDate(dateStr, short = false) {
@@ -117,15 +136,21 @@ function renderDashboard(calls) {
         const vapiId = call.vapi_call_id || call.lead_id || call.id || call.Id || '-';
         const shortId = vapiId.length > 20 ? vapiId.substring(0, 8) + '...' : vapiId;
 
+        const isSyncing = !call.ended_reason || call.ended_reason === 'Call Initiated' || call.ended_reason.toLowerCase().includes('in progress');
+        const statusText = isSyncing ? '<span class="loading" style="font-size: 11px; color: var(--accent);">⏳ Sincronizando...</span>' : formatStatus(call.ended_reason);
+
+        // Preview notes
+        const notePreview = call.notes ? `<span class="badge" style="background: rgba(99, 102, 241, 0.1); color: var(--accent); white-space: normal; line-height: 1.2; text-align: left;">${call.notes.substring(0, 30)}${call.notes.length > 30 ? '...' : ''}</span>` : '-';
+
         tr.innerHTML = `
             <td><code style="font-family: monospace; color: var(--accent); font-size: 11px;" title="${vapiId}">${shortId}</code></td>
             <td><strong>${call.lead_name || '-'}</strong></td>
             <td class="phone">${call.phone_called || '-'}</td>
             <td>${formatDate(call.call_time || call.CreatedAt)}</td>
-            <td>${call.ended_reason || '-'}</td>
+            <td>${statusText}</td>
             <td><span class="badge ${getBadgeClass(call.evaluation)}">${call.evaluation || 'Pendiente'}</span></td>
             <td>${formatDuration(call.duration_seconds)}</td>
-            <td class="table-notes">${call.notes || '-'}</td>
+            <td class="table-notes">${notePreview}</td>
             <td>
                 <button class="action-btn" data-index="${index}">👁 Ver Detalle</button>
             </td>
@@ -194,11 +219,79 @@ function closeModal() {
     document.getElementById('modal-audio').pause();
 }
 
+async function syncCallStatus(vapiCallId, recordId) {
+    if (!vapiCallId || vapiCallId === '-' || vapiCallId.startsWith('39')) return; // Ignore invalid or manual IDs
+
+    try {
+        const res = await fetch(`https://api.vapi.ai/call/${vapiCallId}`, {
+            headers: { 'Authorization': `Bearer ${VAPI_API_KEY}` }
+        });
+
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // Only update if the call has ended and we have a reason
+        if (data.status === 'ended' && data.endedReason) {
+            console.log(`Syncing call ${vapiCallId}: ${data.endedReason}`);
+
+            const updatePayload = {
+                id: recordId, // Primary key for NocoDB
+                ended_reason: data.endedReason,
+                duration_seconds: data.durationSeconds || 0,
+                cost: data.cost || 0,
+                transcript: data.transcript || '',
+                recording_url: data.recordingUrl || '',
+                evaluation: data.analysis?.successEvaluation || 'Completed'
+            };
+
+            // NocoDB V2 PATCH expects an array of objects for /records
+            await fetch(`${API_BASE}/${CALL_LOGS_TABLE}/records`, {
+                method: 'PATCH',
+                headers: { 'xc-token': XC_TOKEN, 'Content-Type': 'application/json' },
+                body: JSON.stringify([updatePayload])
+            });
+
+            return true; // Signal update
+        }
+    } catch (err) {
+        console.error(`Error syncing ${vapiCallId}:`, err);
+    }
+    return false;
+}
+
+async function syncPendingCalls() {
+    const pending = allCalls.filter(c =>
+        !c.ended_reason ||
+        c.ended_reason === 'Call Initiated' ||
+        c.ended_reason.toLowerCase().includes('in progress')
+    );
+
+    if (pending.length === 0) return;
+
+    console.log(`Checking ${pending.length} pending calls...`);
+
+    let updatedAny = false;
+    for (const call of pending) {
+        const success = await syncCallStatus(call.vapi_call_id, call.id || call.Id);
+        if (success) updatedAny = true;
+    }
+
+    if (updatedAny) {
+        // Refresh local data silenty
+        const updatedCalls = await fetchData(CALL_LOGS_TABLE);
+        allCalls = updatedCalls;
+        applyFilters();
+    }
+}
+
 async function loadData() {
     try {
         const calls = await fetchData(CALL_LOGS_TABLE);
         allCalls = calls;
         applyFilters();
+
+        // Start background sync for pending ones
+        syncPendingCalls();
     } catch (err) {
         console.error('Error:', err);
         document.getElementById('call-table').innerHTML = '<tr><td colspan="9" class="empty-state">Error al cargar datos</td></tr>';
@@ -218,7 +311,7 @@ async function saveNotes() {
         const res = await fetch(`${API_BASE}/${CALL_LOGS_TABLE}/records`, {
             method: 'PATCH',
             headers: { 'xc-token': XC_TOKEN, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ Id: id, notes: notes })
+            body: JSON.stringify([{ id: id, notes: notes }])
         });
 
         if (res.ok) {

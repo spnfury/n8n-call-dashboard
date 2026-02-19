@@ -1,0 +1,327 @@
+{
+    "name": "Vapi Confirmed Data Webhook",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "vapi-confirmed-data",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-node",
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                220,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Extract the data from Vapi tool call\nconst body = $input.first().json.body;\n\n// Vapi apiRequest tool sends the body fields directly\nconst name = body?.name || body?.message?.toolCalls?.[0]?.function?.arguments?.name || '';\nconst email = body?.email || body?.message?.toolCalls?.[0]?.function?.arguments?.email || '';\nconst phone = body?.phone || body?.message?.toolCalls?.[0]?.function?.arguments?.phone || '';\nconst notas = body?.notas || body?.message?.toolCalls?.[0]?.function?.arguments?.notas || '';\nconst tipo_empresa = body?.tipo_empresa || body?.message?.toolCalls?.[0]?.function?.arguments?.tipo_empresa || '';\nconst interes = body?.interes_recurrentes || body?.message?.toolCalls?.[0]?.function?.arguments?.interes_recurrentes || '';\n\n// Also check if data came at root level (Vapi apiRequest sends directly)\nconst finalName = name || $input.first().json.name || '';\nconst finalEmail = email || $input.first().json.email || '';\nconst finalPhone = phone || $input.first().json.phone || '';\nconst finalNotas = notas || $input.first().json.notas || '';\nconst finalTipo = tipo_empresa || $input.first().json.tipo_empresa || '';\nconst finalInteres = interes || $input.first().json.interes_recurrentes || '';\n\n// Build notes string\nconst notesParts = [];\nif (finalName) notesParts.push(`Contacto: ${finalName}`);\nif (finalEmail) notesParts.push(`Email: ${finalEmail}`);\nif (finalPhone) notesParts.push(`Tel: ${finalPhone}`);\nif (finalTipo) notesParts.push(`Tipo: ${finalTipo}`);\nif (finalInteres) notesParts.push(`Interés: ${finalInteres}`);\nif (finalNotas) notesParts.push(`Notas: ${finalNotas}`);\n\nreturn [{\n  json: {\n    name: finalName,\n    email: finalEmail,\n    phone: finalPhone,\n    notas: finalNotas,\n    tipo_empresa: finalTipo,\n    interes_recurrentes: finalInteres,\n    notes_text: notesParts.join(' | '),\n    has_data: (finalName || finalEmail || finalPhone) ? true : false,\n    raw_body: JSON.stringify($input.first().json)\n  }\n}];"
+            },
+            "id": "parse-data",
+            "name": "Parse Vapi Data",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                440,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict"
+                    },
+                    "conditions": [
+                        {
+                            "id": "condition-has-data",
+                            "leftValue": "={{ $json.has_data }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "id": "check-data",
+            "name": "Has Data?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                660,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "https://nocodb.srv889387.hstgr.cloud/api/v2/tables/m013en5u2cyu30j/records",
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "where",
+                            "value": "=(phone_called,like,%{{ $json.phone }}%)"
+                        },
+                        {
+                            "name": "sort",
+                            "value": "-CreatedAt"
+                        },
+                        {
+                            "name": "limit",
+                            "value": "1"
+                        }
+                    ]
+                },
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "xc-token",
+                            "value": "jx3uoKeVaidZLF7M0skVb9pV6yvNsam0Hu-Vfeww"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "find-record",
+            "name": "Find NocoDB Record",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                880,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const response = $input.first().json;\nconst records = response.list || [];\nconst parseData = $('Parse Vapi Data').first().json;\n\nif (records.length > 0) {\n  const record = records[0];\n  return [{\n    json: {\n      record_id: record.id,\n      lead_name: record.lead_name,\n      notes_text: parseData.notes_text,\n      found: true\n    }\n  }];\n} else {\n  // No record found by phone - try to find latest record\n  return [{\n    json: {\n      record_id: null,\n      notes_text: parseData.notes_text,\n      found: false\n    }\n  }];\n}"
+            },
+            "id": "extract-record",
+            "name": "Extract Record ID",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1100,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict"
+                    },
+                    "conditions": [
+                        {
+                            "id": "condition-found",
+                            "leftValue": "={{ $json.found }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "id": "record-found",
+            "name": "Record Found?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                1320,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "method": "PATCH",
+                "url": "=https://nocodb.srv889387.hstgr.cloud/api/v2/tables/m013en5u2cyu30j/records",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "xc-token",
+                            "value": "jx3uoKeVaidZLF7M0skVb9pV6yvNsam0Hu-Vfeww"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"id\": {{ $json.record_id }},\n  \"Data Confirmada\": 1,\n  \"Notes\": \"{{ $json.notes_text }}\"\n}",
+                "options": {}
+            },
+            "id": "update-record",
+            "name": "Update NocoDB Record",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1540,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={\n  \"result\": \"success\",\n  \"message\": \"Data confirmed and saved for {{ $('Extract Record ID').first().json.lead_name }}\"\n}",
+                "options": {}
+            },
+            "id": "respond-success",
+            "name": "Respond Success",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                1760,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={\n  \"result\": \"warning\",\n  \"message\": \"No matching record found for phone number\"\n}",
+                "options": {}
+            },
+            "id": "respond-not-found",
+            "name": "Respond Not Found",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                1540,
+                340
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={\n  \"result\": \"error\",\n  \"message\": \"No contact data provided\"\n}",
+                "options": {}
+            },
+            "id": "respond-no-data",
+            "name": "Respond No Data",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                880,
+                420
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Vapi Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Vapi Data": {
+            "main": [
+                [
+                    {
+                        "node": "Has Data?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Has Data?": {
+            "main": [
+                [
+                    {
+                        "node": "Find NocoDB Record",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Respond No Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Find NocoDB Record": {
+            "main": [
+                [
+                    {
+                        "node": "Extract Record ID",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract Record ID": {
+            "main": [
+                [
+                    {
+                        "node": "Record Found?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Record Found?": {
+            "main": [
+                [
+                    {
+                        "node": "Update NocoDB Record",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Respond Not Found",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Update NocoDB Record": {
+            "main": [
+                [
+                    {
+                        "node": "Respond Success",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [],
+    "triggerCount": 0
+}
