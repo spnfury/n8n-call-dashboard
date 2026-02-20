@@ -1,0 +1,251 @@
+{
+    "name": "Scheduled Call Trigger",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "minutes",
+                            "minutesInterval": 1
+                        }
+                    ]
+                }
+            },
+            "id": "schedule-trigger",
+            "name": "Schedule Trigger",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "position": [
+                -400,
+                200
+            ],
+            "typeVersion": 1.1
+        },
+        {
+            "parameters": {
+                "authentication": "nocoDbApiToken",
+                "operation": "getAll",
+                "projectId": "p5xxqp29w9h8sb6",
+                "table": "m4044lwk0p6f721",
+                "where": "(key,eq,automation_enabled)",
+                "options": {}
+            },
+            "id": "get-config",
+            "name": "Get Automation Config",
+            "type": "n8n-nodes-base.nocoDb",
+            "position": [
+                -180,
+                200
+            ],
+            "typeVersion": 3,
+            "credentials": {
+                "nocoDbApiToken": {
+                    "id": "tV5VwP4BVmME7Vgo",
+                    "name": "NocoDB Token account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "id": "is-enabled",
+                            "leftValue": "={{ $json.value }}",
+                            "operator": {
+                                "operation": "equals",
+                                "type": "string"
+                            },
+                            "rightValue": "true"
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "id": "config-check",
+            "name": "Automation Enabled?",
+            "type": "n8n-nodes-base.filter",
+            "position": [
+                40,
+                200
+            ],
+            "typeVersion": 2.2
+        },
+        {
+            "parameters": {
+                "authentication": "nocoDbApiToken",
+                "operation": "getAll",
+                "projectId": "p5xxqp29w9h8sb6",
+                "table": "mgot1kl4sglenym",
+                "where": "(status,eq,Programado)~or(status,eq,Re-intentar)",
+                "options": {}
+            },
+            "id": "get-planned-leads",
+            "name": "Get Eligible Leads",
+            "type": "n8n-nodes-base.nocoDb",
+            "position": [
+                260,
+                200
+            ],
+            "typeVersion": 3,
+            "credentials": {
+                "nocoDbApiToken": {
+                    "id": "tV5VwP4BVmME7Vgo",
+                    "name": "NocoDB Token account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "id": "is-due",
+                            "leftValue": "={{ $json.fecha_planificada }}",
+                            "operator": {
+                                "operation": "before",
+                                "type": "dateTime"
+                            },
+                            "rightValue": "={{ $now }}"
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "id": "due-check",
+            "name": "Filter: Is Due?",
+            "type": "n8n-nodes-base.filter",
+            "position": [
+                480,
+                200
+            ],
+            "typeVersion": 2.2
+        },
+        {
+            "parameters": {
+                "authentication": "nocoDbApiToken",
+                "operation": "update",
+                "projectId": "p5xxqp29w9h8sb6",
+                "table": "mgot1kl4sglenym",
+                "dataToUpdate": {
+                    "values": [
+                        {
+                            "column": "status",
+                            "value": "En Proceso"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "update-status",
+            "name": "Set 'En Proceso'",
+            "type": "n8n-nodes-base.nocoDb",
+            "position": [
+                700,
+                200
+            ],
+            "typeVersion": 3,
+            "credentials": {
+                "nocoDbApiToken": {
+                    "id": "tV5VwP4BVmME7Vgo",
+                    "name": "NocoDB Token account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "workflowId": "bulk_call_manager_id"
+            },
+            "id": "execute-call",
+            "name": "Execute Call",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "position": [
+                920,
+                200
+            ],
+            "typeVersion": 1
+        }
+    ],
+    "connections": {
+        "Schedule Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Get Automation Config",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Automation Config": {
+            "main": [
+                [
+                    {
+                        "node": "Automation Enabled?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Automation Enabled?": {
+            "main": [
+                [
+                    {
+                        "node": "Get Eligible Leads",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Eligible Leads": {
+            "main": [
+                [
+                    {
+                        "node": "Filter: Is Due?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Filter: Is Due?": {
+            "main": [
+                [
+                    {
+                        "node": "Set 'En Proceso'",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Set 'En Proceso'": {
+            "main": [
+                [
+                    {
+                        "node": "Execute Call",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

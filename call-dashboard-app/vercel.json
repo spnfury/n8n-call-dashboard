@@ -8,5 +8,11 @@
                 "distDir": "dist"
             }
         }
+    ],
+    "routes": [
+        {
+            "src": "/vapi-api/(.*)",
+            "dest": "https://api.vapi.ai/$1"
+        }
     ]
 }
