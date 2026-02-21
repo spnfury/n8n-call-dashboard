@@ -3844,6 +3844,14 @@ document.getElementById('agent-prompt-textarea')?.addEventListener('keydown', (e
 // ── Changelog / Registro de Cambios ──
 const CHANGELOG_DATA = [
     {
+        date: '2026-02-20',
+        entries: [
+            { type: 'fix', title: 'Diagnóstico de llamadas programadas vencidas', hours: 1, desc: 'Investigación de 9 llamadas programadas a las 13:00-13:16 que no se ejecutaron: análisis de la sección de planificación, revisión del workflow de n8n y del trigger automático para identificar la causa raíz.' },
+            { type: 'fix', title: 'Reprogramación de 9 llamadas vencidas', hours: 0.5, desc: 'Ejecución del script reschedule_overdue.mjs para redistribuir las 9 llamadas vencidas de forma escalonada cada 3 minutos, empezando 5 minutos después de la hora actual, evitando avalancha de llamadas simultáneas.' },
+            { type: 'improvement', title: 'Verificación de estado del workflow n8n', hours: 0.5, desc: 'Consulta directa a la API de n8n para confirmar que el workflow "General Protect" (Schedule Trigger cada 1 minuto) está activo y operativo, asegurando que las llamadas reprogramadas se ejecuten automáticamente.' },
+        ]
+    },
+    {
         date: '2026-02-19',
         entries: [
             { type: 'feature', title: 'Sección "Changelog" — Registro de Cambios', hours: 2, desc: 'Diseño e implementación de nueva pestaña "📝 Changelog" con timeline visual día a día, badges por tipo de cambio (feature, fix, mejora, prompt), barra de resumen con KPIs y diseño responsive.' },
