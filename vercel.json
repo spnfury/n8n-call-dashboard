@@ -8,6 +8,19 @@
             }
         }
     ],
+    "redirects": [
+        {
+            "source": "/(.*)",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "skypulsebot.vercel.app"
+                }
+            ],
+            "destination": "https://skypulsebot-five.vercel.app/$1",
+            "permanent": true
+        }
+    ],
     "routes": [
         {
             "src": "/(.*)",
