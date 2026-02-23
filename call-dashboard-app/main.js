@@ -518,110 +518,156 @@ function applyFilters() {
 async function openDetailDirect(call) {
 
     if (!call) return;
+
+    // Show Modal FIRST so user sees it immediately even if content takes time to load
+    document.getElementById('detail-modal').style.display = 'flex';
+
     activeDetailCall = call;
 
     const vapiId = call.vapi_call_id || call.lead_id || call.id || call.Id;
 
-    document.getElementById('modal-title').textContent = call.lead_name || 'Llamada';
-    document.getElementById('modal-subtitle').textContent = `${call.phone_called} • ${formatDate(call.call_time || call.CreatedAt)}`;
+    try {
+        document.getElementById('modal-title').textContent = call.lead_name || 'Llamada';
+        document.getElementById('modal-subtitle').textContent = `${call.phone_called || ''} • ${formatDate(call.call_time || call.CreatedAt)}`;
 
-    const transcriptEl = document.getElementById('modal-transcript');
-    const audioSec = document.getElementById('recording-section');
-    const audio = document.getElementById('modal-audio');
+        const transcriptEl = document.getElementById('modal-transcript');
+        const audioSec = document.getElementById('recording-section');
+        const audio = document.getElementById('modal-audio');
 
-    transcriptEl.innerHTML = '<span class="loading-pulse">⌛ Obteniendo transcripción en tiempo real desde Vapi...</span>';
-    audioSec.style.display = 'none';
+        transcriptEl.innerHTML = '<span class="loading-pulse">⌛ Obteniendo transcripción en tiempo real desde Vapi...</span>';
+        audioSec.style.display = 'none';
 
-    document.getElementById('modal-notes').value = call.Notes || '';
-    document.getElementById('save-notes-btn').setAttribute('data-id', call.id || call.Id);
+        // Reset extraction and error sections (consistent with openDetail)
+        const extractionTools = document.getElementById('extraction-tools');
+        const extractionResults = document.getElementById('extraction-results');
+        const errorSec = document.getElementById('error-section');
+        if (extractionTools) extractionTools.style.display = 'none';
+        if (extractionResults) extractionResults.style.display = 'none';
+        if (errorSec) errorSec.style.display = 'none';
 
-    // Update test toggle button state in modal
-    const testToggleBtn = document.getElementById('toggle-test-btn');
-    const isCurrentlyTest = call.is_test === true || call.is_test === 1 || (call.ended_reason || '').includes('Manual Trigger') || (call.lead_name || '').toLowerCase() === 'test manual';
-    if (testToggleBtn) {
-        testToggleBtn.className = isCurrentlyTest ? 'toggle-test-pill active' : 'toggle-test-pill';
-        testToggleBtn.querySelector('.toggle-test-label').textContent = isCurrentlyTest ? '✅ Marcada como Test' : 'Marcar como Test';
-    }
-    // Wire up the toggle handler for this specific call
-    window._toggleDetailTest = async () => {
-        const callId = call.id || call.Id;
-        const newTestState = !(call.is_test === true || call.is_test === 1);
-        await toggleTestStatus(callId, newTestState);
-        closeModal();
-    };
-    const confirmedSec = document.getElementById('confirmed-section');
-    if (confirmedSec) confirmedSec.style.display = 'none';
+        document.getElementById('modal-notes').value = call.Notes || '';
+        document.getElementById('save-notes-btn').setAttribute('data-id', call.id || call.Id);
 
-    // ── Render Score Gauge ──
-    const scoreSec = document.getElementById('score-section');
-    if (scoreSec) {
-        const scoreResult = call._scoreBreakdown ? { total: call._score, breakdown: call._scoreBreakdown } : calculateCallScore(call);
-        const label = getScoreLabel(scoreResult.total);
-        const color = getScoreColor(scoreResult.total);
-        const bd = scoreResult.breakdown;
-        const dims = [
-            { name: 'Duración', val: bd.duration, max: 25, icon: '⏱️' },
-            { name: 'Evaluación', val: bd.evaluation, max: 30, icon: '📊' },
-            { name: 'Datos Confirmados', val: bd.confirmed, max: 20, icon: '✅' },
-            { name: 'Motivo Fin', val: bd.endReason, max: 15, icon: '🔚' },
-            { name: 'Transcripción', val: bd.transcript, max: 10, icon: '📝' }
-        ];
-        scoreSec.style.display = 'block';
-        scoreSec.innerHTML = `
-            <div class="section-title">🏆 Score de Calidad</div>
-            <div class="score-gauge-container">
-                <div class="score-gauge-ring" style="--score-pct: ${scoreResult.total}%; --score-clr: ${color}">
-                    <div class="score-gauge-inner">
-                        <span class="score-gauge-value" style="color: ${color}">${scoreResult.total}</span>
-                        <span class="score-gauge-label">${label.emoji} ${label.text}</span>
+        // Update test toggle button state in modal
+        const testToggleBtn = document.getElementById('toggle-test-btn');
+        const isCurrentlyTest = call.is_test === true || call.is_test === 1 || (call.ended_reason || '').includes('Manual Trigger') || (call.lead_name || '').toLowerCase() === 'test manual';
+        if (testToggleBtn) {
+            testToggleBtn.className = isCurrentlyTest ? 'toggle-test-pill active' : 'toggle-test-pill';
+            testToggleBtn.querySelector('.toggle-test-label').textContent = isCurrentlyTest ? '✅ Marcada como Test' : 'Marcar como Test';
+        }
+        // Wire up the toggle handler for this specific call
+        window._toggleDetailTest = async () => {
+            const callId = call.id || call.Id;
+            const newTestState = !(call.is_test === true || call.is_test === 1);
+            await toggleTestStatus(callId, newTestState);
+            closeModal();
+        };
+        // Wire up the retry handler for this specific call
+        window._retryCall = async () => {
+            const retryFeedback = document.getElementById('retry-feedback');
+            if (retryFeedback) {
+                retryFeedback.style.display = 'block';
+                retryFeedback.textContent = '⏳ Preparando rellamada...';
+                retryFeedback.style.color = 'var(--accent)';
+            }
+        };
+
+        const confirmedSec = document.getElementById('confirmed-section');
+        if (confirmedSec) confirmedSec.style.display = 'none';
+
+        // ── Render Score Gauge ──
+        const scoreSec = document.getElementById('score-section');
+        if (scoreSec) {
+            const scoreResult = call._scoreBreakdown ? { total: call._score, breakdown: call._scoreBreakdown } : calculateCallScore(call);
+            const label = getScoreLabel(scoreResult.total);
+            const color = getScoreColor(scoreResult.total);
+            const bd = scoreResult.breakdown;
+            const dims = [
+                { name: 'Duración', val: bd.duration, max: 25, icon: '⏱️' },
+                { name: 'Evaluación', val: bd.evaluation, max: 30, icon: '📊' },
+                { name: 'Datos Confirmados', val: bd.confirmed, max: 20, icon: '✅' },
+                { name: 'Motivo Fin', val: bd.endReason, max: 15, icon: '🔚' },
+                { name: 'Transcripción', val: bd.transcript, max: 10, icon: '📝' }
+            ];
+            scoreSec.style.display = 'block';
+            scoreSec.innerHTML = `
+                <div class="section-title">🏆 Score de Calidad</div>
+                <div class="score-gauge-container">
+                    <div class="score-gauge-ring" style="--score-pct: ${scoreResult.total}%; --score-clr: ${color}">
+                        <div class="score-gauge-inner">
+                            <span class="score-gauge-value" style="color: ${color}">${scoreResult.total}</span>
+                            <span class="score-gauge-label">${label.emoji} ${label.text}</span>
+                        </div>
+                    </div>
+                    <div class="score-breakdown">
+                        ${dims.map(d => `
+                            <div class="score-dim">
+                                <div class="score-dim-header">
+                                    <span>${d.icon} ${d.name}</span>
+                                    <span class="score-dim-val">${d.val}/${d.max}</span>
+                                </div>
+                                <div class="score-dim-bar">
+                                    <div class="score-dim-fill" style="width: ${(d.val / d.max) * 100}%; background: ${getScoreColor((d.val / d.max) * 100)}"></div>
+                                </div>
+                            </div>
+                        `).join('')}
                     </div>
                 </div>
-                <div class="score-breakdown">
-                    ${dims.map(d => `
-                        <div class="score-dim">
-                            <div class="score-dim-header">
-                                <span>${d.icon} ${d.name}</span>
-                                <span class="score-dim-val">${d.val}/${d.max}</span>
-                            </div>
-                            <div class="score-dim-bar">
-                                <div class="score-dim-fill" style="width: ${(d.val / d.max) * 100}%; background: ${getScoreColor((d.val / d.max) * 100)}"></div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-    }
-
-    // Show Modal — use style.display to match closeModal() which sets display:none
-    document.getElementById('detail-modal').style.display = 'flex';
-
-    // Fetch Vapi data
-    if (vapiId && vapiId.startsWith('019')) {
-        try {
-            const res = await fetch(`https://api.vapi.ai/call/${vapiId}`, {
-                headers: { 'Authorization': `Bearer ${VAPI_API_KEY}` }
-            });
-            if (res.ok) {
-                const vapi = await res.json();
-                const transcript = vapi.artifact?.transcript || vapi.transcript || '';
-                transcriptEl.innerHTML = transcript
-                    ? `<pre style="white-space:pre-wrap;font-family:inherit;">${transcript}</pre>`
-                    : '<span style="color:var(--text-secondary)">Sin transcripción disponible</span>';
-
-                const recordingUrl = vapi.artifact?.recordingUrl || vapi.recordingUrl;
-                if (recordingUrl) {
-                    audioSec.style.display = 'block';
-                    audio.src = recordingUrl;
-                }
-            } else {
-                transcriptEl.innerHTML = '<span style="color:var(--text-secondary)">No se pudo obtener la transcripción</span>';
-            }
-        } catch (e) {
-            transcriptEl.innerHTML = '<span style="color:var(--danger)">Error al conectar con Vapi</span>';
+            `;
         }
-    } else {
-        transcriptEl.innerHTML = '<span style="color:var(--text-secondary)">Sin ID de Vapi</span>';
+
+        // Show error section if applicable
+        if (call.ended_reason && (call.ended_reason.includes('Error') || call.ended_reason.includes('fail'))) {
+            if (errorSec) {
+                errorSec.style.display = 'block';
+                document.getElementById('modal-error-detail').textContent = call.ended_reason;
+            }
+        }
+
+        // Show confirmed data if applicable
+        if (isConfirmed(call)) {
+            const confData = confirmedDataMap[call.vapi_call_id];
+            if (confData && confirmedSec) {
+                confirmedSec.style.display = 'block';
+                document.getElementById('conf-name').textContent = confData.name;
+                document.getElementById('conf-phone').textContent = sanitizePhone(confData.rawPhone, call.phone_called);
+                document.getElementById('conf-email').textContent = confData.email;
+            }
+        }
+
+        // Show extraction tools
+        if (extractionTools) extractionTools.style.display = 'block';
+        if (extractionResults) extractionResults.style.display = 'none';
+
+        // Fetch Vapi data
+        if (vapiId && vapiId.startsWith('019')) {
+            try {
+                const res = await fetch(`https://api.vapi.ai/call/${vapiId}`, {
+                    headers: { 'Authorization': `Bearer ${VAPI_API_KEY}` }
+                });
+                if (res.ok) {
+                    const vapi = await res.json();
+                    const transcript = vapi.artifact?.transcript || vapi.transcript || '';
+                    transcriptEl.innerHTML = transcript
+                        ? `<pre style="white-space:pre-wrap;font-family:inherit;">${transcript}</pre>`
+                        : '<span style="color:var(--text-secondary)">Sin transcripción disponible</span>';
+
+                    const recordingUrl = vapi.artifact?.recordingUrl || vapi.recordingUrl;
+                    if (recordingUrl) {
+                        audioSec.style.display = 'block';
+                        audio.src = recordingUrl;
+                    }
+                } else {
+                    transcriptEl.innerHTML = '<span style="color:var(--text-secondary)">No se pudo obtener la transcripción</span>';
+                }
+            } catch (e) {
+                transcriptEl.innerHTML = '<span style="color:var(--danger)">Error al conectar con Vapi</span>';
+            }
+        } else {
+            transcriptEl.innerHTML = '<span style="color:var(--text-secondary)">Sin ID de Vapi</span>';
+        }
+    } catch (err) {
+        console.error('[openDetailDirect] Error populating modal:', err);
     }
 }
 
