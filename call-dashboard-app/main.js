@@ -12,13 +12,27 @@ let currentCallsPage = [];
 let confirmedDataMap = {}; // vapi_call_id -> { name, phone, email }
 let activeDetailCall = null; // Global state for the currently active call in the detail view
 let isEnriching = false; // Guard against multiple enrichment runs
+let paginationPage = 1;
+let paginationPageSize = 20;
 
-async function fetchData(tableId, limit = 100) {
-    const res = await fetch(`${API_BASE}/${tableId}/records?limit=${limit}&sort=-CreatedAt`, {
-        headers: { 'xc-token': XC_TOKEN }
-    });
-    const data = await res.json();
-    return data.list || [];
+async function fetchData(tableId, limit = 200) {
+    // Paginate through ALL records from NocoDB
+    let allRecords = [];
+    let offset = 0;
+    const batchSize = limit;
+
+    while (true) {
+        const res = await fetch(`${API_BASE}/${tableId}/records?limit=${batchSize}&offset=${offset}&sort=-CreatedAt`, {
+            headers: { 'xc-token': XC_TOKEN }
+        });
+        const data = await res.json();
+        const records = data.list || [];
+        allRecords = allRecords.concat(records);
+        if (records.length < batchSize || data.pageInfo?.isLastPage !== false) break;
+        offset += batchSize;
+        if (allRecords.length >= 5000) break; // Safety limit
+    }
+    return allRecords;
 }
 
 const STATUS_MAP = {
@@ -1903,8 +1917,10 @@ async function loadData(skipEnrichment = false) {
         document.getElementById('confirmation-rate').textContent = confirmationRate + '%';
 
         const tbody = document.getElementById('call-table');
+        const paginationContainer = document.getElementById('call-pagination');
         if (filteredCalls.length === 0) {
             tbody.innerHTML = '<tr><td colspan="12" class="empty-state">No hay llamadas registradas que coincidan con el filtro</td></tr>';
+            if (paginationContainer) paginationContainer.innerHTML = '';
             return;
         }
 
@@ -1933,6 +1949,27 @@ async function loadData(skipEnrichment = false) {
                 }
             }
         });
+
+        // Build display-order list (parents + their retries grouped together), excluding standalone retries
+        const displayOrder = [];
+        filteredCalls.forEach((call, index) => {
+            if (retryChildIndexes.has(index)) return;
+            displayOrder.push({ call, index, isRetry: false });
+            if (retryMap.has(index)) {
+                retryMap.get(index).forEach(retryIdx => {
+                    displayOrder.push({ call: filteredCalls[retryIdx], index: retryIdx, isRetry: true, parentCall: call });
+                });
+            }
+        });
+
+        // ── Pagination: slice for current page ──
+        const totalItems = displayOrder.length;
+        const totalPages = Math.ceil(totalItems / paginationPageSize);
+        if (paginationPage > totalPages) paginationPage = totalPages;
+        if (paginationPage < 1) paginationPage = 1;
+        const startIdx = (paginationPage - 1) * paginationPageSize;
+        const endIdx = Math.min(startIdx + paginationPageSize, totalItems);
+        const pageItems = displayOrder.slice(startIdx, endIdx);
 
         // Helper to render a single call row
         function renderCallRow(call, index, isRetry = false, parentCall = null) {
@@ -2020,24 +2057,14 @@ async function loadData(skipEnrichment = false) {
             return tr;
         }
 
-        // Render calls with retry grouping
-        filteredCalls.forEach((call, index) => {
-            // Skip retry calls — they will be rendered after their parent
-            if (retryChildIndexes.has(index)) return;
-
-            // Render the main call
-            const tr = renderCallRow(call, index);
+        // Render only the current page items
+        pageItems.forEach(item => {
+            const tr = renderCallRow(item.call, item.index, item.isRetry, item.parentCall || null);
             tbody.appendChild(tr);
-
-            // Render any retry subcalls right after the parent
-            if (retryMap.has(index)) {
-                const retries = retryMap.get(index);
-                retries.forEach(retryIdx => {
-                    const retryTr = renderCallRow(filteredCalls[retryIdx], retryIdx, true, call);
-                    tbody.appendChild(retryTr);
-                });
-            }
         });
+
+        // Render pagination controls
+        renderPagination(totalItems, paginationPage, paginationPageSize, totalPages);
 
         // Update Chart
         renderChart(filteredCalls);
@@ -2251,12 +2278,91 @@ async function toggleContestadorStatus(callId, phone) {
 }
 window.toggleContestadorStatus = toggleContestadorStatus;
 
+// ── Pagination Controls ──
+function renderPagination(totalItems, currentPage, pageSize, totalPages) {
+    const container = document.getElementById('call-pagination');
+    if (!container) return;
+    if (totalItems <= 0) { container.innerHTML = ''; return; }
+
+    const startItem = (currentPage - 1) * pageSize + 1;
+    const endItem = Math.min(currentPage * pageSize, totalItems);
+
+    // Build page buttons with ellipsis
+    let pageButtons = '';
+    const maxVisible = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
+
+    if (startPage > 1) {
+        pageButtons += `<button class="pagination-btn pagination-page" data-page="1">1</button>`;
+        if (startPage > 2) pageButtons += `<span class="pagination-ellipsis">…</span>`;
+    }
+    for (let i = startPage; i <= endPage; i++) {
+        pageButtons += `<button class="pagination-btn pagination-page ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+    }
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) pageButtons += `<span class="pagination-ellipsis">…</span>`;
+        pageButtons += `<button class="pagination-btn pagination-page" data-page="${totalPages}">${totalPages}</button>`;
+    }
+
+    container.innerHTML = `
+        <div class="pagination-bar">
+            <div class="pagination-info">
+                Mostrando <strong>${startItem}–${endItem}</strong> de <strong>${totalItems}</strong> llamadas
+            </div>
+            <div class="pagination-controls">
+                <button class="pagination-btn pagination-nav" ${currentPage <= 1 ? 'disabled' : ''} data-page="${currentPage - 1}">← Anterior</button>
+                ${pageButtons}
+                <button class="pagination-btn pagination-nav" ${currentPage >= totalPages ? 'disabled' : ''} data-page="${currentPage + 1}">Siguiente →</button>
+            </div>
+            <div class="pagination-size">
+                <span class="pagination-size-label">Por página:</span>
+                <select class="pagination-size-select" id="pagination-page-size">
+                    <option value="20" ${pageSize === 20 ? 'selected' : ''}>20</option>
+                    <option value="50" ${pageSize === 50 ? 'selected' : ''}>50</option>
+                    <option value="100" ${pageSize === 100 ? 'selected' : ''}>100</option>
+                </select>
+            </div>
+        </div>
+    `;
+
+    // Event: page buttons
+    container.querySelectorAll('.pagination-page').forEach(btn => {
+        btn.addEventListener('click', () => {
+            paginationPage = parseInt(btn.getAttribute('data-page'));
+            loadData(true);
+            document.getElementById('call-table').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+
+    // Event: prev/next
+    container.querySelectorAll('.pagination-nav').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (btn.disabled) return;
+            paginationPage = parseInt(btn.getAttribute('data-page'));
+            loadData(true);
+            document.getElementById('call-table').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+
+    // Event: page size selector
+    const sizeSelect = container.querySelector('#pagination-page-size');
+    if (sizeSelect) {
+        sizeSelect.addEventListener('change', () => {
+            paginationPageSize = parseInt(sizeSelect.value);
+            paginationPage = 1;
+            loadData(true);
+        });
+    }
+}
+
 // Event listeners
 document.getElementById('refresh-btn').addEventListener('click', loadData);
-document.getElementById('filter-confirmed').addEventListener('change', loadData);
-document.getElementById('filter-status').addEventListener('change', loadData);
-document.getElementById('filter-company').addEventListener('input', loadData);
-document.getElementById('filter-score').addEventListener('change', loadData);
+document.getElementById('filter-confirmed').addEventListener('change', () => { paginationPage = 1; loadData(); });
+document.getElementById('filter-status').addEventListener('change', () => { paginationPage = 1; loadData(); });
+document.getElementById('filter-company').addEventListener('input', () => { paginationPage = 1; loadData(); });
+document.getElementById('filter-score').addEventListener('change', () => { paginationPage = 1; loadData(); });
 document.getElementById('close-modal').addEventListener('click', closeModal);
 document.getElementById('save-notes-btn').addEventListener('click', saveNotes);
 
@@ -2354,6 +2460,7 @@ function showDashboard() {
         maxDate: "today",
         onChange: function (selectedDates, dateStr) {
             if (selectedDates.length === 2) {
+                paginationPage = 1;
                 loadData();
             }
         }
