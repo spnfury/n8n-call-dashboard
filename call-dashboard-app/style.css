@@ -380,23 +380,22 @@ button:disabled:hover {
 
 table {
     width: 100%;
-    min-width: 1100px;
     border-collapse: collapse;
 }
 
 th,
 td {
-    padding: 14px 18px;
+    padding: 10px 10px;
     text-align: left;
     border-bottom: 1px solid var(--border);
-    font-size: 14px;
+    font-size: 13px;
     white-space: nowrap;
 }
 
 th {
     background: var(--bg-secondary);
     font-weight: 600;
-    font-size: 13px;
+    font-size: 12px;
     text-transform: uppercase;
     color: var(--text-secondary);
 }
@@ -2949,8 +2948,9 @@ input:checked+.slider:before {
 /* Mark/Unmark test buttons in tables */
 .actions-cell-calls {
     display: flex;
-    gap: 6px;
+    gap: 4px;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .mark-test-btn {
@@ -4301,5 +4301,97 @@ input:checked+.slider:before {
     .pagination-nav {
         padding: 6px 10px;
         font-size: 12px;
+    }
+}
+
+/* ── Responsive Card Layout for Call History Table ── */
+@media (max-width: 1200px) {
+    .table-container {
+        overflow-x: visible;
+    }
+
+    .table-container table,
+    .table-container thead,
+    .table-container tbody,
+    .table-container th,
+    .table-container td,
+    .table-container tr {
+        display: block;
+    }
+
+    .table-container thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+
+    .table-container tbody tr {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        margin-bottom: 12px;
+        padding: 16px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px 16px;
+        transition: border-color 0.2s ease;
+    }
+
+    .table-container tbody tr:hover {
+        border-color: rgba(99, 102, 241, 0.3);
+    }
+
+    .table-container tbody td {
+        border-bottom: none;
+        padding: 4px 0;
+        white-space: normal;
+        word-break: break-word;
+        position: relative;
+        font-size: 13px;
+    }
+
+    .table-container tbody td::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: var(--text-secondary);
+        margin-bottom: 2px;
+        letter-spacing: 0.5px;
+    }
+
+    /* Make some cells span full width */
+    .table-container tbody td.actions-cell-calls {
+        grid-column: 1 / -1;
+        display: flex;
+        gap: 8px;
+        justify-content: flex-start;
+        align-items: center;
+        padding-top: 8px;
+        margin-top: 4px;
+        border-top: 1px solid var(--border);
+    }
+
+    .table-container tbody td.actions-cell-calls::before {
+        display: none;
+    }
+
+    /* Confirmed cell full width for details */
+    .table-container tbody td[data-label="Confirmado"] {
+        grid-column: 1 / -1;
+    }
+
+    .table-container tbody td[data-label="Confirmado"] .confirmed-inline {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+    }
+
+    /* Make action buttons bigger on mobile */
+    .table-container tbody .action-btn {
+        padding: 8px 14px;
+        font-size: 13px;
     }
 }
