@@ -15,6 +15,57 @@ let isEnriching = false; // Guard against multiple enrichment runs
 let paginationPage = 1;
 let paginationPageSize = 20;
 
+// Helper: Format transcript with AI/User colors
+function formatTranscriptHTML(rawTranscript) {
+    if (!rawTranscript || rawTranscript.trim().length === 0) return '';
+    const lines = rawTranscript.split('\n').filter(l => l.trim());
+    return lines.map(line => {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('AI:') || trimmed.startsWith('Assistant:') || trimmed.startsWith('Bot:')) {
+            return `<div style="margin: 4px 0; padding: 6px 10px; border-left: 3px solid var(--accent); background: rgba(99,102,241,0.06); border-radius: 0 6px 6px 0;"><span style="color: var(--accent); font-weight: 600; font-size: 11px;">🤖 IA</span> <span style="color: var(--text-primary);">${trimmed.replace(/^(AI:|Assistant:|Bot:)\s*/, '')}</span></div>`;
+        } else if (trimmed.startsWith('User:') || trimmed.startsWith('Customer:') || trimmed.startsWith('Cliente:')) {
+            return `<div style="margin: 4px 0; padding: 6px 10px; border-left: 3px solid var(--success); background: rgba(16,185,129,0.06); border-radius: 0 6px 6px 0;"><span style="color: var(--success); font-weight: 600; font-size: 11px;">👤 Cliente</span> <span style="color: var(--text-primary);">${trimmed.replace(/^(User:|Customer:|Cliente:)\s*/, '')}</span></div>`;
+        }
+        return `<div style="margin: 4px 0; padding: 4px 10px; color: var(--text-secondary);">${trimmed}</div>`;
+    }).join('');
+}
+
+// Helper: Populate original lead data section
+async function populateOriginalLeadData(call) {
+    const origName = document.getElementById('orig-name');
+    const origPhone = document.getElementById('orig-phone');
+    const origEmail = document.getElementById('orig-email');
+    const origSector = document.getElementById('orig-sector');
+
+    // Set basic data from the call record
+    origName.textContent = call.lead_name || '—';
+    origPhone.textContent = call.phone_called || '—';
+    origEmail.textContent = '—';
+    origSector.textContent = '—';
+
+    // Try to fetch additional data from the Leads table
+    try {
+        const LEADS_TABLE_ID = 'mgot1kl4sglenym';
+        const phoneCalled = call.phone_called;
+        if (phoneCalled) {
+            const normalizedSearch = normalizePhone(phoneCalled);
+            const query = `(phone,eq,${encodeURIComponent(normalizedSearch)})`;
+            const searchRes = await fetch(`${API_BASE}/${LEADS_TABLE_ID}/records?where=${query}`, {
+                headers: { 'xc-token': XC_TOKEN }
+            });
+            const searchData = await searchRes.json();
+            const lead = searchData.list && searchData.list[0];
+            if (lead) {
+                origName.textContent = lead.name || call.lead_name || '—';
+                origEmail.textContent = lead.email || '—';
+                origSector.textContent = lead.sector || '—';
+            }
+        }
+    } catch (err) {
+        console.warn('[populateOriginalLeadData] Error fetching lead:', err);
+    }
+}
+
 async function fetchData(tableId, limit = 200) {
     // Paginate through ALL records from NocoDB
     let allRecords = [];
@@ -537,6 +588,9 @@ async function openDetailDirect(call) {
         transcriptEl.innerHTML = '<span class="loading-pulse">⌛ Obteniendo transcripción en tiempo real desde Vapi...</span>';
         audioSec.style.display = 'none';
 
+        // Populate original lead data (async, non-blocking)
+        populateOriginalLeadData(call);
+
         // Reset extraction and error sections (consistent with openDetail)
         const extractionTools = document.getElementById('extraction-tools');
         const extractionResults = document.getElementById('extraction-results');
@@ -648,8 +702,9 @@ async function openDetailDirect(call) {
                 if (res.ok) {
                     const vapi = await res.json();
                     const transcript = vapi.artifact?.transcript || vapi.transcript || '';
-                    transcriptEl.innerHTML = transcript
-                        ? `<pre style="white-space:pre-wrap;font-family:inherit;">${transcript}</pre>`
+                    const formattedTranscript = formatTranscriptHTML(transcript);
+                    transcriptEl.innerHTML = formattedTranscript
+                        ? formattedTranscript
                         : '<span style="color:var(--text-secondary)">Sin transcripción disponible</span>';
 
                     const recordingUrl = vapi.artifact?.recordingUrl || vapi.recordingUrl;
@@ -688,6 +743,9 @@ async function openDetail(index) {
 
     transcriptEl.innerHTML = '<span class="loading-pulse">⌛ Obteniendo transcripción en tiempo real desde Vapi...</span>';
     audioSec.style.display = 'none';
+
+    // Populate original lead data (async, non-blocking)
+    populateOriginalLeadData(call);
 
     document.getElementById('modal-notes').value = call.Notes || '';
     document.getElementById('save-notes-btn').setAttribute('data-id', call.id || call.Id);
@@ -762,7 +820,11 @@ async function openDetail(index) {
 
             if (vapiRes.ok) {
                 const vapiData = await vapiRes.json();
-                transcriptEl.textContent = vapiData.transcript || 'No hay transcripción disponible en Vapi.';
+                const rawTranscript = vapiData.transcript || '';
+                const formattedTranscript = formatTranscriptHTML(rawTranscript);
+                transcriptEl.innerHTML = formattedTranscript
+                    ? formattedTranscript
+                    : '<span style="color:var(--text-secondary)">No hay transcripción disponible en Vapi.</span>';
 
                 if (vapiData.recordingUrl) {
                     audioSec.style.display = 'block';
@@ -776,15 +838,18 @@ async function openDetail(index) {
                 }
             } else {
                 console.warn('Vapi API error:', vapiRes.status);
-                transcriptEl.textContent = call.transcript || 'No hay transcripción disponible (error API Vapi).';
+                const fallbackFormatted = formatTranscriptHTML(call.transcript || '');
+                transcriptEl.innerHTML = fallbackFormatted || '<span style="color:var(--text-secondary)">No hay transcripción disponible (error API Vapi).</span>';
             }
         } catch (err) {
             console.error('Error fetching Vapi detail:', err);
-            transcriptEl.textContent = call.transcript || 'No hay transcripción disponible (error de conexión).';
+            const fallbackFormatted = formatTranscriptHTML(call.transcript || '');
+            transcriptEl.innerHTML = fallbackFormatted || '<span style="color:var(--text-secondary)">No hay transcripción disponible (error de conexión).</span>';
         }
     } else {
         // Fallback to local data if no valid Vapi ID
-        transcriptEl.textContent = call.transcript || 'No hay transcripción disponible.';
+        const fallbackFormatted = formatTranscriptHTML(call.transcript || '');
+        transcriptEl.innerHTML = fallbackFormatted || '<span style="color:var(--text-secondary)">No hay transcripción disponible.</span>';
         if (call.recording_url) {
             audioSec.style.display = 'block';
             audio.src = call.recording_url;

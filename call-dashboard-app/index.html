@@ -657,7 +657,28 @@
 
             <div id="score-section" style="display: none; margin-bottom: 24px;"></div>
 
-            <div class="section-title">📝 Transscripción</div>
+            <!-- Datos Originales del Lead (siempre visible) -->
+            <div id="original-lead-section"
+                style="background: rgba(99, 102, 241, 0.08); padding: 16px; border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.25); margin-bottom: 24px;">
+                <div class="section-title" style="margin-bottom: 10px; font-size: 14px; color: var(--accent);">📋 Datos
+                    Originales del Lead</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; font-size: 14px;">
+                    <p style="margin: 0;"><strong
+                            style="color: var(--text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Empresa</strong><br><span
+                            id="orig-name" style="color: var(--text-primary);">—</span></p>
+                    <p style="margin: 0;"><strong
+                            style="color: var(--text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Teléfono</strong><br><span
+                            id="orig-phone" style="color: var(--text-primary);">—</span></p>
+                    <p style="margin: 0;"><strong
+                            style="color: var(--text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Email</strong><br><span
+                            id="orig-email" style="color: var(--text-primary);">—</span></p>
+                    <p style="margin: 0;"><strong
+                            style="color: var(--text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Sector</strong><br><span
+                            id="orig-sector" style="color: var(--text-primary);">—</span></p>
+                </div>
+            </div>
+
+            <div class="section-title">📝 Transcripción</div>
             <div class="transcript-text" id="modal-transcript">No hay transcripción disponible para esta llamada.</div>
             <div id="extraction-tools" style="margin: 15px 0; display: none;">
                 <button id="extract-transcript-btn" class="refresh-btn"
@@ -707,11 +728,20 @@
 
             <div id="confirmed-section"
                 style="display: none; background: rgba(245, 158, 11, 0.1); padding: 16px; border-radius: 12px; border: 1px solid var(--warning); margin-bottom: 24px;">
-                <div class="section-title" style="margin-bottom: 8px;">✅ Datos Confirmados</div>
-                <div style="font-size: 14px;">
-                    <p><strong>Nombre:</strong> <span id="conf-name"></span></p>
-                    <p><strong>Teléfono:</strong> <span id="conf-phone"></span></p>
-                    <p><strong>Email:</strong> <span id="conf-email"></span></p>
+                <div class="section-title" style="margin-bottom: 4px; font-size: 14px; color: var(--warning);">📊 Datos
+                    Extraídos para el Gerente</div>
+                <p style="font-size: 11px; color: var(--text-secondary); margin: 0 0 10px 0;">Información confirmada o
+                    extraída de la conversación telefónica</p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; font-size: 14px;">
+                    <p style="margin: 0;"><strong
+                            style="color: var(--text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Nombre
+                            Confirmado</strong><br><span id="conf-name" style="color: var(--warning);"></span></p>
+                    <p style="margin: 0;"><strong
+                            style="color: var(--text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Teléfono
+                            Confirmado</strong><br><span id="conf-phone" style="color: var(--warning);"></span></p>
+                    <p style="margin: 0; grid-column: span 2;"><strong
+                            style="color: var(--text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Email
+                            Confirmado</strong><br><span id="conf-email" style="color: var(--warning);"></span></p>
                 </div>
             </div>
             <div class="section-title">📝 Notas del Agente</div>
