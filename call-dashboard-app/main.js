@@ -4047,6 +4047,28 @@ document.getElementById('agent-prompt-textarea')?.addEventListener('keydown', (e
 // ── Changelog / Registro de Cambios ──
 const CHANGELOG_DATA = [
     {
+        date: '2026-02-24',
+        entries: [
+            { type: 'improvement', title: 'Workflow automático de deploy a producción', hours: 1, desc: 'Creación de workflow /deploy que automatiza el bump de versión, actualización del changelog, build y deploy a Vercel en un solo paso, sin intervención manual.' },
+        ]
+    },
+    {
+        date: '2026-02-23',
+        entries: [
+            { type: 'fix', title: 'Modal "Ver Detalle" en pestaña Test', hours: 1.5, desc: 'Corrección del bug donde el modal de detalle no se abría correctamente desde la pestaña Test. Se implementó función openTestDetail() dedicada que muestra el modal con display:flex, renderiza score, transcripción, grabación y datos confirmados.' },
+            { type: 'improvement', title: 'Mejora de visibilidad y legibilidad del dashboard', hours: 1.5, desc: 'Aumento de tamaños de fuente en estadísticas, KPIs, tablas y navegación para mejorar la legibilidad sin necesidad de zoom. Ajuste del ancho máximo del contenedor a 1700px.' },
+            { type: 'improvement', title: 'Tablas responsive sin scroll horizontal', hours: 1, desc: 'Rediseño de las tablas para que se adapten a pantallas más pequeñas: reducción de padding, font-size compacto, eliminación del min-width fijo y overflow-x:auto como fallback.' },
+            { type: 'feature', title: 'Sistema de paginación en historial de llamadas', hours: 1.5, desc: 'Implementación de paginación completa con 20 registros por página, barra de navegación con botones de página, indicador de registros mostrados y navegación primera/última página.' },
+        ]
+    },
+    {
+        date: '2026-02-21',
+        entries: [
+            { type: 'improvement', title: 'Paginación de fetchData para +500 registros', hours: 1, desc: 'Reescritura de la función fetchData con paginación automática de NocoDB API: carga por lotes de 200 registros hasta obtener todos los datos, con safety limit de 5000 registros.' },
+            { type: 'fix', title: 'Corrección de carga de datos en dashboard principal', hours: 0.5, desc: 'Fix del flujo de carga de datos para asegurar que las estadísticas y gráficos se alimentan de todos los registros disponibles en la base de datos, no solo del primer lote.' },
+        ]
+    },
+    {
         date: '2026-02-20',
         entries: [
             { type: 'fix', title: 'Diagnóstico de llamadas programadas vencidas', hours: 1, desc: 'Investigación de 9 llamadas programadas a las 13:00-13:16 que no se ejecutaron: análisis de la sección de planificación, revisión del workflow de n8n y del trigger automático para identificar la causa raíz.' },
