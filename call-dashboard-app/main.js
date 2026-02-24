@@ -4114,6 +4114,8 @@ const CHANGELOG_DATA = [
     {
         date: '2026-02-24',
         entries: [
+            { type: 'feature', title: 'Separación Datos Originales vs Datos Extraídos', hours: 1.5, desc: 'El modal de detalle ahora distingue claramente los datos originales del lead (empresa, teléfono, email, sector) de los datos extraídos de la conversación para el gerente (nombre, teléfono y email confirmados). Sección azul para originales, naranja para extraídos.' },
+            { type: 'improvement', title: 'Transcripción formateada con colores IA/Cliente', hours: 0.5, desc: 'La transcripción ahora muestra líneas de IA con borde violeta y líneas del cliente con borde verde, facilitando la lectura y el seguimiento de la conversación.' },
             { type: 'improvement', title: 'Workflow automático de deploy a producción', hours: 1, desc: 'Creación de workflow /deploy que automatiza el bump de versión, actualización del changelog, build y deploy a Vercel en un solo paso, sin intervención manual.' },
         ]
     },
