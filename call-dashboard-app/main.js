@@ -3,6 +3,7 @@ const CALL_LOGS_TABLE = 'm013en5u2cyu30j';
 const CONFIRMED_TABLE = 'mtoilizta888pej';
 const XC_TOKEN = 'jx3uoKeVaidZLF7M0skVb9pV6yvNsam0Hu-Vfeww';
 const VAPI_API_KEY = '852080ba-ce7c-4778-b218-bf718613a2b6';
+const OPENAI_API_KEY = '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';
 
 let currentCalls = [];
 let allCalls = [];
@@ -233,6 +234,213 @@ function sanitizeName(name) {
     // Capitalize each word
     return name.replace(/\b\w/g, c => c.toUpperCase());
 }
+
+// ── AI Diagnostic ──
+async function generateCallDiagnostic(call) {
+    const diagSection = document.getElementById('diagnostic-section');
+    diagSection.style.display = 'block';
+    diagSection.innerHTML = `
+        <div class="diagnostic-container">
+            <div class="diagnostic-loading">
+                <div class="diagnostic-spinner"></div>
+                <div>Analizando llamada con IA...</div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Consultando Vapi + GPT-4o-mini</div>
+            </div>
+        </div>`;
+
+    const vapiId = call.vapi_call_id || call.lead_id || call.id || call.Id;
+    let vapiData = null;
+
+    // 1. Fetch full Vapi data
+    try {
+        if (vapiId && vapiId.startsWith('019')) {
+            const res = await fetch(`https://api.vapi.ai/call/${vapiId}`, {
+                headers: { 'Authorization': `Bearer ${VAPI_API_KEY}` }
+            });
+            if (res.ok) vapiData = await res.json();
+        }
+    } catch (e) {
+        console.warn('[Diagnostic] Vapi fetch error:', e);
+    }
+
+    // 2. Build context for OpenAI
+    const transcript = vapiData?.artifact?.transcript || call.transcript || '';
+    const summary = vapiData?.analysis?.summary || '';
+    const successEval = vapiData?.analysis?.successEvaluation || '';
+    const endedReason = vapiData?.endedReason || call.ended_reason || '';
+    const duration = vapiData?.endedAt && vapiData?.startedAt
+        ? Math.round((new Date(vapiData.endedAt) - new Date(vapiData.startedAt)) / 1000)
+        : parseInt(call.duration_seconds) || 0;
+    const costs = vapiData?.costs || [];
+    const totalCost = costs.reduce((s, c) => s + (c.cost || 0), 0);
+    const perf = vapiData?.artifact?.performanceMetrics || {};
+    const structuredOutputs = vapiData?.artifact?.structuredOutputs || {};
+
+    const costBreakdown = costs.map(c => `${c.type}: $${c.cost?.toFixed(4)}`).join(', ');
+    const soList = Object.values(structuredOutputs).map(so => `${so.name}: ${so.result}`).join(', ');
+
+    const prompt = `Eres un analista experto en llamadas de ventas con IA para una empresa de ciberseguridad (General Protection).
+Analiza esta llamada individual y genera un diagnóstico detallado en español.
+
+## DATOS DE LA LLAMADA
+- Lead/Empresa: ${call.lead_name || 'Desconocida'}
+- Teléfono: ${call.phone_called || '—'}
+- Duración: ${duration}s
+- Motivo de fin: ${endedReason}
+- Evaluación: ${call.evaluation || 'Pendiente'}
+- Success (Vapi): ${successEval}
+- Structured Outputs: ${soList || 'N/A'}
+- Coste total: $${totalCost.toFixed(4)}
+- Costes: ${costBreakdown || 'N/A'}
+- Latencia media turno: ${perf.turnLatencyAverage || 'N/A'}ms
+- Resumen Vapi: ${summary || 'N/A'}
+
+## TRANSCRIPCIÓN
+${transcript || 'Sin transcripción'}
+
+## INSTRUCCIONES
+Responde EXACTAMENTE en JSON puro (sin markdown, sin \`\`\`):
+{
+  "resumen": "Párrafo de 2-3 líneas resumiendo qué pasó en la llamada, el tono del contacto y el resultado.",
+  "problemas": ["problema 1", "problema 2", ...],
+  "recomendaciones": ["recomendación 1", "recomendación 2", ...],
+  "interes_lead": "alto/medio/bajo/nulo",
+  "calidad_ia": "excelente/buena/regular/mala",
+  "oportunidad_perdida": true/false,
+  "siguiente_paso": "Qué acción concreta se debería tomar con este lead."
+}`;
+
+    let aiResult = null;
+    try {
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${OPENAI_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'gpt-4o-mini',
+                messages: [
+                    { role: 'system', content: 'Eres un analista de ventas. Responde siempre en JSON válido, sin markdown.' },
+                    { role: 'user', content: prompt }
+                ],
+                temperature: 0.7,
+                max_tokens: 1500
+            })
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            const content = data.choices[0]?.message?.content || '';
+            const jsonStr = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+            aiResult = JSON.parse(jsonStr);
+        }
+    } catch (e) {
+        console.warn('[Diagnostic] OpenAI error:', e);
+    }
+
+    // 3. Render diagnostic
+    const interesColors = { alto: '#22c55e', medio: '#f59e0b', bajo: '#f97316', nulo: '#ef4444' };
+    const calidadColors = { excelente: '#22c55e', buena: '#3b82f6', regular: '#f59e0b', mala: '#ef4444' };
+    const interes = aiResult?.interes_lead || 'nulo';
+    const calidad = aiResult?.calidad_ia || 'regular';
+
+    const costRows = costs.map(c => {
+        const typeLabels = { transcriber: 'Transcriber', model: 'Modelo IA', voice: 'Voz', vapi: 'Vapi', 'voicemail-detection': 'VM Detection', 'knowledge-base': 'Knowledge', analysis: 'Análisis' };
+        return `<div class="diagnostic-cost-row">
+            <span class="diagnostic-cost-label">${typeLabels[c.type] || c.type}</span>
+            <span class="diagnostic-cost-value">$${c.cost?.toFixed(4)}</span>
+        </div>`;
+    }).join('');
+
+    const problemsHTML = (aiResult?.problemas || ['No se pudo generar el análisis']).map(p =>
+        `<div class="diagnostic-problem-item">${p}</div>`
+    ).join('');
+
+    const recsHTML = (aiResult?.recomendaciones || ['Intentar nuevamente con más información']).map(r =>
+        `<div class="diagnostic-rec-item">${r}</div>`
+    ).join('');
+
+    diagSection.innerHTML = `
+        <div class="diagnostic-container">
+            <div class="diagnostic-header">🔍 Diagnóstico IA</div>
+
+            <div class="diagnostic-summary">${aiResult?.resumen || summary || 'No se pudo generar el resumen.'}</div>
+
+            <div class="diagnostic-metrics">
+                <div class="diagnostic-metric">
+                    <div class="diagnostic-metric-value">${formatDuration(duration)}</div>
+                    <div class="diagnostic-metric-label">Duración</div>
+                </div>
+                <div class="diagnostic-metric">
+                    <div class="diagnostic-metric-value" style="color: ${interesColors[interes] || '#94a3b8'}">${interes.charAt(0).toUpperCase() + interes.slice(1)}</div>
+                    <div class="diagnostic-metric-label">Interés Lead</div>
+                </div>
+                <div class="diagnostic-metric">
+                    <div class="diagnostic-metric-value" style="color: ${calidadColors[calidad] || '#94a3b8'}">${calidad.charAt(0).toUpperCase() + calidad.slice(1)}</div>
+                    <div class="diagnostic-metric-label">Calidad IA</div>
+                </div>
+                <div class="diagnostic-metric">
+                    <div class="diagnostic-metric-value" style="color: ${aiResult?.oportunidad_perdida ? '#ef4444' : '#22c55e'}">${aiResult?.oportunidad_perdida ? 'Sí ⚠️' : 'No ✓'}</div>
+                    <div class="diagnostic-metric-label">Oportunidad Perdida</div>
+                </div>
+                <div class="diagnostic-metric">
+                    <div class="diagnostic-metric-value" style="font-size: 14px;">$${totalCost.toFixed(2)}</div>
+                    <div class="diagnostic-metric-label">Coste Total</div>
+                </div>
+                <div class="diagnostic-metric">
+                    <div class="diagnostic-metric-value" style="font-size: 14px;">${perf.turnLatencyAverage ? Math.round(perf.turnLatencyAverage) + 'ms' : '—'}</div>
+                    <div class="diagnostic-metric-label">Latencia Media</div>
+                </div>
+            </div>
+
+            <div class="diagnostic-problems">
+                <div class="diagnostic-problems-title">⚠️ Problemas Detectados</div>
+                ${problemsHTML}
+            </div>
+
+            <div class="diagnostic-problems">
+                <div class="diagnostic-recs-title">💡 Recomendaciones</div>
+                ${recsHTML}
+            </div>
+
+            ${aiResult?.siguiente_paso ? `
+            <div style="background: rgba(99, 102, 241, 0.1); padding: 12px; border-radius: 10px; border-left: 3px solid var(--accent); margin-bottom: 16px;">
+                <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--accent); margin-bottom: 4px;">📌 Siguiente Paso</div>
+                <div style="font-size: 13px; color: var(--text-primary); line-height: 1.5;">${aiResult.siguiente_paso}</div>
+            </div>` : ''}
+
+            ${costs.length > 0 ? `
+            <details style="margin-top: 12px;">
+                <summary style="cursor: pointer; font-size: 12px; color: var(--text-secondary); user-select: none;">💰 Desglose de Costes</summary>
+                <div class="diagnostic-cost-grid" style="margin-top: 8px;">${costRows}</div>
+            </details>` : ''}
+        </div>`;
+}
+
+window._runDiagnostic = async function () {
+    if (!activeDetailCall) return;
+    const btn = document.getElementById('diagnostic-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.querySelector('.toggle-test-label').textContent = 'Analizando...';
+    }
+    try {
+        await generateCallDiagnostic(activeDetailCall);
+    } catch (e) {
+        console.error('[Diagnostic] Error:', e);
+        const sec = document.getElementById('diagnostic-section');
+        if (sec) {
+            sec.style.display = 'block';
+            sec.innerHTML = `<div class="diagnostic-container"><div style="color: var(--danger); padding: 20px; text-align: center;">❌ Error al generar el diagnóstico: ${e.message}</div></div>`;
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.querySelector('.toggle-test-label').textContent = 'Diagnóstico IA';
+        }
+    }
+};
 
 // Pre-fetch all confirmed data into a map keyed by vapi_call_id
 async function fetchConfirmedData() {
@@ -598,6 +806,8 @@ async function openDetailDirect(call) {
         if (extractionTools) extractionTools.style.display = 'none';
         if (extractionResults) extractionResults.style.display = 'none';
         if (errorSec) errorSec.style.display = 'none';
+        const diagSec = document.getElementById('diagnostic-section');
+        if (diagSec) { diagSec.style.display = 'none'; diagSec.innerHTML = ''; }
 
         document.getElementById('modal-notes').value = call.Notes || '';
         document.getElementById('save-notes-btn').setAttribute('data-id', call.id || call.Id);

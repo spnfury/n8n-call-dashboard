@@ -651,11 +651,18 @@
                         <span class="toggle-test-icon">🔄</span>
                         <span class="toggle-test-label">Rellamar con contexto</span>
                     </button>
+                    <button id="diagnostic-btn" class="toggle-test-pill" onclick="window._runDiagnostic()"
+                        style="background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.3);">
+                        <span class="toggle-test-icon">🔍</span>
+                        <span class="toggle-test-label">Diagnóstico IA</span>
+                    </button>
                 </div>
                 <div id="retry-feedback" style="margin-top: 8px; font-size: 12px; display: none;"></div>
             </div>
 
             <div id="score-section" style="display: none; margin-bottom: 24px;"></div>
+
+            <div id="diagnostic-section" style="display: none; margin-bottom: 24px;"></div>
 
             <!-- Datos Originales del Lead (siempre visible) -->
             <div id="original-lead-section"
