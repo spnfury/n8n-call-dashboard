@@ -74,10 +74,39 @@ async function fetchData(tableId, limit = 200) {
     const batchSize = limit;
 
     while (true) {
-        const res = await fetch(`${API_BASE}/${tableId}/records?limit=${batchSize}&offset=${offset}&sort=-CreatedAt`, {
-            headers: { 'xc-token': XC_TOKEN }
-        });
-        const data = await res.json();
+        const url = `${API_BASE}/${tableId}/records?limit=${batchSize}&offset=${offset}&sort=-CreatedAt`;
+        let res;
+        try {
+            res = await fetch(url, {
+                headers: { 'xc-token': XC_TOKEN }
+            });
+        } catch (networkErr) {
+            const err = new Error(`No se pudo conectar con el servidor de datos (${API_BASE}). Comprueba tu conexión a internet.`);
+            err.type = 'NETWORK_ERROR';
+            err.detail = networkErr.message;
+            err.url = url;
+            throw err;
+        }
+        if (!res.ok) {
+            let body = '';
+            try { body = await res.text(); } catch (_) { }
+            const err = new Error(`El servidor de datos respondió con error HTTP ${res.status} (${res.statusText || 'sin descripción'})`);
+            err.type = 'HTTP_ERROR';
+            err.status = res.status;
+            err.detail = body.substring(0, 300);
+            err.url = url;
+            throw err;
+        }
+        let data;
+        try {
+            data = await res.json();
+        } catch (parseErr) {
+            const err = new Error('La respuesta del servidor no es JSON válido.');
+            err.type = 'PARSE_ERROR';
+            err.detail = parseErr.message;
+            err.url = url;
+            throw err;
+        }
         const records = data.list || [];
         allRecords = allRecords.concat(records);
         if (records.length < batchSize || data.pageInfo?.isLastPage !== false) break;
@@ -2447,8 +2476,54 @@ async function loadData(skipEnrichment = false) {
         // Render test calls section
         renderTestCalls(testCalls);
     } catch (err) {
-        console.error('Error:', err);
-        document.getElementById('call-table').innerHTML = '<tr><td colspan="12" class="empty-state">Error al cargar datos</td></tr>';
+        console.error('[loadData] Error completo:', err);
+        const errType = err.type || 'UNKNOWN';
+        const errMsg = err.message || 'Error desconocido';
+        const errDetail = err.detail || '';
+        const errUrl = err.url || '';
+        const isNetwork = errType === 'NETWORK_ERROR' || errMsg.includes('fetch') || errMsg.includes('Failed to fetch');
+        const isHTTP = errType === 'HTTP_ERROR';
+        const timestamp = new Date().toLocaleString('es-ES');
+
+        let causasHTML = '';
+        if (isNetwork) {
+            causasHTML = `
+                <div style="margin-top:12px;text-align:left;font-size:13px;color:var(--text-secondary);line-height:1.6;">
+                    <div style="font-weight:600;color:var(--text-primary);margin-bottom:6px;">🔍 Posibles causas:</div>
+                    <div>• Tu conexión a internet puede estar inestable</div>
+                    <div>• El servidor de datos (<code style="font-size:11px;background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;">${API_BASE}</code>) puede estar temporalmente caído</div>
+                    <div>• Un firewall o proxy puede estar bloqueando la conexión</div>
+                    <div>• Extensiones del navegador (ad blockers) pueden interferir</div>
+                </div>`;
+        } else if (isHTTP) {
+            causasHTML = `
+                <div style="margin-top:12px;text-align:left;font-size:13px;color:var(--text-secondary);line-height:1.6;">
+                    <div style="font-weight:600;color:var(--text-primary);margin-bottom:6px;">🔍 Posibles causas:</div>
+                    <div>• HTTP ${err.status || '?'}: ${err.status === 401 ? 'Token de acceso inválido o expirado' : err.status === 403 ? 'Acceso denegado al servidor' : err.status === 500 ? 'Error interno del servidor de datos' : err.status === 502 || err.status === 503 ? 'Servidor temporalmente no disponible' : 'Error del servidor'}</div>
+                    ${errDetail ? `<div style="margin-top:6px;"><code style="font-size:11px;word-break:break-all;background:rgba(255,255,255,0.05);padding:4px 8px;border-radius:4px;display:block;max-height:80px;overflow:auto;">${errDetail}</code></div>` : ''}
+                </div>`;
+        } else {
+            causasHTML = `
+                <div style="margin-top:12px;text-align:left;font-size:13px;color:var(--text-secondary);line-height:1.6;">
+                    <div style="font-weight:600;color:var(--text-primary);margin-bottom:6px;">🔍 Detalle técnico:</div>
+                    <div><code style="font-size:11px;word-break:break-all;background:rgba(255,255,255,0.05);padding:4px 8px;border-radius:4px;display:block;max-height:80px;overflow:auto;">${errMsg}${errDetail ? '\n' + errDetail : ''}</code></div>
+                    ${errUrl ? `<div style="margin-top:4px;font-size:11px;">URL: <code style="background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;">${errUrl}</code></div>` : ''}
+                </div>`;
+        }
+
+        document.getElementById('call-table').innerHTML = `<tr><td colspan="12" style="padding:40px 20px;text-align:center;">
+            <div style="max-width:500px;margin:0 auto;">
+                <div style="font-size:40px;margin-bottom:12px;">⚠️</div>
+                <div style="font-size:16px;font-weight:600;color:var(--danger);margin-bottom:8px;">Error al cargar datos</div>
+                <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px;">${errMsg}</div>
+                <div style="font-size:11px;color:var(--text-secondary);opacity:0.7;">Tipo: ${errType} • ${timestamp}</div>
+                ${causasHTML}
+                <div style="margin-top:20px;display:flex;gap:10px;justify-content:center;">
+                    <button onclick="loadData()" style="padding:10px 24px;background:var(--accent);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px;">🔄 Reintentar</button>
+                    <button onclick="navigator.clipboard.writeText('Error: ${errMsg.replace(/'/g, "\\'").replace(/\n/g, ' ')} | Tipo: ${errType} | Detalle: ${errDetail.replace(/'/g, "\\'").replace(/\n/g, ' ')} | URL: ${errUrl} | Hora: ${timestamp}').then(()=>this.textContent='✅ Copiado')" style="padding:10px 24px;background:rgba(255,255,255,0.1);color:var(--text-secondary);border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;font-size:13px;">📋 Copiar error</button>
+                </div>
+            </div>
+        </td></tr>`;
     }
 }
 
