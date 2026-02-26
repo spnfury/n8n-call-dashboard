@@ -4397,6 +4397,20 @@ document.getElementById('agent-prompt-textarea')?.addEventListener('keydown', (e
 // ── Changelog / Registro de Cambios ──
 const CHANGELOG_DATA = [
     {
+        date: '2026-02-26',
+        entries: [
+            { type: 'improvement', title: 'Bump de versión a v0.0.4', hours: 0.5, desc: 'Actualización de versión del dashboard con changelog actualizado y deploy a producción.' },
+        ]
+    },
+    {
+        date: '2026-02-25',
+        entries: [
+            { type: 'feature', title: 'Diagnóstico IA individual por llamada', hours: 2, desc: 'Nuevo botón \"🔍 Diagnóstico IA\" en el modal de detalle que analiza la llamada con GPT-4o-mini: genera resumen, detecta problemas, recomendaciones, nivel de interés del lead, calidad de la IA y siguiente paso sugerido. Resultados visuales con badges de colores.' },
+            { type: 'fix', title: 'Error reporting detallado en carga de datos', hours: 1.5, desc: 'Reescritura completa del manejo de errores en loadData: mensajes descriptivos por tipo de error (red, HTTP, JSON), botones de reintento y copia de detalles técnicos para diagnóstico rápido. Elimina el genérico \"Error loading data\".' },
+            { type: 'improvement', title: 'Población automática de datos originales del lead', hours: 1, desc: 'El modal de detalle ahora consulta la tabla de Leads por teléfono para mostrar datos originales completos (empresa, email, sector) incluso cuando el registro de llamada solo tiene datos parciales.' },
+        ]
+    },
+    {
         date: '2026-02-24',
         entries: [
             { type: 'feature', title: 'Separación Datos Originales vs Datos Extraídos', hours: 1.5, desc: 'El modal de detalle ahora distingue claramente los datos originales del lead (empresa, teléfono, email, sector) de los datos extraídos de la conversación para el gerente (nombre, teléfono y email confirmados). Sección azul para originales, naranja para extraídos.' },
