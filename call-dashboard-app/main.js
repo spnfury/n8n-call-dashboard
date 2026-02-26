@@ -1,9 +1,5 @@
-const API_BASE = 'https://nocodb.srv889387.hstgr.cloud/api/v2/tables';
-const CALL_LOGS_TABLE = 'm013en5u2cyu30j';
-const CONFIRMED_TABLE = 'mtoilizta888pej';
-const XC_TOKEN = 'jx3uoKeVaidZLF7M0skVb9pV6yvNsam0Hu-Vfeww';
-const VAPI_API_KEY = '852080ba-ce7c-4778-b218-bf718613a2b6';
-const OPENAI_API_KEY = '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';
+// ── Configuration loaded from config.js (gitignored) ──
+const { API_BASE, CALL_LOGS_TABLE, CONFIRMED_TABLE, XC_TOKEN, VAPI_API_KEY, OPENAI_API_KEY } = window.APP_CONFIG;
 
 let currentCalls = [];
 let allCalls = [];

@@ -1,0 +1,8 @@
+# Secrets
+call-dashboard-app/config.js
+
+# Dependencies
+node_modules/
+
+# OS
+.DS_Store
