@@ -760,6 +760,9 @@ function renderDashboard(calls) {
         const notePreview = call.notes || call.Notes ? `<span class="badge" style="background: rgba(99, 102, 241, 0.1); color: var(--accent); white-space: normal; line-height: 1.2; text-align: left;">${(call.notes || call.Notes).substring(0, 30)}${(call.notes || call.Notes).length > 30 ? '...' : ''}</span>` : '-';
 
         tr.innerHTML = `
+            <td>
+                <button class="action-btn" data-index="${index}">👁 Ver Detalle</button>
+            </td>
             <td><code style="font-family: monospace; color: var(--accent); font-size: 11px;" title="${vapiId}">${shortId}</code></td>
             <td><strong>${call.lead_name || '-'}</strong></td>
             <td class="phone">${call.phone_called || '-'}</td>
@@ -768,9 +771,6 @@ function renderDashboard(calls) {
             <td><span class="badge ${getBadgeClass(call.evaluation)}">${call.evaluation || 'Pendiente'}</span></td>
             <td>${formatDuration(call.duration_seconds)}</td>
             <td class="table-notes">${notePreview}</td>
-            <td>
-                <button class="action-btn" data-index="${index}">👁 Ver Detalle</button>
-            </td>
         `;
         tbody.appendChild(tr);
     });
@@ -2014,16 +2014,16 @@ function renderLeadsTable(leads) {
 
         return `
             <tr data-id="${escapedId}">
+                <td class="actions-cell">
+                    <button class="btn-detail" onclick="triggerManualCall('${escapedPhone}', '${escapedName}')" title="Llamar ahora">📞</button>
+                    <button class="btn-detail" onclick="openLeadEditor('${escapedId}')" title="Editar">✏️</button>
+                </td>
                 <td><strong>${lead.name || 'Sin nombre'}</strong></td>
                 <td><small class="text-muted">${lead.sector || '-'}</small></td>
                 <td>${lead.phone || '-'}</td>
                 <td>${lead.email || '-'}</td>
                 <td><span class="status-badge ${getBadgeStatusClass(lead.status)}">${lead.status || 'Nuevo'}</span></td>
                 <td>${lead.fecha_planificada ? utcStringToLocalDate(lead.fecha_planificada).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}</td>
-                <td class="actions-cell">
-                    <button class="btn-detail" onclick="triggerManualCall('${escapedPhone}', '${escapedName}')" title="Llamar ahora">📞</button>
-                    <button class="btn-detail" onclick="openLeadEditor('${escapedId}')" title="Editar">✏️</button>
-                </td>
             </tr>
         `;
     }).join('');
@@ -2434,6 +2434,11 @@ async function loadData(skipEnrichment = false) {
             const placeholderSpan = '<span class="unenriched-placeholder">⏳</span>';
 
             tr.innerHTML = `
+                <td data-label="Acciones" class="actions-cell-calls">
+                    <button class="action-btn" data-index="${index}">👁 Ver Detalle</button>
+                    <button class="action-btn mark-test-btn" data-call-id="${call.id || call.Id}" title="Marcar como Test">🧪</button>
+                    <button class="action-btn mark-contestador-btn" data-call-id="${call.id || call.Id}" data-phone="${call.phone_called || ''}" title="Marcar como Contestador">📞🤖</button>
+                </td>
                 <td data-label="Call ID">${idCell}</td>
                 <td data-label="Empresa">${empresaCell}</td>
                 <td data-label="Teléfono" class="phone">${call.phone_called || '-'}</td>
@@ -2444,11 +2449,6 @@ async function loadData(skipEnrichment = false) {
                 <td data-label="Score">${isUnenriched ? placeholderSpan : `<span class="score-badge ${scoreLbl.cls}" style="--score-color: ${scoreClr}">${scoreLbl.emoji} ${scoreVal}</span>`}</td>
                 <td data-label="Notas" class="table-notes">${call.Notes ? `<span class="note-indicator" data-index="${index}" title="${call.Notes}" style="cursor: pointer;">📝</span>` : '-'}</td>
                 <td data-label="Confirmado">${isUnenriched ? placeholderSpan : confirmedCell}</td>
-                <td data-label="Acciones" class="actions-cell-calls">
-                    <button class="action-btn" data-index="${index}">👁 Ver Detalle</button>
-                    <button class="action-btn mark-test-btn" data-call-id="${call.id || call.Id}" title="Marcar como Test">🧪</button>
-                    <button class="action-btn mark-contestador-btn" data-call-id="${call.id || call.Id}" data-phone="${call.phone_called || ''}" title="Marcar como Contestador">📞🤖</button>
-                </td>
             `;
             return tr;
         }
@@ -2477,8 +2477,6 @@ async function loadData(skipEnrichment = false) {
         const errMsg = err.message || 'Error desconocido';
         const errDetail = err.detail || '';
         const errUrl = err.url || '';
-        const isNetwork = errType === 'NETWORK_ERROR' || errMsg.includes('fetch') || errMsg.includes('Failed to fetch');
-        const isHTTP = errType === 'HTTP_ERROR';
         const timestamp = new Date().toLocaleString('es-ES');
 
         let causasHTML = '';
@@ -2566,6 +2564,10 @@ function renderTestCalls(testCalls) {
         const scoreClr = getScoreColor(scoreVal);
 
         tr.innerHTML = `
+            <td class="actions-cell-calls">
+                <button class="action-btn test-detail-btn" data-test-index="${idx}">👁 Ver Detalle</button>
+                <button class="action-btn unmark-test-btn" data-call-id="${call.id || call.Id}" title="Quitar de Test">↩️</button>
+            </td>
             <td data-label="Call ID"><code style="font-family: monospace; color: #a855f7; font-size: 11px;" title="${vapiId}">${shortId}</code> <button class="copy-id-btn" data-copy-id="${vapiId}" title="Copiar ID completo" style="background:none;border:none;cursor:pointer;font-size:12px;padding:2px 4px;opacity:0.6;transition:opacity 0.2s;vertical-align:middle;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">📋</button></td>
             <td data-label="Empresa"><strong>${call.lead_name || '-'}</strong></td>
             <td data-label="Teléfono" class="phone">${call.phone_called || '-'}</td>
@@ -2575,10 +2577,6 @@ function renderTestCalls(testCalls) {
             <td data-label="Duración">${formatDuration(call.duration_seconds)}</td>
             <td data-label="Score"><span class="score-badge ${scoreLbl.cls}" style="--score-color: ${scoreClr}">${scoreLbl.emoji} ${scoreVal}</span></td>
             <td data-label="Confirmado">${confirmedCell}</td>
-            <td class="actions-cell-calls">
-                <button class="action-btn test-detail-btn" data-test-index="${idx}">👁 Ver Detalle</button>
-                <button class="action-btn unmark-test-btn" data-call-id="${call.id || call.Id}" title="Quitar de Test">↩️</button>
-            </td>
         `;
         tbody.appendChild(tr);
     });
